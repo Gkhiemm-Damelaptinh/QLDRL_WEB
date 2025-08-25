@@ -42,44 +42,80 @@
 </header>
 
 <!-- Sidebar Navigation -->
-<aside id="sidebar" class="fixed left-0 top-0 h-full w-64 bg-white shadow-lg transform -translate-x-full transition-transform duration-300 ease-in-out z-40">
-  <div class="p-4 border-b">
-    <h3 class="text-lg font-semibold text-gray-800">Menu Giảng viên</h3>
+<aside id="sidebar" 
+  class="fixed left-0 top-20 h-[calc(100%-5rem)] w-16 hover:w-64 bg-white shadow-lg transition-all duration-300 ease-in-out z-40 group overflow-hidden">
+
+  <div class="p-4 border-b relative">
+    <h3 class="text-lg font-semibold text-gray-800 absolute left-14 top-1 opacity-0 transform -translate-x-2 
+               transition-all duration-300 group-hover:opacity-100 group-hover:translate-x-0">
+      Menu Giảng viên
+    </h3>
   </div>
-  <nav class="p-4 space-y-2">
-    <a href="#dashboard" class="sidebar-item active" data-section="dashboard">
-      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z"></path>
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5a2 2 0 012-2h4a2 2 0 012 2v6H8V5z"></path>
+
+  <nav class="p-2 space-y-2">
+    <!-- Dashboard -->
+    <a href="#dashboard" class="relative flex items-center p-2 rounded hover:bg-gray-100 sidebar-item active" data-section="dashboard">
+      <svg class="w-6 h-6 text-gray-700 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z"/>
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5a2 2 0 012-2h4a2 2 0 012 2v6H8V5z"/>
       </svg>
-      <span>Tổng quan</span>
+      <span class="absolute left-12 opacity-0 transform -translate-x-2 
+                   transition-all duration-300 group-hover:opacity-100 group-hover:translate-x-0">
+        Tổng quan
+      </span>
     </a>
-    <a href="#students" class="sidebar-item" data-section="students">
-      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"></path>
+
+    <!-- Students -->
+    <a href="#students" class="relative flex items-center p-2 rounded hover:bg-gray-100 sidebar-item" data-section="students">
+      <svg class="w-6 h-6 text-gray-700 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"/>
       </svg>
-      <span>Quản lý sinh viên</span>
+      <span class="absolute left-12 opacity-0 transform -translate-x-2 
+                   transition-all duration-300 group-hover:opacity-100 group-hover:translate-x-0">
+        Quản lý sinh viên
+      </span>
     </a>
-    <a href="#grades" class="sidebar-item" data-section="grades">
-      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+
+    <!-- Grades -->
+    <a href="#grades" class="relative flex items-center p-2 rounded hover:bg-gray-100 sidebar-item" data-section="grades">
+      <svg class="w-6 h-6 text-gray-700 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2m0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
       </svg>
-      <span>Điểm rèn luyện</span>
+      <span class="absolute left-12 opacity-0 transform -translate-x-2 
+                   transition-all duration-300 group-hover:opacity-100 group-hover:translate-x-0">
+        Điểm rèn luyện
+      </span>
     </a>
-    <a href="#activities" class="sidebar-item" data-section="activities">
-      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+
+    <!-- Activities -->
+    <a href="#activities" class="relative flex items-center p-2 rounded hover:bg-gray-100 sidebar-item" data-section="activities">
+      <svg class="w-6 h-6 text-gray-700 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
       </svg>
-      <span>Hoạt động</span>
+      <span class="absolute left-12 opacity-0 transform -translate-x-2 
+                   transition-all duration-300 group-hover:opacity-100 group-hover:translate-x-0">
+        Hoạt động
+      </span>
     </a>
-    <a href="#reports" class="sidebar-item" data-section="reports">
-      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+
+    <!-- Reports -->
+    <a href="#reports" class="relative flex items-center p-2 rounded hover:bg-gray-100 sidebar-item" data-section="reports">
+      <svg class="w-6 h-6 text-gray-700 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
       </svg>
-      <span>Báo cáo</span>
+      <span class="absolute left-12 opacity-0 transform -translate-x-2 
+                   transition-all duration-300 group-hover:opacity-100 group-hover:translate-x-0">
+        Báo cáo
+      </span>
     </a>
   </nav>
 </aside>
+
+
+
+
+
+
 
 <!-- Mobile menu button -->
 <button id="mobile-menu-btn" class="fixed top-4 left-4 z-50 lg:hidden bg-white p-2 rounded-md shadow-md">
