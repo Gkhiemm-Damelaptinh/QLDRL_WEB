@@ -17,30 +17,29 @@ document.addEventListener("DOMContentLoaded", async () => {
       sidebar.classList.toggle("-translate-x-full");
     });
 
-    // Sidebar item click
-    sidebarItems.forEach(item => {
-      item.addEventListener("click", (e) => {
+    document.querySelectorAll('.sidebar-item').forEach(item => {
+      item.addEventListener('click', e => {
         e.preventDefault();
-        const targetSection = item.getAttribute("data-section");
-        
-        // Update active states
-        sidebarItems.forEach(i => i.classList.remove("active"));
-        item.classList.add("active");
-        
-        // Show target section
-        sectionContents.forEach(section => {
-          section.classList.add("hidden");
-          section.classList.remove("active");
+    
+        // Bỏ active ở tất cả sidebar item
+        document.querySelectorAll('.sidebar-item').forEach(el => el.classList.remove('active'));
+    
+        // Gắn active cho item đang click
+        item.classList.add('active');
+    
+        // Ẩn toàn bộ section
+        document.querySelectorAll('.section-content').forEach(sec => {
+          sec.classList.add('hidden');
+          sec.classList.remove('active');
         });
-        
-        const targetElement = document.getElementById(targetSection);
-        if (targetElement) {
-          targetElement.classList.remove("hidden");
-          targetElement.classList.add("active");
+    
+        // Hiện section tương ứng
+        const sectionId = item.getAttribute('data-section');
+        const section = document.getElementById(sectionId);
+        if (section) {
+          section.classList.remove('hidden');
+          section.classList.add('active');
         }
-
-        // Close mobile menu
-        sidebar.classList.add("-translate-x-full");
       });
     });
   }
