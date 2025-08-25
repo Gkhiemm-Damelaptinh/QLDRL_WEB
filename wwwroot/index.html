@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>QLDRL - Hoạt động sinh viên</title>
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Google font -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="bg-gradient-to-b from-slate-50 to-slate-100 min-h-screen">
+
+<header class="bg-white shadow-sm fade-down">
+  <div class="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
+    <div class="flex items-center gap-4">
+      <div class="bg-blue-700 text-white font-bold rounded-md px-3 py-2">KGU</div>
+      <div>
+        <h1 class="text-xl font-semibold">Hệ thống hoạt động &amp; Điểm rèn luyện</h1>
+        <p class="text-sm text-gray-500">Danh sách hoạt động - Trường Đại học Kiên Giang</p>
+      </div>
+    </div>
+    <nav id="nav-right" class="space-x-4 text-sm text-gray-600 flex items-center">
+      <a href="giangvien.html" class="hover-link">Giao diện Giảng viên</a>
+      <a href="admin.html" class="hover-link">Giao diện Admin</a>
+    </nav>
+  </div>
+</header>
+
+<!-- Modal đăng nhập -->
+<div id="login-modal" class="modal hidden">
+  <div class="modal-content p-6 max-w-md">
+    <h2 class="text-xl font-semibold mb-4">Đăng nhập</h2>
+    <form id="login-form" class="space-y-4">
+      <div>
+        <label class="block text-sm mb-1">Tên đăng nhập</label>
+        <input type="text" id="username" required class="w-full border rounded-md px-3 py-2" />
+      </div>
+      <div>
+        <label class="block text-sm mb-1">Mật khẩu</label>
+        <input type="password" id="password" required class="w-full border rounded-md px-3 py-2" />
+        <div class="mt-2 text-sm">
+          <label class="inline-flex items-center gap-2">
+            <input type="checkbox" id="toggle-password" class="accent-blue-600">
+            <span>Hiển thị mật khẩu</span>
+          </label>
+        </div>
+      </div>
+      <!-- Error message display -->
+      <div id="login-error" class="hidden">
+        <p class="text-red-600 text-sm font-medium"></p>
+      </div>
+      <div class="flex justify-end gap-2">
+        <button type="button" id="cancel-login" class="px-3 py-1 border rounded-md hover:bg-gray-100">Hủy</button>
+        <button type="submit" class="px-3 py-1 bg-blue-600 text-white rounded-md hover:bg-blue-700">Đăng nhập</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<main class="max-w-6xl mx-auto p-6 fade-up">
+  <div class="flex items-center justify-between mb-6">
+    <h2 class="text-2xl font-bold">Hoạt động mới nhất</h2>
+    <div class="flex gap-2">
+      <input id="search" type="text" placeholder="Tìm kiếm hoạt động..." class="px-3 py-2 border rounded-md" />
+      <select id="filter" class="px-3 py-2 border rounded-md">
+        <option value="">Tất cả</option>
+        <option value="tinh nguyen">Tình nguyện</option>
+        <option value="hoi thao">Hội thảo</option>
+        <option value="cuoc thi">Cuộc thi</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Grid hoạt động -->
+  <div id="activities" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+
+  <!-- Thông báo khi không có hoạt động -->
+  <div id="no-activity" class="hidden mt-16 text-center text-gray-500 fade-up">
+    <svg xmlns="http://www.w3.org/2000/svg" class="mx-auto h-16 w-16 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 13h6m2 8H7a2 2 0 01-2-2V7a2 2 0 012-2h3l2-2h2l2 2h3a2 2 0 012 2v12a2 2 0 01-2 2z" />
+    </svg>
+    <p class="mt-4 text-lg">Hiện chưa có hoạt động nào.</p>
+    <p class="text-sm text-gray-400">Quay lại sau hoặc thêm hoạt động mới.</p>
+  </div>
+</main>
+
+<!-- Modal chi tiết -->
+<div id="modal" class="modal hidden">
+  <div class="modal-content">
+    <div class="p-4 border-b flex justify-between items-center">
+      <h3 id="modal-title" class="text-lg font-semibold"></h3>
+      <button onclick="closeModal()" class="text-gray-600 px-2 py-1 rounded hover:bg-gray-100">Đóng</button>
+    </div>
+    <div id="modal-body" class="p-4"></div>
+  </div>
+</div>
+
+<!-- Custom JS -->
+<script src="js/script.js"></script>
+
+</body>
+</html>
