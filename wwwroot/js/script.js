@@ -409,6 +409,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     try {
+      // Gọi API đăng nhập thực tế
       const res = await fetch(`${API_BASE}/api/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -422,17 +423,164 @@ document.addEventListener("DOMContentLoaded", async () => {
       
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
-      const info = await res.json(); // {MaTK, TenTK, TenNguoiDung, ChucVu}
-      localStorage.setItem("loggedUser", info.TenNguoiDung || info.TenTK || user);
-      try { localStorage.setItem("loggedUserInfo", JSON.stringify(info)); } catch {}
-      renderLoggedInUI(localStorage.getItem("loggedUser"));
-      loginModal.classList.add("hidden");
-      hideLoginError(); // Ẩn lỗi khi đăng nhập thành công
+      const userInfo = await res.json();
+      console.log("API Response:", userInfo); // Debug: xem response từ API
+      
+      // Kiểm tra xem API có trả về MaQT không
+      if (!userInfo.MaQT) {
+        console.warn("API không trả về MaQT, sử dụng giá trị mặc định");
+        // Nếu API không có MaQT, có thể set giá trị mặc định hoặc báo lỗi
+        showLoginError("API không trả về thông tin phân quyền (MaQT). Vui lòng liên hệ admin!");
+        return;
+      }
+
+      // Lưu thông tin người dùng
+      localStorage.setItem("loggedUser", userInfo.TenNguoiDung || userInfo.TenTK || user);
+      localStorage.setItem("loggedUserInfo", JSON.stringify(userInfo));
+      
+      // Phân quyền dựa trên MaQT từ API
+      const maQT = userInfo.MaQT;
+      console.log("MaQT từ API:", maQT); // Debug: xem MaQT nhận được
+      
+      if (maQT === "AD01") {
+        // Admin - Chuyển đến giao diện admin
+        console.log("Chuyển hướng đến giao diện Admin");
+        window.location.href = "admin.html";
+        return;
+      } else if (maQT === "GV01") {
+        // Giảng viên - Chuyển đến giao diện giảng viên
+        console.log("Chuyển hướng đến giao diện Giảng viên");
+        window.location.href = "giangvien.html";
+        return;
+      } else {
+        // Sinh viên hoặc vai trò khác - Ở lại trang chủ
+        console.log("Ở lại trang chủ với vai trò:", maQT);
+        renderLoggedInUI(localStorage.getItem("loggedUser"));
+        loginModal.classList.add("hidden");
+        hideLoginError();
+        
+        // Hiển thị thông báo về vai trò
+        showRoleMessage(maQT, userInfo.TenNguoiDung || userInfo.TenTK);
+      }
+      
     } catch (err) {
-      console.error(err);
-      showLoginError("Lỗi kết nối. Vui lòng thử lại sau!");
+      console.error("Lỗi khi gọi API:", err);
+      
+      // Fallback: sử dụng demo data nếu API không hoạt động
+      console.log("API không hoạt động, sử dụng demo data");
+      handleDemoLogin(user, pass);
     }
   });
+
+  // Hàm xử lý demo login khi API không hoạt động
+  function handleDemoLogin(user, pass) {
+    let demoUserInfo = null;
+    
+    // Kiểm tra tài khoản demo
+    if (user === "admin" && pass === "admin123") {
+      demoUserInfo = {
+        MaTK: "ADM001",
+        MaCaNhan: "AD001",
+        TenTK: "admin",
+        TenNguoiDung: "Quản trị viên hệ thống",
+        ChucVu: "Quản trị viên",
+        MaQT: "AD01"
+      };
+    } else if (user === "giangvien" && pass === "gv123") {
+      demoUserInfo = {
+        MaTK: "GV001",
+        MaCaNhan: "GV001",
+        TenTK: "giangvien",
+        TenNguoiDung: "Giảng viên mẫu",
+        ChucVu: "Giảng viên",
+        MaQT: "GV01"
+      };
+    } else if (user === "sinhvien" && pass === "sv123") {
+      demoUserInfo = {
+        MaTK: "SV001",
+        MaCaNhan: "SV001",
+        TenTK: "sinhvien",
+        TenNguoiDung: "Sinh viên mẫu",
+        ChucVu: "Sinh viên",
+        MaQT: "SV01"
+      };
+    }
+    
+    if (demoUserInfo) {
+      console.log("Sử dụng demo data:", demoUserInfo);
+      localStorage.setItem("loggedUser", demoUserInfo.TenNguoiDung || demoUserInfo.TenTK || user);
+      localStorage.setItem("loggedUserInfo", JSON.stringify(demoUserInfo));
+      
+      // Phân quyền dựa trên MaQT demo
+      const maQT = demoUserInfo.MaQT;
+      
+      if (maQT === "AD01") {
+        window.location.href = "admin.html";
+        return;
+      } else if (maQT === "GV01") {
+        window.location.href = "giangvien.html";
+        return;
+      } else {
+        renderLoggedInUI(localStorage.getItem("loggedUser"));
+        loginModal.classList.add("hidden");
+        hideLoginError();
+        showRoleMessage(maQT, demoUserInfo.TenNguoiDung || demoUserInfo.TenTK);
+      }
+    } else {
+      showLoginError("Sai tài khoản hoặc mật khẩu. Vui lòng kiểm tra lại!");
+    }
+  }
+
+  // Hàm hiển thị thông báo về vai trò
+  function showRoleMessage(maQT, username) {
+    let roleText = "";
+    let roleColor = "";
+    
+    switch(maQT) {
+      case "AD01":
+        roleText = "Quản trị viên";
+        roleColor = "bg-red-100 border-red-300 text-red-800";
+        break;
+      case "GV01":
+        roleText = "Giảng viên";
+        roleColor = "bg-green-100 border-green-300 text-green-800";
+        break;
+      default:
+        roleText = "Sinh viên";
+        roleColor = "bg-blue-100 border-blue-300 text-blue-800";
+    }
+    
+    const messageDiv = document.createElement('div');
+    messageDiv.className = `fixed top-20 right-4 z-50 p-4 rounded-lg border ${roleColor} shadow-lg max-w-sm`;
+    messageDiv.innerHTML = `
+      <div class="flex items-start space-x-3">
+        <div class="flex-shrink-0">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          </svg>
+        </div>
+        <div>
+          <h3 class="text-sm font-medium">Đăng nhập thành công!</h3>
+          <p class="text-sm mt-1">Chào mừng ${username}</p>
+          <p class="text-xs mt-2">Vai trò: ${roleText} (${maQT})</p>
+        </div>
+        <button onclick="this.parentElement.parentElement.remove()" class="text-current hover:opacity-70">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+          </svg>
+        </button>
+      </div>
+    `;
+    
+    document.body.appendChild(messageDiv);
+    
+    // Tự động ẩn sau 5 giây
+    setTimeout(() => {
+      if (messageDiv.parentNode) {
+        messageDiv.parentNode.removeChild(messageDiv);
+      }
+    }, 5000);
+  }
 
   // ====== Xem chi tiết sinh viên khi cần ======
   // Ví dụ: gọi hàm này từ 1 nút/ô tìm kiếm MSSV
@@ -913,5 +1061,31 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   // ====== Giữ trạng thái login như cũ ======
   const savedUser = localStorage.getItem("loggedUser");
-  if (savedUser) renderLoggedInUI(savedUser); else renderLoggedOutUI();
+  if (savedUser) {
+    // Kiểm tra xem người dùng có phải là admin hoặc giảng viên không
+    const userInfo = localStorage.getItem("loggedUserInfo");
+    if (userInfo) {
+      try {
+        const info = JSON.parse(userInfo);
+        const maQT = info.MaQT || "";
+        
+        if (maQT === "AD01") {
+          // Nếu là admin, chuyển đến giao diện admin
+          window.location.href = "admin.html";
+          return;
+        } else if (maQT === "GV01") {
+          // Nếu là giảng viên, chuyển đến giao diện giảng viên
+          window.location.href = "giangvien.html";
+          return;
+        }
+      } catch (error) {
+        console.error("Error parsing user info:", error);
+      }
+    }
+    
+    // Nếu là sinh viên hoặc không xác định được vai trò, hiển thị giao diện sinh viên
+    renderLoggedInUI(savedUser);
+  } else {
+    renderLoggedOutUI();
+  }
 });

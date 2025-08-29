@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("QLDRL_API")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+acb842a54080911b6a7c7f5e073b47db57f5f7db")]
 [assembly: System.Reflection.AssemblyProductAttribute("QLDRL_API")]
 [assembly: System.Reflection.AssemblyTitleAttribute("QLDRL_API")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

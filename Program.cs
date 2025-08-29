@@ -67,7 +67,7 @@ app.MapPost("/api/auth/login", async (LoginDto dto) =>
     using var con = new SqlConnection(connStr);
     await con.OpenAsync();
 
-    var sql = @"SELECT MaCaNhan, TenTK, TenNguoiDung, ChucVu
+    var sql = @"SELECT MaCaNhan, TenTK, TenNguoiDung, ChucVu, MaQT
                 FROM TK
                 WHERE TenTK = @u AND MatKhau = @p;";
     var rows = await QueryAsync(con, sql,

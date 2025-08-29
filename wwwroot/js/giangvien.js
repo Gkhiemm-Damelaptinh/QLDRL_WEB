@@ -2,6 +2,47 @@ document.addEventListener("DOMContentLoaded", async () => {
   // ==== cấu hình API ====
   const API_BASE = "http://localhost:5204";
 
+  // ==== Kiểm tra quyền truy cập ====
+  function checkTeacherAccess() {
+    const userInfo = localStorage.getItem("loggedUserInfo");
+    if (!userInfo) {
+      alert("Bạn chưa đăng nhập. Vui lòng đăng nhập trước!");
+      window.location.href = "index.html";
+      return false;
+    }
+
+    try {
+      const user = JSON.parse(userInfo);
+      const maQT = user.MaQT || "";
+      
+      if (maQT !== "GV01") {
+        alert("Bạn không có quyền truy cập giao diện giảng viên!");
+        window.location.href = "index.html";
+        return false;
+      }
+
+      // Hiển thị thông tin người dùng
+      const userNameElement = document.getElementById("user-name");
+      const headerAvatar = document.getElementById("header-avatar");
+      
+      if (userNameElement) {
+        userNameElement.textContent = user.TenNguoiDung || user.TenTK || "Giảng viên";
+      }
+      
+      if (headerAvatar) {
+        // Có thể thêm logic để hiển thị avatar thực tế của người dùng
+        headerAvatar.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(user.TenNguoiDung || user.TenTK || "Giảng viên")}&background=059669&color=fff`;
+      }
+
+      return true;
+    } catch (error) {
+      console.error("Error parsing user info:", error);
+      alert("Lỗi thông tin người dùng. Vui lòng đăng nhập lại!");
+      window.location.href = "index.html";
+      return false;
+    }
+  }
+
   // ==== phần tử UI ====
   const sidebar = document.getElementById("sidebar");
   const mobileMenuBtn = document.getElementById("mobile-menu-btn");
@@ -397,6 +438,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   // ==== Initialize ====
   function init() {
+    if (!checkTeacherAccess()) return; // Kiểm tra quyền truy cập trước khi load các phần khác
     initSidebar();
     initEventListeners();
     loadDashboardStats();

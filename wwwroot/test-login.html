@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Hệ thống Phân quyền</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen p-8">
+    <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl font-bold text-center mb-8 text-gray-800">Demo Hệ thống Phân quyền QLDRL</h1>
+        
+        <div class="bg-white rounded-lg shadow-lg p-6 mb-8">
+            <h2 class="text-xl font-semibold mb-4 text-gray-700">Hướng dẫn sử dụng</h2>
+            <div class="space-y-3 text-gray-600">
+                <p><strong>1.</strong> Mở file <code class="bg-gray-200 px-2 py-1 rounded">index.html</code> trong trình duyệt</p>
+                <p><strong>2.</strong> Nhấn nút "Đăng nhập" để mở modal đăng nhập</p>
+                <p><strong>3.</strong> Sử dụng các tài khoản demo bên dưới để test phân quyền</p>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <!-- Admin Account -->
+            <div class="bg-red-50 border border-red-200 rounded-lg p-6">
+                <div class="flex items-center gap-3 mb-4">
+                    <div class="w-4 h-4 bg-red-500 rounded-full"></div>
+                    <h3 class="text-lg font-semibold text-red-800">Tài khoản Admin</h3>
+                </div>
+                <div class="space-y-2 text-sm text-red-700">
+                    <p><strong>Tên đăng nhập:</strong> admin</p>
+                    <p><strong>Mật khẩu:</strong> admin123</p>
+                    <p><strong>Mã quản trị:</strong> AD01</p>
+                    <p><strong>Kết quả:</strong> Chuyển đến giao diện admin</p>
+                </div>
+            </div>
+
+            <!-- Teacher Account -->
+            <div class="bg-green-50 border border-green-200 rounded-lg p-6">
+                <div class="flex items-center gap-3 mb-4">
+                    <div class="w-4 h-4 bg-green-500 rounded-full"></div>
+                    <h3 class="text-lg font-semibold text-green-800">Tài khoản Giảng viên</h3>
+                </div>
+                <div class="space-y-2 text-sm text-green-700">
+                    <p><strong>Tên đăng nhập:</strong> giangvien</p>
+                    <p><strong>Mật khẩu:</strong> gv123</p>
+                    <p><strong>Mã quản trị:</strong> GV01</p>
+                    <p><strong>Kết quả:</strong> Chuyển đến giao diện giảng viên</p>
+                </div>
+            </div>
+
+            <!-- Student Account -->
+            <div class="bg-blue-50 border border-blue-200 rounded-lg p-6">
+                <div class="flex items-center gap-3 mb-4">
+                    <div class="w-4 h-4 bg-blue-500 rounded-full"></div>
+                    <h3 class="text-lg font-semibold text-blue-800">Tài khoản Sinh viên</h3>
+                </div>
+                <div class="space-y-2 text-sm text-blue-700">
+                    <p><strong>Tên đăng nhập:</strong> sinhvien</p>
+                    <p><strong>Mật khẩu:</strong> sv123</p>
+                    <p><strong>Mã quản trị:</strong> SV01</p>
+                    <p><strong>Kết quả:</strong> Ở lại trang chủ</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-6 mt-8">
+            <h3 class="text-lg font-semibold mb-3 text-yellow-800">Lưu ý quan trọng</h3>
+            <div class="space-y-2 text-sm text-yellow-700">
+                <p><strong>•</strong> Đây chỉ là demo giao diện. API thực tế cần được cấu hình để hoạt động đúng.</p>
+                <p><strong>•</strong> Hệ thống sử dụng <strong>Mã quản trị (MaQT)</strong> để phân quyền:</p>
+                <ul class="ml-4 mt-2 space-y-1">
+                    <li>• <strong>AD01:</strong> Quản trị viên → Giao diện admin</li>
+                    <li>• <strong>GV01:</strong> Giảng viên → Giao diện giảng viên</li>
+                    <li>• <strong>Khác:</strong> Sinh viên → Ở lại trang chủ</li>
+                </ul>
+                <p><strong>•</strong> Nếu không có API, bạn có thể thay đổi logic trong <code class="bg-yellow-200 px-2 py-1 rounded">script.js</code> để test.</p>
+                <p><strong>•</strong> Mỗi giao diện (admin, giảng viên) đều có kiểm tra quyền truy cập riêng.</p>
+            </div>
+        </div>
+
+        <div class="text-center mt-8">
+            <a href="index.html" class="inline-block bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors">
+                Mở trang chính
+            </a>
+        </div>
+    </div>
+</body>
+</html>

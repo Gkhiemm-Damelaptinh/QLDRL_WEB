@@ -141,7 +141,6 @@ D:\WEB\QLDRL\obj\Debug\net9.0\rjimswa.dswa.cache.json
 D:\WEB\QLDRL\obj\Debug\net9.0\rjsmrazor.dswa.cache.json
 D:\WEB\QLDRL\obj\Debug\net9.0\rjsmcshtml.dswa.cache.json
 D:\WEB\QLDRL\obj\Debug\net9.0\scopedcss\bundle\QLDRL_API.styles.css
-D:\WEB\QLDRL\obj\Debug\net9.0\compressed\4eoqzsiivw-7ck2jfxe72.gz
 D:\WEB\QLDRL\obj\Debug\net9.0\staticwebassets.build.json
 D:\WEB\QLDRL\obj\Debug\net9.0\staticwebassets.build.json.cache
 D:\WEB\QLDRL\obj\Debug\net9.0\staticwebassets.development.json
@@ -152,9 +151,12 @@ D:\WEB\QLDRL\obj\Debug\net9.0\refint\QLDRL_API.dll
 D:\WEB\QLDRL\obj\Debug\net9.0\QLDRL_API.pdb
 D:\WEB\QLDRL\obj\Debug\net9.0\QLDRL_API.genruntimeconfig.cache
 D:\WEB\QLDRL\obj\Debug\net9.0\ref\QLDRL_API.dll
-D:\WEB\QLDRL\obj\Debug\net9.0\compressed\6lyh85aplj-k60n6d6b1a.gz
 D:\WEB\QLDRL\obj\Debug\net9.0\compressed\vi60684hcu-02jrikm7hb.gz
-D:\WEB\QLDRL\obj\Debug\net9.0\compressed\nyqut5bldf-5ugg8z54ce.gz
-D:\WEB\QLDRL\obj\Debug\net9.0\compressed\qri2ryoodo-dz209o1oc1.gz
-D:\WEB\QLDRL\obj\Debug\net9.0\compressed\ur54e3gsz6-19yrr44z59.gz
-D:\WEB\QLDRL\obj\Debug\net9.0\compressed\x4iiz0oefc-4vz19hlig8.gz
+D:\WEB\QLDRL\obj\Debug\net9.0\QLDRL_API.sourcelink.json
+D:\WEB\QLDRL\obj\Debug\net9.0\compressed\6lyh85aplj-2cy2eaf6e6.gz
+D:\WEB\QLDRL\obj\Debug\net9.0\compressed\nyqut5bldf-qdyhs41h6i.gz
+D:\WEB\QLDRL\obj\Debug\net9.0\compressed\qri2ryoodo-8duodvf5y8.gz
+D:\WEB\QLDRL\obj\Debug\net9.0\compressed\ur54e3gsz6-5tcu9alabc.gz
+D:\WEB\QLDRL\obj\Debug\net9.0\compressed\x4iiz0oefc-wt7enxt6wk.gz
+D:\WEB\QLDRL\obj\Debug\net9.0\compressed\4eoqzsiivw-306oyw3uwl.gz
+D:\WEB\QLDRL\obj\Debug\net9.0\compressed\iutwd5qy9n-t7wj8e1u4f.gz
