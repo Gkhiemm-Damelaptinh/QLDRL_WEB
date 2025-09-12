@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug Users</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 p-8">
+    <div class="max-w-6xl mx-auto">
+        <h1 class="text-2xl font-bold mb-6">Debug Users</h1>
+        
+        <div class="bg-white rounded-lg shadow p-6 mb-6">
+            <h2 class="text-lg font-semibold mb-4">API Test</h2>
+            <button id="test-api" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
+                Test API
+            </button>
+            <div id="api-result" class="mt-4 p-4 bg-gray-100 rounded"></div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow p-6">
+            <h2 class="text-lg font-semibold mb-4">Users Table</h2>
+            <div class="overflow-x-auto">
+                <table class="w-full">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tài khoản</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Họ tên</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Chức vụ</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Thông tin chi tiết</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody id="users-table-body">
+                        <tr>
+                            <td colspan="5" class="px-6 py-4 text-center text-gray-500">Đang tải...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = window.location.origin;
+
+        // Helper để thêm X-User header
+        function getCurrentUserId() {
+            try {
+                const raw = localStorage.getItem('loggedUserInfo');
+                if (!raw) return '';
+                const info = JSON.parse(raw);
+                return info?.MaCaNhan || info?.TenTK || '';
+            } catch { return ''; }
+        }
+
+        function withUserHeader(init) {
+            const headers = new Headers((init && init.headers) || {});
+            const uid = getCurrentUserId();
+            if (uid) headers.set('X-User', uid);
+            return { ...(init || {}), headers };
+        }
+
+        // Test API
+        document.getElementById('test-api').onclick = async () => {
+            const resultDiv = document.getElementById('api-result');
+            resultDiv.innerHTML = 'Đang test...';
+            
+            try {
+                // Test login first
+                const loginResponse = await fetch(`${API_BASE}/api/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ TenTK: 'yakhiem1412', MatKhau: 'Special1210' })
+                });
+                
+                if (loginResponse.ok) {
+                    const loginData = await loginResponse.json();
+                    localStorage.setItem('loggedUserInfo', JSON.stringify(loginData));
+                    resultDiv.innerHTML = 'Login thành công: ' + JSON.stringify(loginData);
+                    
+                    // Test users API
+                    const usersResponse = await fetch(`${API_BASE}/api/users`, withUserHeader({}));
+                    if (usersResponse.ok) {
+                        const users = await usersResponse.json();
+                        resultDiv.innerHTML += '<br><br>Users API thành công: ' + JSON.stringify(users);
+                        loadUsers(users);
+                    } else {
+                        resultDiv.innerHTML += '<br><br>Users API lỗi: ' + usersResponse.status;
+                    }
+                } else {
+                    resultDiv.innerHTML = 'Login thất bại: ' + loginResponse.status;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = 'Lỗi: ' + error.message;
+            }
+        };
+
+        // Load users
+        function loadUsers(users) {
+            const tbody = document.getElementById('users-table-body');
+            
+            if (users.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="px-6 py-4 text-center text-gray-500">Chưa có dữ liệu</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = users.map(user => `
+                <tr>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${user.TenTK}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${user.TenNguoiDung}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${user.ChucVu}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <span id="info-status-${user.MaCaNhan}" class="text-gray-400">Đang kiểm tra...</span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <button onclick="editUser('${user.MaCaNhan}')" class="text-blue-600 hover:text-blue-900 mr-2">Sửa</button>
+                        <button id="add-info-btn-${user.MaCaNhan}" onclick="openAddInfoModal('${user.MaCaNhan}', '${user.TenNguoiDung}', '${user.ChucVu}')" class="text-green-600 hover:text-green-900 mr-2 hidden">Thêm thông tin</button>
+                        <button onclick="deleteUser('${user.MaCaNhan}')" class="text-red-600 hover:text-red-900">Xóa</button>
+                    </td>
+                </tr>
+            `).join('');
+
+            // Test checkUserInfo for each user
+            users.forEach(user => {
+                checkUserInfo(user.MaCaNhan);
+            });
+        }
+
+        // Check user info
+        async function checkUserInfo(maCaNhan) {
+            console.log('Checking user info for:', maCaNhan);
+            try {
+                const response = await fetch(`${API_BASE}/api/user-info/${maCaNhan}`, withUserHeader({}));
+                console.log('Response status:', response.status);
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    console.log('User info data:', data);
+                    
+                    const statusElement = document.getElementById(`info-status-${maCaNhan}`);
+                    const addInfoBtn = document.getElementById(`add-info-btn-${maCaNhan}`);
+                    
+                    if (data.hasInfo) {
+                        statusElement.textContent = 'Đã có thông tin';
+                        statusElement.className = 'text-green-600';
+                        addInfoBtn.classList.add('hidden');
+                    } else if (data.infoType === 'giangvien' || data.infoType === 'sinhvien') {
+                        statusElement.textContent = 'Chưa có thông tin';
+                        statusElement.className = 'text-orange-600';
+                        addInfoBtn.classList.remove('hidden');
+                        console.log('Showing add info button for:', maCaNhan);
+                    } else {
+                        statusElement.textContent = 'Không cần thông tin';
+                        statusElement.className = 'text-gray-400';
+                        addInfoBtn.classList.add('hidden');
+                    }
+                } else {
+                    console.error('API error:', response.status);
+                    const statusElement = document.getElementById(`info-status-${maCaNhan}`);
+                    statusElement.textContent = 'Lỗi API: ' + response.status;
+                    statusElement.className = 'text-red-600';
+                }
+            } catch (error) {
+                console.error('Error checking user info:', error);
+                const statusElement = document.getElementById(`info-status-${maCaNhan}`);
+                statusElement.textContent = 'Lỗi: ' + error.message;
+                statusElement.className = 'text-red-600';
+            }
+        }
+
+        // Placeholder functions
+        function editUser(maCaNhan) {
+            alert('Edit user: ' + maCaNhan);
+        }
+
+        function openAddInfoModal(maCaNhan, tenNguoiDung, chucVu) {
+            alert('Add info for: ' + maCaNhan + ' - ' + tenNguoiDung + ' - ' + chucVu);
+        }
+
+        function deleteUser(maCaNhan) {
+            alert('Delete user: ' + maCaNhan);
+        }
+    </script>
+</body>
+</html>
+

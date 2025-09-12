@@ -14,7 +14,317 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
 
   <!-- Custom CSS -->
-  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/style.css?v=2.0">
+  
+  <!-- Inline CSS for action buttons -->
+  <style>
+    .action-buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      align-items: center;
+    }
+    
+    .action-btn {
+      position: relative;
+      overflow: hidden;
+      color: white;
+      font-weight: 500;
+      padding: 0.5rem 0.75rem;
+      border-radius: 9999px;
+      transition: all 0.3s ease-out;
+      display: flex;
+      align-items: center;
+      gap: 0.375rem;
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+      min-width: 80px;
+      justify-content: center;
+      backdrop-filter: blur(4px);
+      font-size: 0.75rem;
+    }
+    
+    .action-btn:hover {
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+      transform: scale(1.1) translateY(-4px);
+    }
+    
+    .action-btn:active {
+      transform: scale(0.95) translateY(0);
+    }
+    
+    .action-btn.bg-blue-500 {
+      background: linear-gradient(135deg, #3b82f6, #2563eb, #1d4ed8);
+    }
+    
+    .action-btn.bg-green-500 {
+      background: linear-gradient(135deg, #10b981, #059669, #047857);
+    }
+    
+    .action-btn.bg-orange-500 {
+      background: linear-gradient(135deg, #f97316, #ea580c, #c2410c);
+    }
+    
+    .action-btn.bg-emerald-500 {
+      background: linear-gradient(135deg, #10b981, #059669, #047857);
+    }
+    
+    .action-btn.bg-red-500 {
+      background: linear-gradient(135deg, #ef4444, #dc2626, #b91c1c);
+    }
+    
+    .action-btn svg {
+      width: 1rem;
+      height: 1rem;
+      flex-shrink: 0;
+      filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1));
+    }
+    
+    .action-btn span {
+      white-space: nowrap;
+      font-size: 0.75rem;
+      font-weight: 600;
+      filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1));
+    }
+    
+    /* User info preview tooltip */
+    .user-info-preview {
+      position: relative;
+      cursor: pointer;
+    }
+    
+    .user-info-tooltip {
+      position: fixed;
+      background: white;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+      padding: 16px;
+      min-width: 300px;
+      max-width: 400px;
+      max-height: 80vh;
+      overflow-y: auto;
+      z-index: 9999;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.3s ease;
+      pointer-events: none;
+    }
+    
+    .user-info-tooltip.show {
+      opacity: 1;
+      visibility: visible;
+      pointer-events: auto;
+    }
+    
+    /* Removed arrow pseudo-elements since tooltip is now positioned outside table */
+    
+    .preview-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 12px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid #e5e7eb;
+    }
+    
+    .preview-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: 600;
+      font-size: 16px;
+    }
+    
+    .preview-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: #1f2937;
+      margin: 0;
+    }
+    
+    .preview-subtitle {
+      font-size: 14px;
+      color: #6b7280;
+      margin: 0;
+    }
+    
+    .preview-content {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+    
+    .preview-field {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    
+    .preview-label {
+      font-size: 12px;
+      font-weight: 500;
+      color: #6b7280;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    
+    .preview-value {
+      font-size: 14px;
+      color: #1f2937;
+      font-weight: 500;
+    }
+    
+    .preview-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 8px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 500;
+    }
+    
+    .preview-status.giảng-viên {
+      background: #dbeafe;
+      color: #1e40af;
+    }
+    
+    .preview-status.sinh-viên {
+      background: #dcfce7;
+      color: #166534;
+    }
+    
+    .preview-status.admin {
+      background: #fef3c7;
+      color: #92400e;
+    }
+    
+    .preview-loading {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      color: #6b7280;
+    }
+    
+    .preview-error {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      color: #dc2626;
+      text-align: center;
+    }
+
+    /* Filter Tabs */
+    .filter-tab {
+      transition: all 0.2s ease;
+    }
+    
+    .filter-tab.active {
+      border-bottom-color: #3b82f6 !important;
+      color: #3b82f6 !important;
+    }
+    
+    .filter-content {
+      display: none;
+    }
+    
+    .filter-content.active {
+      display: block;
+    }
+    
+    .filter-content.hidden {
+      display: none;
+    }
+
+    /* Edit Tabs */
+    .edit-tab {
+      transition: all 0.2s ease;
+    }
+    
+    .edit-tab.active {
+      border-bottom-color: #3b82f6 !important;
+      color: #3b82f6 !important;
+    }
+    
+    .edit-tab.inactive {
+      border-bottom-color: transparent !important;
+      color: #6b7280 !important;
+    }
+    
+    .edit-tab-content {
+      display: none !important;
+    }
+    
+    .edit-tab-content.active {
+      display: block !important;
+    }
+    
+    .edit-tab-content.hidden {
+      display: none !important;
+    }
+
+    /* Responsive design */
+    @media (max-width: 640px) {
+      .action-buttons {
+        gap: 0.25rem;
+      }
+      
+      .action-btn {
+        flex: 1;
+        min-width: 70px;
+        padding: 0.375rem 0.5rem;
+        font-size: 0.6875rem;
+      }
+      
+      .user-info-tooltip {
+        min-width: 280px;
+        max-width: 320px;
+      }
+      
+      .preview-content {
+        grid-template-columns: 1fr;
+      }
+      
+      .action-btn span {
+        font-size: 0.6875rem;
+      }
+      
+      /* Mobile filter tabs */
+      .filter-tab {
+        font-size: 0.75rem;
+        padding: 0.5rem 0.25rem;
+      }
+    }
+    
+    .action-btn::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: 9999px;
+      background: white;
+      opacity: 0;
+      transition: all 0.3s;
+      pointer-events: none;
+      transform: scale(0);
+    }
+    
+    .action-btn:hover::before {
+      opacity: 0.2;
+      transform: scale(1);
+    }
+    
+    .action-btn:active::before {
+      opacity: 0.3;
+      transform: scale(1.1);
+    }
+  </style>
 </head>
 <body class="bg-gradient-to-b from-slate-50 to-slate-100 min-h-screen">
 
@@ -27,119 +337,230 @@
         <p class="text-sm text-gray-500">Giao diện Admin - Trường Đại học Kiên Giang</p>
       </div>
     </div>
-    <nav id="nav-right" class="space-x-4 text-sm text-gray-600 flex items-center">
-      <a href="#" class="hover-link">Trang chủ</a>
-      <a href="#" class="hover-link">Quản lý hệ thống</a>
-      <a href="#" class="hover-link">Người dùng</a>
-      <a href="#" class="hover-link">Cấu hình</a>
-      <div class="user-avatar slide-in-right">
-        <img id="header-avatar" src="https://i.pravatar.cc/150?u=admin" alt="Avatar">
-        <span id="user-name">Admin</span>
+    <nav id="nav-right" class="flex items-center space-x-4">
+      <!-- Breadcrumb navigation -->
+      <div class="hidden lg:flex items-center space-x-2 text-sm text-gray-500">
+        <span id="current-section">Tổng quan</span>
+        <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+        </svg>
+        <span class="text-gray-700 font-medium" id="current-page">Dashboard</span>
       </div>
-      <button id="btn-logout" class="px-3 py-1 border rounded-md hover:bg-gray-100">Đăng xuất</button>
+
+      <!-- Notifications -->
+      <div class="relative notifications-container">
+        <button id="btn-notifications" class="relative p-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-5 5v-5z"></path>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6a2 2 0 012 2v8a2 2 0 01-2 2H7a2 2 0 01-2-2V9a2 2 0 012-2z"></path>
+          </svg>
+          <span id="notifications-badge" class="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[10px] rounded-full hidden items-center justify-center">0</span>
+        </button>
+        <div id="notifications-menu" class="hidden absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
+          <div class="p-3 border-b border-gray-200">
+            <p class="text-sm font-medium text-gray-900">Thông báo</p>
+          </div>
+          <div id="notifications-list" class="max-h-80 overflow-auto divide-y divide-gray-100">
+            <div class="p-4 text-sm text-gray-500">Đang tải...</div>
+          </div>
+          <div class="p-2 text-center">
+            <button class="text-sm text-blue-600 hover:underline" id="notifications-view-all">Xem tất cả</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- User profile dropdown -->
+      <div class="relative user-avatar-dropdown">
+        <button class="user-avatar slide-in-right flex items-center space-x-2 p-2 hover:bg-gray-100 rounded-lg transition-colors">
+          <img id="header-avatar" src="https://i.pravatar.cc/150?u=admin" alt="Avatar" class="w-8 h-8 rounded-full border-2 border-red-600">
+          <span id="user-name" class="text-sm font-medium text-gray-700 hidden sm:block">Admin</span>
+          <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+          </svg>
+        </button>
+        <div class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-50 hidden user-dropdown-menu">
+          <div class="p-3 border-b border-gray-200">
+            <p class="text-sm font-medium text-gray-900" id="dropdown-user-name">Admin</p>
+            <p class="text-xs text-gray-500">Quản trị viên</p>
+          </div>
+          <div class="py-2">
+            <a id="dropdown-change-password" href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+              <svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 11c1.657 0 3-1.343 3-3S13.657 5 12 5 9 6.343 9 8s1.343 3 3 3z"/>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21v-2a4 4 0 00-3-3.873M8 21v-2a4 4 0 013-3.873M12 11v2m0 0a4 4 0 00-4 4v2h8v-2a4 4 0 00-4-4z"/>
+              </svg>
+              Đổi mật khẩu
+            </a>
+            <hr class="my-2">
+            <button id="btn-logout" class="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50">
+              <svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+              </svg>
+              Đăng xuất
+            </button>
+          </div>
+        </div>
+      </div>
     </nav>
   </div>
 </header>
 
-<!-- Sidebar Navigation -->
+<!-- Enhanced Sidebar Navigation (Admin) -->
 <aside id="sidebar" 
-  class="fixed left-0 top-20 h-[calc(100%-5rem)] w-16 hover:w-64 bg-white shadow-lg transition-all duration-300 ease-in-out z-40 group overflow-hidden">
+  class="fixed left-0 top-20 h-[calc(100%-5rem)] w-16 bg-white shadow-xl transition-all duration-300 ease-in-out z-40 group overflow-y-auto overflow-x-hidden border-r border-gray-200">
 
-  <div class="p-4 border-b relative">
-    <h3 class="text-lg font-semibold text-gray-800 absolute left-14 top-1 opacity-0 transform -translate-x-4 
-               transition-none group-hover:transition-all group-hover:duration-300 
-               group-hover:opacity-100 group-hover:translate-x-0">
-      Menu Admin
-    </h3>
+  <!-- Sidebar Header -->
+  <div class="p-4 border-b border-gray-200 bg-gradient-to-r from-rose-50 to-red-50 relative">
+    <div class="flex items-center">
+      <div class="w-8 h-8 bg-red-600 rounded-lg flex items-center justify-center flex-shrink-0">
+        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+        </svg>
+      </div>
+      <div class="ml-3 sidebar-text transition-all duration-300 overflow-hidden">
+        <h3 class="text-sm font-semibold text-gray-800">Menu Admin</h3>
+        <p class="text-xs text-gray-500">Quản trị hệ thống</p>
+      </div>
+    </div>
+    <button id="sidebar-pin" title="Ghim menu" class="absolute right-2 top-2 p-2 rounded-md hover:bg-gray-100 text-gray-500">
+      <svg id="sidebar-pin-icon" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7l-1-1-6 6 1 1M8 13l-5 5m0 0h5m-5 0v-5" />
+      </svg>
+    </button>
   </div>
 
-  <nav class="p-2 space-y-2">
+  <!-- Navigation Menu -->
+  <nav class="p-3 space-y-1 sidebar-nav">
     <!-- Dashboard -->
-    <a href="#dashboard" class="relative flex items-center p-2 rounded hover:bg-gray-100 sidebar-item active" data-section="dashboard">
-      <div class="w-6 h-6 text-gray-700 flex-shrink-0">
-        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z"/>
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5a2 2 0 012-2h4a2 2 0 012 2v6H8V5z"/>
-        </svg>
+    <div class="sidebar-item active" data-section="dashboard">
+      <div class="flex items-center p-3 rounded-lg cursor-pointer transition-all duration-200 hover:bg-blue-50 hover:shadow-sm">
+        <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
+          <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z"/>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5a2 2 0 012-2h4a2 2 0 012 2v6H8V5z"/>
+          </svg>
+        </div>
+        <div class="ml-3 sidebar-text transition-all duration-300 overflow-hidden">
+          <span class="text-sm font-medium text-gray-800">Tổng quan</span>
+          <p class="text-xs text-gray-500">Dashboard hệ thống</p>
+        </div>
+        <div class="ml-auto sidebar-text transition-all duration-300 overflow-hidden">
+          <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+          </svg>
+        </div>
       </div>
-      <span class="absolute left-12 opacity-0 transform -translate-x-4 
-                   transition-none group-hover:transition-all group-hover:duration-300 
-                   group-hover:opacity-100 group-hover:translate-x-0">
-        Tổng quan
-      </span>
-    </a>
+    </div>
 
     <!-- Users -->
-    <a href="#users" class="relative flex items-center p-2 rounded hover:bg-gray-100 sidebar-item" data-section="users">
-      <div class="w-6 h-6 text-gray-700 flex-shrink-0">
-        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"/>
-        </svg>
+    <div class="sidebar-item" data-section="users">
+      <div class="flex items-center p-3 rounded-lg cursor-pointer transition-all duration-200 hover:bg-green-50 hover:shadow-sm">
+        <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center flex-shrink-0">
+          <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"/>
+          </svg>
+        </div>
+        <div class="ml-3 sidebar-text transition-all duration-300 overflow-hidden">
+          <span class="text-sm font-medium text-gray-800">Người dùng</span>
+          <p class="text-xs text-gray-500">Quản lý tài khoản</p>
+        </div>
+        <div class="ml-auto sidebar-text transition-all duration-300 overflow-hidden">
+          <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+          </svg>
+        </div>
       </div>
-      <span class="absolute left-12 opacity-0 transform -translate-x-4 
-                   transition-none group-hover:transition-all group-hover:duration-300 
-                   group-hover:opacity-100 group-hover:translate-x-0">
-        Quản lý người dùng
-      </span>
-    </a>
+    </div>
 
     <!-- Faculty -->
-    <a href="#faculty" class="relative flex items-center p-2 rounded hover:bg-gray-100 sidebar-item" data-section="faculty">
-      <div class="w-6 h-6 text-gray-700 flex-shrink-0">
-        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
-        </svg>
+    <div class="sidebar-item" data-section="faculty">
+      <div class="flex items-center p-3 rounded-lg cursor-pointer transition-all duration-200 hover:bg-indigo-50 hover:shadow-sm">
+        <div class="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center flex-shrink-0">
+          <svg class="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+          </svg>
+        </div>
+        <div class="ml-3 sidebar-text transition-all duration-300 overflow-hidden">
+          <span class="text-sm font-medium text-gray-800">Khoa/Lớp</span>
+          <p class="text-xs text-gray-500">Quản lý khoa, lớp</p>
+        </div>
+        <div class="ml-auto sidebar-text transition-all duration-300 overflow-hidden">
+          <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+          </svg>
+        </div>
       </div>
-      <span class="absolute left-12 opacity-0 transform -translate-x-4 
-                   transition-none group-hover:transition-all group-hover:duration-300 
-                   group-hover:opacity-100 group-hover:translate-x-0">
-        Quản lý khoa/lớp
-      </span>
-    </a>
+    </div>
 
     <!-- Activities -->
-    <a href="#activities" class="relative flex items-center p-2 rounded hover:bg-gray-100 sidebar-item" data-section="activities">
-      <div class="w-6 h-6 text-gray-700 flex-shrink-0">
-        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
-        </svg>
+    <div class="sidebar-item" data-section="activities">
+      <div class="flex items-center p-3 rounded-lg cursor-pointer transition-all duration-200 hover:bg-purple-50 hover:shadow-sm">
+        <div class="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center flex-shrink-0">
+          <svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+          </svg>
+        </div>
+        <div class="ml-3 sidebar-text transition-all duration-300 overflow-hidden">
+          <span class="text-sm font-medium text-gray-800">Hoạt động</span>
+          <p class="text-xs text-gray-500">Tạo & quản lý</p>
+        </div>
+        <div class="ml-auto sidebar-text transition-all duration-300 overflow-hidden">
+          <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+          </svg>
+        </div>
       </div>
-      <span class="absolute left-12 opacity-0 transform -translate-x-4 
-                   transition-none group-hover:transition-all group-hover:duration-300 
-                   group-hover:opacity-100 group-hover:translate-x-0">
-        Quản lý hoạt động
-      </span>
-    </a>
+    </div>
 
     <!-- System -->
-    <a href="#system" class="relative flex items-center p-2 rounded hover:bg-gray-100 sidebar-item" data-section="system">
-      <div class="w-6 h-6 text-gray-700 flex-shrink-0">
-        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-        </svg>
+    <div class="sidebar-item" data-section="system">
+      <div class="flex items-center p-3 rounded-lg cursor-pointer transition-all duration-200 hover:bg-amber-50 hover:shadow-sm">
+        <div class="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center flex-shrink-0">
+          <svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+          </svg>
+        </div>
+        <div class="ml-3 sidebar-text transition-all duration-300 overflow-hidden">
+          <span class="text-sm font-medium text-gray-800">Cấu hình</span>
+          <p class="text-xs text-gray-500">Thiết lập hệ thống</p>
+        </div>
+        <div class="ml-auto sidebar-text transition-all duration-300 overflow-hidden">
+          <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+          </svg>
+        </div>
       </div>
-      <span class="absolute left-12 opacity-0 transform -translate-x-4 
-                   transition-none group-hover:transition-all group-hover:duration-300 
-                   group-hover:opacity-100 group-hover:translate-x-0">
-        Cấu hình hệ thống
-      </span>
-    </a>
+    </div>
 
     <!-- Logs -->
-    <a href="#logs" class="relative flex items-center p-2 rounded hover:bg-gray-100 sidebar-item" data-section="logs">
-      <div class="w-6 h-6 text-gray-700 flex-shrink-0">
-        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-        </svg>
+    <div class="sidebar-item" data-section="logs">
+      <div class="flex items-center p-3 rounded-lg cursor-pointer transition-all duration-200 hover:bg-slate-50 hover:shadow-sm">
+        <div class="w-10 h-10 bg-slate-100 rounded-lg flex items-center justify-center flex-shrink-0">
+          <svg class="w-5 h-5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+          </svg>
+        </div>
+        <div class="ml-3 sidebar-text transition-all duration-300 overflow-hidden">
+          <span class="text-sm font-medium text-gray-800">Nhật ký</span>
+          <p class="text-xs text-gray-500">Hoạt động hệ thống</p>
+        </div>
+        <div class="ml-auto sidebar-text transition-all duration-300 overflow-hidden">
+          <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+          </svg>
+        </div>
       </div>
-      <span class="absolute left-12 opacity-0 transform -translate-x-4 
-                   transition-none group-hover:transition-all group-hover:duration-300 
-                   group-hover:opacity-100 group-hover:translate-x-0">
-        Nhật ký hệ thống
-      </span>
-    </a>
+    </div>
   </nav>
+  <div class="sticky bottom-0 left-0 right-0 p-3 border-t border-gray-200 bg-gray-50 z-10">
+    <div class="opacity-0 transform -translate-x-2 transition-all duration-300 group-hover:opacity-100 group-hover:translate-x-0">
+      <div class="text-xs text-gray-500 text-center">
+        <p>QLDRL v1.0</p>
+        <p>© 2025 KGU</p>
+      </div>
+    </div>
+  </div>
 </aside>
 
 
@@ -150,8 +571,11 @@
   </svg>
 </button>
 
+<!-- Mobile overlay -->
+<div id="mobile-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-30 lg:hidden hidden transition-opacity duration-300"></div>
+
 <!-- Main Content -->
-<main class="lg:ml-64 transition-all duration-300 ease-in-out">
+<main class="lg:ml-16 transition-all duration-300 ease-in-out">
   
   <!-- Dashboard Section -->
   <section id="dashboard" class="section-content active">
@@ -227,24 +651,24 @@
           <div class="space-y-3">
             <div class="flex items-center justify-between p-3 bg-green-50 rounded-lg">
               <div class="flex items-center">
-                <div class="w-3 h-3 bg-green-500 rounded-full mr-3"></div>
+                <div id="db-status-dot" class="w-3 h-3 bg-green-500 rounded-full mr-3"></div>
                 <span class="text-sm font-medium text-gray-800">Cơ sở dữ liệu</span>
               </div>
-              <span class="text-sm text-green-600 font-medium">Hoạt động</span>
+              <span id="db-status-text" class="text-sm text-green-600 font-medium">Hoạt động</span>
             </div>
             <div class="flex items-center justify-between p-3 bg-green-50 rounded-lg">
               <div class="flex items-center">
-                <div class="w-3 h-3 bg-green-500 rounded-full mr-3"></div>
+                <div id="api-status-dot" class="w-3 h-3 bg-green-500 rounded-full mr-3"></div>
                 <span class="text-sm font-medium text-gray-800">API Server</span>
               </div>
-              <span class="text-sm text-green-600 font-medium">Hoạt động</span>
+              <span id="api-status-text" class="text-sm text-green-600 font-medium">Hoạt động</span>
             </div>
             <div class="flex items-center justify-between p-3 bg-green-50 rounded-lg">
               <div class="flex items-center">
-                <div class="w-3 h-3 bg-green-500 rounded-full mr-3"></div>
+                <div id="sec-status-dot" class="w-3 h-3 bg-green-500 rounded-full mr-3"></div>
                 <span class="text-sm font-medium text-gray-800">Bảo mật</span>
               </div>
-              <span class="text-sm text-green-600 font-medium">Bảo vệ</span>
+              <span id="sec-status-text" class="text-sm text-green-600 font-medium">Bảo vệ</span>
             </div>
           </div>
         </div>
@@ -273,14 +697,136 @@
         <p class="text-gray-600">Thêm, sửa, xóa và phân quyền người dùng</p>
       </div>
 
-      <!-- Add User Button -->
+      <!-- Filter Tabs -->
       <div class="mb-6">
-        <button id="add-user-btn" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
-          <svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-          </svg>
-          Thêm người dùng mới
-        </button>
+        <div class="border-b border-gray-200">
+          <nav class="-mb-px flex space-x-8">
+            <button id="filter-all" class="filter-tab active py-2 px-1 border-b-2 border-blue-500 font-medium text-sm text-blue-600">
+              Tất cả
+            </button>
+            <button id="filter-chucvu" class="filter-tab py-2 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300">
+              Theo chức vụ
+            </button>
+            <button id="filter-lop" class="filter-tab py-2 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300">
+              Theo lớp
+            </button>
+            <button id="filter-khoa" class="filter-tab py-2 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300">
+              Theo khoa
+            </button>
+            <button id="filter-khoahoc" class="filter-tab py-2 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300">
+              Theo khóa học
+            </button>
+          </nav>
+        </div>
+      </div>
+
+      <!-- Filter Content -->
+      <div id="filter-content" class="mb-6">
+        <!-- All Users (Default) -->
+        <div id="filter-all-content" class="filter-content active">
+          <div class="flex flex-col md:flex-row md:items-center gap-3">
+            <div class="flex-1">
+              <input id="user-search-input" type="text" class="w-full border rounded-md px-3 py-2" placeholder="Tìm theo tên tài khoản...">
+            </div>
+            <div class="flex items-center gap-2">
+              <button id="user-search-btn" class="px-4 py-2 bg-gray-100 text-gray-800 rounded-md hover:bg-gray-200">Tìm kiếm</button>
+              <button id="add-user-btn" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
+                <svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                </svg>
+                Thêm người dùng mới
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Filter by Chức vụ -->
+        <div id="filter-chucvu-content" class="filter-content hidden">
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Chức vụ</label>
+              <select id="chucvu-filter" class="w-full border rounded-md px-3 py-2">
+                <option value="">Tất cả chức vụ</option>
+                <option value="ADMIN">Admin</option>
+                <option value="Giảng viên">Giảng viên</option>
+                <option value="Sinh viên">Sinh viên</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Tìm kiếm</label>
+              <input id="chucvu-search" type="text" class="w-full border rounded-md px-3 py-2" placeholder="Tên tài khoản, họ tên...">
+            </div>
+            <div class="flex items-end">
+              <button id="chucvu-search-btn" class="w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
+                Tìm kiếm
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Filter by Lớp -->
+        <div id="filter-lop-content" class="filter-content hidden">
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Lớp</label>
+              <select id="lop-filter" class="w-full border rounded-md px-3 py-2">
+                <option value="">Tất cả lớp</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Tìm kiếm</label>
+              <input id="lop-search" type="text" class="w-full border rounded-md px-3 py-2" placeholder="MSSV, tên sinh viên...">
+            </div>
+            <div class="flex items-end">
+              <button id="lop-search-btn" class="w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
+                Tìm kiếm
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Filter by Khoa -->
+        <div id="filter-khoa-content" class="filter-content hidden">
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Khoa</label>
+              <select id="khoa-filter" class="w-full border rounded-md px-3 py-2">
+                <option value="">Tất cả khoa</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Tìm kiếm</label>
+              <input id="khoa-search" type="text" class="w-full border rounded-md px-3 py-2" placeholder="Tên tài khoản, họ tên...">
+            </div>
+            <div class="flex items-end">
+              <button id="khoa-search-btn" class="w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
+                Tìm kiếm
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Filter by Khóa học -->
+        <div id="filter-khoahoc-content" class="filter-content hidden">
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Khóa học</label>
+              <select id="khoahoc-filter" class="w-full border rounded-md px-3 py-2">
+                <option value="">Tất cả khóa học</option>
+                <!-- Sẽ được load động từ database -->
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Tìm kiếm</label>
+              <input id="khoahoc-search" type="text" class="w-full border rounded-md px-3 py-2" placeholder="MSSV, tên sinh viên...">
+            </div>
+            <div class="flex items-end">
+              <button id="khoahoc-search-btn" class="w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
+                Tìm kiếm
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- Users Table -->
@@ -295,13 +841,14 @@
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tài khoản</th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Họ tên</th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Chức vụ</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Thông tin chi tiết</th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Trạng thái</th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Thao tác</th>
               </tr>
             </thead>
             <tbody id="users-table-body" class="bg-white divide-y divide-gray-200">
               <tr>
-                <td colspan="5" class="px-6 py-4 text-center text-gray-500">
+                <td colspan="6" class="px-6 py-4 text-center text-gray-500">
                   Đang tải dữ liệu...
                 </td>
               </tr>
@@ -471,6 +1018,24 @@
                 <option value="3">Học kì 3</option>
               </select>
             </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Ngày kết thúc học kì</label>
+              <input type="datetime-local" id="semester-end-date" class="w-full border rounded-md px-3 py-2">
+              <p class="text-xs text-gray-500 mt-1">Thiết lập thời gian tự động cộng điểm rèn luyện</p>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Trạng thái tự động cộng điểm</label>
+              <div class="flex items-center space-x-4">
+                <label class="inline-flex items-center">
+                  <input type="radio" name="auto-point-status" value="enabled" class="form-radio text-blue-600">
+                  <span class="ml-2 text-sm">Bật</span>
+                </label>
+                <label class="inline-flex items-center">
+                  <input type="radio" name="auto-point-status" value="disabled" class="form-radio text-blue-600" checked>
+                  <span class="ml-2 text-sm">Tắt</span>
+                </label>
+              </div>
+            </div>
             <button id="save-general-settings" class="w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
               Lưu cài đặt
             </button>
@@ -500,6 +1065,52 @@
             <button id="save-point-settings" class="w-full px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700">
               Lưu cài đặt
             </button>
+          </div>
+        </div>
+
+        <!-- Evaluation Criteria (HoatDongTC) -->
+        <div class="bg-white p-6 rounded-lg shadow-md lg:col-span-2">
+          <h3 class="text-lg font-semibold text-gray-800 mb-4">Tiêu chí đánh giá (Hoạt động TC)</h3>
+          <form id="criteria-form" class="grid grid-cols-1 md:grid-cols-5 gap-4 mb-4">
+            <div class="md:col-span-2">
+              <label class="block text-sm font-medium text-gray-700 mb-1">Tên tiêu chí</label>
+              <input type="text" id="tc-ten" class="w-full border rounded-md px-3 py-2" placeholder="Tên tiêu chí" required>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Số điểm</label>
+              <input type="number" id="tc-diem" class="w-full border rounded-md px-3 py-2" min="0" required>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">ID Hoạt động</label>
+              <input type="text" id="tc-idhd" class="w-full border rounded-md px-3 py-2" placeholder="Nhập mục VD: 1.1">
+            </div>
+            <div class="flex items-end gap-2">
+              <label class="inline-flex items-center gap-2 text-sm text-gray-700">
+                <input type="checkbox" id="tc-tdtt" class="rounded">
+                Cho SV tự đánh giá (TDTT)
+              </label>
+            </div>
+            <div class="md:col-span-4 flex justify-end gap-2">
+              <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">Thêm tiêu chí</button>
+            </div>
+          </form>
+          <div class="overflow-x-auto">
+            <table class="w-full">
+              <thead class="bg-gray-50">
+                <tr>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Mã</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">IDHoatDong</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tên tiêu chí</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Số điểm</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">TDTT</th>
+                </tr>
+              </thead>
+              <tbody id="criteria-table-body" class="bg-white divide-y divide-gray-200">
+                <tr>
+                  <td colspan="5" class="px-6 py-4 text-center text-gray-500">Đang tải dữ liệu...</td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         </div>
       </div>
@@ -582,6 +1193,268 @@
     </div>
     <div id="modal-body" class="p-4"></div>
   </div>
+</div>
+
+<!-- Modal thêm/sửa người dùng -->
+<div id="user-modal" class="modal hidden">
+  <div class="modal-content max-w-2xl">
+    <div class="p-4 border-b flex justify-between items-center">
+      <h3 class="text-lg font-semibold">Thêm người dùng mới</h3>
+      <button id="user-modal-close" class="text-gray-600 px-2 py-1 rounded hover:bg-gray-100">Đóng</button>
+    </div>
+    
+    <!-- Tab Navigation -->
+    <div class="border-b border-gray-200">
+      <nav class="-mb-px flex space-x-8 px-6">
+        <button id="tab-basic" class="edit-tab active py-2 px-1 border-b-2 border-blue-500 font-medium text-sm text-blue-600">
+          Thông tin cơ bản
+        </button>
+        <button id="tab-detail" class="edit-tab py-2 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300">
+          Thông tin chi tiết
+        </button>
+      </nav>
+    </div>
+    
+    <div class="p-6">
+      <!-- Tab Content: Thông tin cơ bản -->
+      <div id="tab-basic-content" class="edit-tab-content active">
+        <form id="user-form" class="space-y-4">
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Mã cá nhân</label>
+              <input id="u-macanhan" type="text" class="w-full border rounded-md px-3 py-2 text-sm" placeholder="VD: 23092006119" required>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Tên tài khoản</label>
+              <input id="u-tentk" type="text" class="w-full border rounded-md px-3 py-2 text-sm" placeholder="username" required>
+            </div>
+          </div>
+          
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Mật khẩu</label>
+              <div class="relative">
+                <input id="u-matkhau" type="password" class="w-full border rounded-md px-3 py-2 pr-10 text-sm" placeholder="******" required>
+                <button type="button" id="toggle-password" class="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700">
+                  <svg id="eye-open" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                  </svg>
+                  <svg id="eye-closed" class="w-4 h-4 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21"></path>
+                  </svg>
+                </button>
+              </div>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Tên người dùng</label>
+              <input id="u-tennguoidung" type="text" class="w-full border rounded-md px-3 py-2 text-sm" placeholder="Họ và tên" required>
+            </div>
+          </div>
+          
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Chức vụ</label>
+              <input id="u-chucvu" type="text" class="w-full border rounded-md px-3 py-2 text-sm bg-gray-50" placeholder="Tự động điền" readonly>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Quyền</label>
+              <select id="u-maqt" class="w-full border rounded-md px-3 py-2 text-sm" required>
+                <option value="">Đang tải...</option>
+              </select>
+            </div>
+          </div>
+          
+          <div class="flex justify-end gap-3 pt-4 border-t">
+            <button type="button" id="user-cancel" class="px-4 py-2 text-sm rounded-md border hover:bg-gray-50">Hủy</button>
+            <button type="submit" class="px-4 py-2 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700">Lưu</button>
+          </div>
+        </form>
+      </div>
+      
+      <!-- Tab Content: Thông tin chi tiết -->
+      <div id="tab-detail-content" class="edit-tab-content">
+        <form id="user-detail-form" class="space-y-4">
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Mã cá nhân</label>
+              <input type="text" id="edit-info-macanhan" class="w-full border rounded-md px-3 py-2 text-sm bg-gray-50" readonly>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Tên người dùng</label>
+              <input type="text" id="edit-info-tennguoidung" class="w-full border rounded-md px-3 py-2 text-sm bg-gray-50" readonly>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Họ và tên</label>
+              <input type="text" id="edit-info-ten" class="w-full border rounded-md px-3 py-2 text-sm" required>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Số điện thoại</label>
+              <input type="text" id="edit-info-sdt" class="w-full border rounded-md px-3 py-2 text-sm" placeholder="0123456789">
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+              <input type="email" id="edit-info-email" class="w-full border rounded-md px-3 py-2 text-sm" placeholder="example@email.com">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Khoa</label>
+              <select id="edit-info-khoa" class="w-full border rounded-md px-3 py-2 text-sm">
+                <option value="">Chọn khoa</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Các trường dành riêng cho Giảng viên -->
+          <div id="edit-giangvien-fields" class="hidden">
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Lớp chủ nhiệm</label>
+                <div class="relative">
+                  <input type="text" id="edit-info-lopcv-input" class="w-full border rounded-md px-3 py-2 text-sm" placeholder="Tìm kiếm lớp chủ nhiệm..." autocomplete="off">
+                  <select id="edit-info-lopcv" class="w-full border rounded-md px-3 py-2 text-sm absolute top-0 left-0 opacity-0 pointer-events-none">
+                    <option value="">Chọn lớp chủ nhiệm</option>
+                  </select>
+                  <div id="edit-info-lopcv-dropdown" class="absolute z-10 w-full bg-white border border-gray-300 rounded-md shadow-lg max-h-40 overflow-y-auto hidden">
+                  </div>
+                </div>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Địa chỉ</label>
+                <input type="text" id="edit-info-diachi-gv" class="w-full border rounded-md px-3 py-2 text-sm" placeholder="Địa chỉ thường trú">
+              </div>
+            </div>
+          </div>
+
+          <!-- Các trường dành riêng cho Sinh viên -->
+          <div id="edit-sinhvien-fields" class="hidden">
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Lớp</label>
+                <div class="relative">
+                  <input type="text" id="edit-info-lop-input" class="w-full border rounded-md px-3 py-2 text-sm" placeholder="Tìm kiếm lớp..." autocomplete="off">
+                  <select id="edit-info-lop" class="w-full border rounded-md px-3 py-2 text-sm absolute top-0 left-0 opacity-0 pointer-events-none">
+                    <option value="">Chọn lớp</option>
+                  </select>
+                  <div id="edit-info-lop-dropdown" class="absolute z-10 w-full bg-white border border-gray-300 rounded-md shadow-lg max-h-40 overflow-y-auto hidden">
+                  </div>
+                </div>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Khóa học</label>
+                <select id="edit-info-khoahoc" class="w-full border rounded-md px-3 py-2 text-sm">
+                  <option value="">Chọn khóa học</option>
+                </select>
+              </div>
+            </div>
+            
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Chức vụ lớp</label>
+              <div class="flex space-x-4 mt-2">
+                <label class="inline-flex items-center">
+                  <input type="checkbox" id="edit-info-cblop" class="rounded text-sm">
+                  <span class="ml-2 text-sm">Cán bộ lớp</span>
+                </label>
+                <label class="inline-flex items-center">
+                  <input type="checkbox" id="edit-info-tvclbkhoa" class="rounded text-sm">
+                  <span class="ml-2 text-sm">TVCLB Khoa</span>
+                </label>
+                <label class="inline-flex items-center">
+                  <input type="checkbox" id="edit-info-tvclbtruong" class="rounded text-sm">
+                  <span class="ml-2 text-sm">TVCLB Trường</span>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Địa chỉ</label>
+            <textarea id="edit-info-diachi" class="w-full border rounded-md px-3 py-2 text-sm" rows="2" placeholder="Nhập địa chỉ chi tiết"></textarea>
+          </div>
+
+          <div class="flex justify-end gap-3 pt-4 border-t">
+            <button type="button" id="edit-detail-cancel" class="px-4 py-2 text-sm border rounded-md hover:bg-gray-50">Hủy</button>
+            <button type="submit" class="px-4 py-2 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700">Lưu thông tin</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+  <div class="modal-overlay"></div>
+</div>
+
+<!-- Modal đổi mật khẩu đã loại bỏ; chỉnh sửa tích hợp trong modal người dùng -->
+
+
+<!-- Modal thêm hoạt động (Admin) -->
+<div id="activity-modal-admin" class="modal hidden">
+  <div class="modal-content max-w-2xl">
+    <div class="p-4 border-b flex justify-between items-center">
+      <h3 class="text-lg font-semibold">Thêm hoạt động mới</h3>
+      <button id="activity-modal-admin-close" class="text-gray-600 px-2 py-1 rounded hover:bg-gray-100">Đóng</button>
+    </div>
+    <div class="p-6">
+      <form id="activity-form-admin" class="space-y-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Mã hoạt động</label>
+            <input type="text" id="act-code" class="w-full border rounded-md px-3 py-2" placeholder="Nhập mã hoạt động" required>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Tên hoạt động</label>
+            <input type="text" id="act-name" class="w-full border rounded-md px-3 py-2" placeholder="Nhập tên hoạt động" required>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Mô tả</label>
+          <textarea id="act-desc" class="w-full border rounded-md px-3 py-2" placeholder="Mô tả hoạt động"></textarea>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Ngày bắt đầu</label>
+            <input type="date" id="act-start" class="w-full border rounded-md px-3 py-2" required>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Ngày kết thúc</label>
+            <input type="date" id="act-end" class="w-full border rounded-md px-3 py-2" required>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Điểm rèn luyện</label>
+            <input type="number" id="act-points" class="w-full border rounded-md px-3 py-2" placeholder="0-100" min="0" max="100" required>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Số lượng tham gia tối đa</label>
+            <input type="number" id="act-max" class="w-full border rounded-md px-3 py-2" placeholder="Số lượng" min="1">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Từ khóa</label>
+            <input type="text" id="act-key" class="w-full border rounded-md px-3 py-2" placeholder="VD: tình nguyện, hội thảo">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Địa điểm</label>
+          <input type="text" id="act-location" class="w-full border rounded-md px-3 py-2" placeholder="Địa điểm tổ chức">
+        </div>
+
+        <div class="flex justify-end gap-3 pt-4">
+          <button type="button" id="act-cancel" class="px-4 py-2 border rounded-md hover:bg-gray-100">Hủy</button>
+          <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">Lưu hoạt động</button>
+        </div>
+      </form>
+    </div>
+  </div>
+  <div class="modal-overlay"></div>
 </div>
 
 <!-- Custom JS -->

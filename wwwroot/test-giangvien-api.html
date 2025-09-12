@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Giảng Viên API</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ccc; }
+        .result { background: #f5f5f5; padding: 10px; margin: 10px 0; }
+        button { padding: 10px 15px; margin: 5px; }
+        input { padding: 8px; margin: 5px; width: 200px; }
+    </style>
+</head>
+<body>
+    <h1>Test Giảng Viên API</h1>
+    
+    <div class="test-section">
+        <h3>Test API /api/giangvien/{maCaNhan}</h3>
+        <input type="text" id="maCaNhan" placeholder="Nhập mã cá nhân" value="GV001">
+        <button onclick="testGiangVienAPI()">Test API</button>
+        <div id="api-result" class="result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h3>Test Fill Form</h3>
+        <button onclick="testFillForm()">Test Fill Form</button>
+        <div id="form-result" class="result"></div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:5204';
+        
+        async function testGiangVienAPI() {
+            const maCaNhan = document.getElementById('maCaNhan').value;
+            const resultDiv = document.getElementById('api-result');
+            
+            try {
+                resultDiv.innerHTML = 'Đang tải...';
+                
+                const response = await fetch(`${API_BASE}/api/giangvien/${maCaNhan}`);
+                const data = await response.json();
+                
+                resultDiv.innerHTML = `
+                    <h4>Response Status: ${response.status}</h4>
+                    <pre>${JSON.stringify(data, null, 2)}</pre>
+                `;
+            } catch (error) {
+                resultDiv.innerHTML = `<h4>Error:</h4><p>${error.message}</p>`;
+            }
+        }
+        
+        async function testFillForm() {
+            const maCaNhan = document.getElementById('maCaNhan').value;
+            const resultDiv = document.getElementById('form-result');
+            
+            try {
+                resultDiv.innerHTML = 'Đang test fill form...';
+                
+                // Simulate the fillEditDetailForm function
+                const response = await fetch(`${API_BASE}/api/giangvien/${maCaNhan}`);
+                if (response.ok) {
+                    const gvData = await response.json();
+                    
+                    const fields = {
+                        'edit-info-ten': gvData.TenGV || '',
+                        'edit-info-sdt': gvData.SDT || '',
+                        'edit-info-email': gvData.Email || '',
+                        'edit-info-khoa': gvData.MaKH || '',
+                        'edit-info-lopcv': gvData.LopCV || '',
+                        'edit-info-diachi-gv': gvData.DiaChi || ''
+                    };
+                    
+                    let result = '<h4>Form Fields to Fill:</h4><ul>';
+                    Object.entries(fields).forEach(([id, value]) => {
+                        result += `<li><strong>${id}:</strong> "${value}"</li>`;
+                    });
+                    result += '</ul>';
+                    
+                    resultDiv.innerHTML = result;
+                } else {
+                    resultDiv.innerHTML = `<h4>API Error:</h4><p>Status: ${response.status}</p>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<h4>Error:</h4><p>${error.message}</p>`;
+            }
+        }
+    </script>
+</body>
+</html>

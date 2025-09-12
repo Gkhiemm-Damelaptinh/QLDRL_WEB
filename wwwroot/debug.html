@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug - Kiểm tra dữ liệu hoạt động</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen p-4">
+    <div class="max-w-4xl mx-auto">
+        <h1 class="text-2xl font-bold text-gray-800 mb-6">Debug - Kiểm tra dữ liệu hoạt động</h1>
+        
+        <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+            <h2 class="text-lg font-semibold mb-4">Danh sách hoạt động trong database</h2>
+            <button onclick="loadActivities()" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
+                Tải danh sách hoạt động
+            </button>
+            <div id="activities-list" class="mt-4"></div>
+        </div>
+        
+        <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+            <h2 class="text-lg font-semibold mb-4">Sửa lỗi QR Permissions</h2>
+            <button onclick="fixQrPermissions()" class="bg-yellow-500 text-white px-4 py-2 rounded hover:bg-yellow-600 mb-4">
+                Sửa tất cả AllowQRRegistration = NULL
+            </button>
+            <div id="fix-result" class="mt-4"></div>
+        </div>
+        
+        <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+            <h2 class="text-lg font-semibold mb-4">Test QR Code cho HD02</h2>
+            <button onclick="testHD02()" class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">
+                Test QR Code HD02
+            </button>
+            <div id="test-result" class="mt-4"></div>
+        </div>
+    </div>
+
+    <script>
+        async function loadActivities() {
+            try {
+                const response = await fetch('/api/debug/activities');
+                const activities = await response.json();
+                
+                const listDiv = document.getElementById('activities-list');
+                listDiv.innerHTML = `
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full table-auto">
+                            <thead>
+                                <tr class="bg-gray-50">
+                                    <th class="px-4 py-2 text-left">Mã HD</th>
+                                    <th class="px-4 py-2 text-left">Tên HD</th>
+                                    <th class="px-4 py-2 text-left">Điểm RL</th>
+                                    <th class="px-4 py-2 text-left">Allow QR</th>
+                                    <th class="px-4 py-2 text-left">Has QR</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${activities.map(activity => `
+                                    <tr class="border-t">
+                                        <td class="px-4 py-2">${activity.MaHD}</td>
+                                        <td class="px-4 py-2">${activity.TenHD}</td>
+                                        <td class="px-4 py-2">${activity.DiemRL}</td>
+                                        <td class="px-4 py-2">
+                                            <span class="px-2 py-1 rounded text-xs ${activity.AllowQRRegistration ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
+                                                ${activity.AllowQRRegistration ? 'Có' : 'Không'}
+                                            </span>
+                                        </td>
+                                        <td class="px-4 py-2">
+                                            <span class="px-2 py-1 rounded text-xs ${activity.HasQRCode ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
+                                                ${activity.HasQRCode ? 'Có' : 'Không'}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+            } catch (error) {
+                document.getElementById('activities-list').innerHTML = `<p class="text-red-600">Lỗi: ${error.message}</p>`;
+            }
+        }
+        
+        async function fixQrPermissions() {
+            try {
+                const response = await fetch('/api/debug/fix-qr-permissions', {
+                    method: 'POST'
+                });
+                
+                const result = await response.json();
+                const resultDiv = document.getElementById('fix-result');
+                
+                if (response.ok) {
+                    resultDiv.innerHTML = `
+                        <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded">
+                            <h3 class="font-bold">✓ Thành công!</h3>
+                            <p><strong>Thông báo:</strong> ${result.message}</p>
+                            <p><strong>Số hoạt động đã sửa:</strong> ${result.updatedCount}</p>
+                        </div>
+                    `;
+                    
+                    // Tự động reload danh sách hoạt động
+                    setTimeout(() => {
+                        loadActivities();
+                    }, 1000);
+                } else {
+                    resultDiv.innerHTML = `
+                        <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+                            <h3 class="font-bold">✗ Lỗi!</h3>
+                            <p><strong>Mã lỗi:</strong> ${response.status}</p>
+                            <p><strong>Thông báo:</strong> ${result.error}</p>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                document.getElementById('fix-result').innerHTML = `
+                    <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+                        <h3 class="font-bold">✗ Lỗi kết nối!</h3>
+                        <p>${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+        
+        async function testHD02() {
+            try {
+                const qrData = JSON.stringify({maHD: 'HD02'});
+                const response = await fetch(`/api/qr/activity-info?qrData=${encodeURIComponent(qrData)}`);
+                
+                const resultDiv = document.getElementById('test-result');
+                
+                if (response.ok) {
+                    const activity = await response.json();
+                    resultDiv.innerHTML = `
+                        <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded">
+                            <h3 class="font-bold">✓ Thành công!</h3>
+                            <p><strong>Mã HD:</strong> ${activity.MaHD}</p>
+                            <p><strong>Tên HD:</strong> ${activity.TenHD}</p>
+                            <p><strong>Điểm tối đa:</strong> ${activity.SoDiemToiDa}</p>
+                            <p><strong>Mô tả:</strong> ${activity.MoTa}</p>
+                            <p><strong>Allow QR:</strong> ${activity.AllowQRRegistration}</p>
+                        </div>
+                    `;
+                } else {
+                    const error = await response.json();
+                    resultDiv.innerHTML = `
+                        <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+                            <h3 class="font-bold">✗ Lỗi!</h3>
+                            <p><strong>Mã lỗi:</strong> ${response.status}</p>
+                            <p><strong>Thông báo:</strong> ${error.error}</p>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                document.getElementById('test-result').innerHTML = `
+                    <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+                        <h3 class="font-bold">✗ Lỗi kết nối!</h3>
+                        <p>${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+    </script>
+</body>
+</html>

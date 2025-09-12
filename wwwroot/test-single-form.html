@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Single Form Modal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 p-8">
+    <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl font-bold text-gray-800 mb-8">Test Single Form Modal</h1>
+        
+        <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+            <h2 class="text-xl font-semibold text-gray-800 mb-4">Test Buttons</h2>
+            <div class="flex gap-4">
+                <button onclick="testAddUser()" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
+                    Test Add User
+                </button>
+                <button onclick="testEditUser()" class="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700">
+                    Test Edit User
+                </button>
+                <button onclick="closeModal()" class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700">
+                    Close Modal
+                </button>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <h2 class="text-xl font-semibold text-gray-800 mb-4">Modal Preview</h2>
+            <p class="text-gray-600 mb-4">Modal đã được đơn giản hóa với:</p>
+            <ul class="list-disc list-inside text-gray-600 space-y-2">
+                <li>✅ Loại bỏ hoàn toàn tab "Thông tin chi tiết"</li>
+                <li>✅ Chỉ còn 1 form duy nhất: "Thông tin cơ bản"</li>
+                <li>✅ Không còn tab navigation</li>
+                <li>✅ Form đơn giản với 6 trường: Mã cá nhân, Tên TK, Mật khẩu, Tên người dùng, Chức vụ, Quyền</li>
+                <li>✅ 2 nút: Hủy và Lưu</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Modal thêm/sửa người dùng (Single Form) -->
+    <div id="user-modal" class="modal hidden">
+        <div class="modal-content max-w-2xl">
+            <div class="p-4 border-b flex justify-between items-center">
+                <h3 class="text-lg font-semibold">Thêm người dùng mới</h3>
+                <button id="user-modal-close" class="text-gray-600 px-2 py-1 rounded hover:bg-gray-100">Đóng</button>
+            </div>
+            
+            <div class="p-6">
+                <!-- Form thông tin cơ bản -->
+                <form id="user-form" class="space-y-4">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Mã cá nhân</label>
+                            <input id="u-macanhan" type="text" class="w-full border rounded-md px-3 py-2 text-sm" placeholder="VD: 23092006119" required>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Tên tài khoản</label>
+                            <input id="u-tentk" type="text" class="w-full border rounded-md px-3 py-2 text-sm" placeholder="username" required>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Mật khẩu</label>
+                            <input id="u-matkhau" type="password" class="w-full border rounded-md px-3 py-2 text-sm" placeholder="******" required>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Tên người dùng</label>
+                            <input id="u-tennguoidung" type="text" class="w-full border rounded-md px-3 py-2 text-sm" placeholder="Họ và tên" required>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Chức vụ</label>
+                            <input id="u-chucvu" type="text" class="w-full border rounded-md px-3 py-2 text-sm bg-gray-50" placeholder="Tự động điền" readonly>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Quyền</label>
+                            <select id="u-maqt" class="w-full border rounded-md px-3 py-2 text-sm" required>
+                                <option value="">Đang tải...</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="flex justify-end gap-3 pt-4 border-t">
+                        <button type="button" id="user-cancel" class="px-4 py-2 text-sm rounded-md border hover:bg-gray-50">Hủy</button>
+                        <button type="submit" class="px-4 py-2 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700">Lưu</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <div class="modal-overlay"></div>
+    </div>
+
+    <style>
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 8px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+    </style>
+
+    <script>
+        function testAddUser() {
+            console.log('Testing Add User - Single form only');
+            const modal = document.getElementById("user-modal");
+            modal.classList.remove("hidden");
+            
+            // Fill sample data
+            document.getElementById("u-macanhan").value = "23092006119";
+            document.getElementById("u-tentk").value = "testuser";
+            document.getElementById("u-tennguoidung").value = "Test User";
+            document.getElementById("u-chucvu").value = "Sinh viên";
+            
+            console.log('Modal shown with sample data');
+        }
+
+        function testEditUser() {
+            console.log('Testing Edit User - Single form only');
+            const modal = document.getElementById("user-modal");
+            modal.classList.remove("hidden");
+            
+            // Update title
+            document.querySelector("h3").textContent = "Chỉnh sửa người dùng";
+            
+            // Fill sample data
+            document.getElementById("u-macanhan").value = "23092006118";
+            document.getElementById("u-tentk").value = "kiendo";
+            document.getElementById("u-tennguoidung").value = "Đỗ Trung Kiên";
+            document.getElementById("u-chucvu").value = "Giảng Viên";
+            
+            console.log('Modal shown for editing with sample data');
+        }
+
+        function closeModal() {
+            const modal = document.getElementById("user-modal");
+            modal.classList.add("hidden");
+            console.log('Modal closed');
+        }
+
+        // Close modal when clicking outside
+        document.addEventListener('click', (e) => {
+            const modal = document.getElementById("user-modal");
+            if (e.target === modal) {
+                modal.classList.add("hidden");
+                console.log('Modal closed via overlay');
+            }
+        });
+
+        // Close modal with close button
+        document.getElementById("user-modal-close").onclick = () => {
+            document.getElementById("user-modal").classList.add("hidden");
+            console.log('Modal closed via close button');
+        };
+
+        // Close modal with cancel button
+        document.getElementById("user-cancel").onclick = () => {
+            document.getElementById("user-modal").classList.add("hidden");
+            console.log('Modal closed via cancel button');
+        };
+
+        // Load when page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('Single form modal test page loaded');
+        });
+    </script>
+</body>
+</html>
