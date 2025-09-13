@@ -21,6 +21,87 @@
 </head>
 <body class="bg-gradient-to-b from-slate-50 to-slate-100 min-h-screen">
 
+<!-- Mobile Sidebar (chỉ hiển thị trên mobile) -->
+<div id="mobile-sidebar" class="fixed left-0 top-0 h-full w-64 bg-white shadow-lg z-40 transform -translate-x-full transition-transform duration-300 ease-in-out lg:hidden">
+  <div class="p-4 border-b border-gray-200">
+    <div class="flex items-center gap-3">
+      <div class="bg-blue-700 text-white font-bold rounded-lg px-3 py-2 text-sm">KGU</div>
+      <div>
+        <h1 class="text-lg font-bold text-gray-800">QLDRL</h1>
+        <p class="text-xs text-gray-500">Hoạt động sinh viên</p>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Navigation Menu -->
+  <nav class="mt-6 px-4">
+    <div class="space-y-2">
+      <!-- Dashboard -->
+      <a href="#" class="mobile-sidebar-item active flex items-center gap-3 p-3 rounded-lg hover:bg-blue-50 transition-colors">
+        <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+          <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z"></path>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5a2 2 0 012-2h4a2 2 0 012 2v2H8V5z"></path>
+          </svg>
+        </div>
+        <span class="mobile-sidebar-text text-gray-700 font-medium">Đánh giá rèn luyện</span>
+      </a>
+      
+      <!-- Activities -->
+      <a href="#" class="mobile-sidebar-item flex items-center gap-3 p-3 rounded-lg hover:bg-blue-50 transition-colors">
+        <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+          <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+          </svg>
+        </div>
+        <span class="mobile-sidebar-text text-gray-700 font-medium">Hoạt động ngoại khóa</span>
+      </a>
+      
+      <!-- Ranking -->
+      <a href="#" class="mobile-sidebar-item flex items-center gap-3 p-3 rounded-lg hover:bg-blue-50 transition-colors">
+        <div class="w-10 h-10 bg-yellow-100 rounded-lg flex items-center justify-center">
+          <svg class="w-5 h-5 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"></path>
+          </svg>
+        </div>
+        <span class="mobile-sidebar-text text-gray-700 font-medium">Bảng xếp hạng</span>
+      </a>
+    </div>
+  </nav>
+  
+  <!-- User Profile Section -->
+  <div class="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-200">
+    <div id="mobile-user-profile-section" class="hidden">
+      <div class="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer" title="Xem / chỉnh sửa thông tin sinh viên">
+        <img id="mobile-sidebar-avatar" src="https://i.pravatar.cc/150?u=user" alt="Avatar" class="w-10 h-10 rounded-full border-2 border-blue-600">
+        <div class="flex-1 min-w-0">
+          <p id="mobile-sidebar-user-name" class="text-sm font-medium text-gray-800 truncate">Tên người dùng</p>
+          <p class="text-xs text-gray-500">Sinh viên</p>
+        </div>
+      </div>
+      <button id="mobile-sidebar-logout" class="w-full mt-2 p-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors">
+        <svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+        </svg>
+        Đăng xuất
+      </button>
+    </div>
+    
+    <div id="mobile-login-section">
+      <button id="mobile-sidebar-login" class="w-full p-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+        <svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"></path>
+        </svg>
+        Đăng nhập
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Mobile overlay -->
+<div id="mobile-sidebar-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-30 hidden lg:hidden"></div>
+
+<!-- Desktop Header (giữ nguyên cho PC) -->
 <header class="bg-white shadow-sm fade-down">
   <div class="max-w-6xl mx-auto px-4 py-4">
     <!-- Mobile header -->
@@ -114,9 +195,14 @@
       <input id="search" type="text" placeholder="Tìm kiếm hoạt động..." class="flex-1 px-3 py-2 border rounded-md text-sm" />
       <select id="filter" class="px-3 py-2 border rounded-md text-sm min-w-[120px]">
         <option value="">Tất cả</option>
-        <option value="tinh nguyen">Tình nguyện</option>
-        <option value="hoi thao">Hội thảo</option>
-        <option value="cuoc thi">Cuộc thi</option>
+        <option value="tình nguyện">Tình nguyện</option>
+        <option value="hội thảo">Hội thảo</option>
+        <option value="cuộc thi">Cuộc thi</option>
+        <option value="sự kiện">Sự kiện</option>
+        <option value="hoạt động">Hoạt động</option>
+        <option value="chương trình">Chương trình</option>
+        <option value="workshop">Workshop</option>
+        <option value="seminar">Seminar</option>
       </select>
     </div>
   </div>

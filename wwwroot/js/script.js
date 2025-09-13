@@ -25,10 +25,28 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
   }
 
-  // Mobile menu toggle
-  if (mobileMenuBtn && mobileMenu) {
+  // Mobile menu toggle - sử dụng mobile sidebar
+  if (mobileMenuBtn) {
     mobileMenuBtn.addEventListener("click", () => {
-      mobileMenu.classList.toggle("hidden");
+      const mobileSidebar = document.getElementById("mobile-sidebar");
+      const mobileOverlay = document.getElementById("mobile-sidebar-overlay");
+      
+      if (mobileSidebar && mobileOverlay) {
+        mobileSidebar.classList.toggle("-translate-x-full");
+        mobileOverlay.classList.toggle("hidden");
+      }
+    });
+  }
+  
+  // Close mobile sidebar when clicking overlay
+  const mobileSidebarOverlay = document.getElementById("mobile-sidebar-overlay");
+  if (mobileSidebarOverlay) {
+    mobileSidebarOverlay.addEventListener("click", () => {
+      const mobileSidebar = document.getElementById("mobile-sidebar");
+      if (mobileSidebar) {
+        mobileSidebar.classList.add("-translate-x-full");
+        mobileSidebarOverlay.classList.add("hidden");
+      }
     });
   }
 
@@ -43,26 +61,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       });
     }
     
-    const rankingBtn = document.getElementById("btn-ranking");
-    if (rankingBtn) {
-      rankingBtn.addEventListener("click", () => {
-        showStudentRanking();
-      });
-    }
-    
-    const btnHome = document.getElementById("btn-home");
-    if (btnHome) {
-      btnHome.addEventListener("click", () => {
-        window.location.href = "index.html";
-      });
-    }
-
-    const btnActivities = document.getElementById("btn-activities");
-    if (btnActivities) {
-      btnActivities.addEventListener("click", () => {
-        document.getElementById("wizard-modal").classList.remove("hidden");
-      });
-    }
+    // Các event listeners khác đã được xử lý bằng event delegation ở trên
   }
 
   // Helper function to setup mobile navigation events
@@ -77,28 +76,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       });
     }
     
-    const rankingBtn = document.getElementById("btn-ranking-mobile");
-    if (rankingBtn) {
-      rankingBtn.addEventListener("click", () => {
-        showStudentRanking();
-        mobileMenu.classList.add("hidden"); // Close mobile menu
-      });
-    }
-    
-    const btnHome = document.getElementById("btn-home-mobile");
-    if (btnHome) {
-      btnHome.addEventListener("click", () => {
-        window.location.href = "index.html";
-      });
-    }
-
-    const btnActivities = document.getElementById("btn-activities-mobile");
-    if (btnActivities) {
-      btnActivities.addEventListener("click", () => {
-        document.getElementById("wizard-modal").classList.remove("hidden");
-        mobileMenu.classList.add("hidden"); // Close mobile menu
-      });
-    }
+    // Các event listeners khác đã được xử lý bằng event delegation ở trên
   }
 
   // Add event listener for ranking button
@@ -108,20 +86,119 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
   }
 
-  if (btnHome) {
-    btnHome.addEventListener("click", () => {
-      window.location.href = "index.html";
-    });
-  }
+  // Event listeners đã được xử lý bằng event delegation ở dưới
   
-  if (btnActivities) {
-    btnActivities.addEventListener("click", () => {
+  // Sử dụng event delegation để xử lý các nút navigation
+  document.addEventListener("click", (e) => {
+    // Mobile sidebar menu items
+    if (e.target.closest('.mobile-sidebar-item')) {
+      const sidebarItem = e.target.closest('.mobile-sidebar-item');
+      const text = sidebarItem.querySelector('.mobile-sidebar-text');
+      
+      if (text) {
+        const menuText = text.textContent.trim();
+        
+        // Remove active class from all mobile sidebar items
+        document.querySelectorAll('.mobile-sidebar-item').forEach(item => {
+          item.classList.remove('active');
+        });
+        
+        // Add active class to clicked item
+        sidebarItem.classList.add('active');
+        
+        // Handle menu actions
+        if (menuText === 'Hoạt động ngoại khóa') {
+          document.getElementById("wizard-modal").classList.remove("hidden");
+          // Close mobile sidebar
+          const mobileSidebar = document.getElementById("mobile-sidebar");
+          const mobileOverlay = document.getElementById("mobile-sidebar-overlay");
+          if (mobileSidebar) mobileSidebar.classList.add("-translate-x-full");
+          if (mobileOverlay) mobileOverlay.classList.add("hidden");
+        } else if (menuText === 'Bảng xếp hạng') {
+          showStudentRanking();
+          // Close mobile sidebar
+          const mobileSidebar = document.getElementById("mobile-sidebar");
+          const mobileOverlay = document.getElementById("mobile-sidebar-overlay");
+          if (mobileSidebar) mobileSidebar.classList.add("-translate-x-full");
+          if (mobileOverlay) mobileOverlay.classList.add("hidden");
+        } else if (menuText === 'Đánh giá rèn luyện') {
+          // Already on this page, just close sidebar
+          const mobileSidebar = document.getElementById("mobile-sidebar");
+          const mobileOverlay = document.getElementById("mobile-sidebar-overlay");
+          if (mobileSidebar) mobileSidebar.classList.add("-translate-x-full");
+          if (mobileOverlay) mobileOverlay.classList.add("hidden");
+        }
+      }
+    }
+    
+    // Avatar click events - Desktop và Mobile
+    if (e.target.closest('.user-avatar') || e.target.closest('.user-avatar-mobile')) {
+      e.preventDefault();
+      e.stopPropagation();
+      
+      // Close mobile menu if open
+      const mobileMenu = document.getElementById("mobile-menu");
+      if (mobileMenu) mobileMenu.classList.add("hidden");
+      
+      // Close mobile sidebar if open
+      const mobileSidebar = document.getElementById("mobile-sidebar");
+      const mobileOverlay = document.getElementById("mobile-sidebar-overlay");
+      if (mobileSidebar) mobileSidebar.classList.add("-translate-x-full");
+      if (mobileOverlay) mobileOverlay.classList.add("hidden");
+      
+      // Open student profile
+      openCurrentStudentProfile();
+    }
+    
+    // Mobile sidebar avatar click
+    if (e.target.closest('#mobile-user-profile-section .flex.items-center')) {
+      e.preventDefault();
+      e.stopPropagation();
+      
+      // Close mobile sidebar
+      const mobileSidebar = document.getElementById("mobile-sidebar");
+      const mobileOverlay = document.getElementById("mobile-sidebar-overlay");
+      if (mobileSidebar) mobileSidebar.classList.add("-translate-x-full");
+      if (mobileOverlay) mobileOverlay.classList.add("hidden");
+      
+      // Open student profile
+      openCurrentStudentProfile();
+    }
+    
+    // Legacy button handling (for backward compatibility)
+    if (e.target && e.target.id === "btn-activities") {
       document.getElementById("wizard-modal").classList.remove("hidden");
-    });
-  }
+    } else if (e.target && e.target.id === "btn-activities-mobile") {
+      document.getElementById("wizard-modal").classList.remove("hidden");
+      mobileMenu.classList.add("hidden");
+    } else if (e.target && e.target.id === "btn-home") {
+      window.location.href = "index.html";
+    } else if (e.target && e.target.id === "btn-home-mobile") {
+      window.location.href = "index.html";
+    } else if (e.target && e.target.id === "btn-ranking") {
+      showStudentRanking();
+    } else if (e.target && e.target.id === "btn-ranking-mobile") {
+      showStudentRanking();
+      mobileMenu.classList.add("hidden");
+    } else if (e.target && e.target.id === "btn-logout") {
+      localStorage.removeItem("loggedUser");
+      localStorage.removeItem("loggedUserInfo");
+      localStorage.removeItem("userAvatar");
+      renderLoggedOutUI();
+    } else if (e.target && e.target.id === "btn-logout-mobile") {
+      localStorage.removeItem("loggedUser");
+      localStorage.removeItem("loggedUserInfo");
+      localStorage.removeItem("userAvatar");
+      mobileMenu.classList.add("hidden");
+      renderLoggedOutUI();
+    }
+  });
   
   if (closeWizard) {
     closeWizard.addEventListener("click", () => {
+      // Tắt camera khi đóng modal
+      stopCamera();
+      
       document.getElementById("wizard-modal").classList.add("hidden");
       document.getElementById("step-1").classList.remove("hidden");
       document.getElementById("step-2-video").classList.add("hidden");
@@ -163,6 +240,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   function renderLoggedOutUI() {
+    // Desktop navigation (giữ nguyên)
     const desktopNav = `
       <button id="btn-home" class="nav-btn">Đánh giá rèn luyện</button>
       <button id="btn-activities" class="nav-btn">Hoạt động ngoại khóa</button>
@@ -187,9 +265,32 @@ document.addEventListener("DOMContentLoaded", async () => {
         setupMobileNavigationEvents();
       });
     }
+    
+    // Mobile sidebar - hiển thị login section
+    const mobileLoginSection = document.getElementById("mobile-login-section");
+    const mobileUserProfileSection = document.getElementById("mobile-user-profile-section");
+    
+    if (mobileLoginSection) mobileLoginSection.classList.remove("hidden");
+    if (mobileUserProfileSection) mobileUserProfileSection.classList.add("hidden");
+    
+    // Setup mobile sidebar login button
+    const mobileSidebarLoginBtn = document.getElementById("mobile-sidebar-login");
+    if (mobileSidebarLoginBtn) {
+      mobileSidebarLoginBtn.addEventListener("click", (e) => {
+        e.preventDefault();
+        loginModal.classList.remove("hidden");
+        hideLoginError();
+        // Close mobile sidebar
+        const mobileSidebar = document.getElementById("mobile-sidebar");
+        const mobileOverlay = document.getElementById("mobile-sidebar-overlay");
+        if (mobileSidebar) mobileSidebar.classList.add("-translate-x-full");
+        if (mobileOverlay) mobileOverlay.classList.add("hidden");
+      });
+    }
   }
 
   function renderLoggedInUI(username) {
+    // Desktop navigation (giữ nguyên)
     const desktopNav = `
       <button id="btn-home" class="nav-btn">Đánh giá rèn luyện</button>
       <button id="btn-activities" class="nav-btn">Hoạt động ngoại khóa</button>
@@ -222,36 +323,64 @@ document.addEventListener("DOMContentLoaded", async () => {
         setupLoggedInMobileNavigationEvents();
       });
     }
-  }
-
-  function setupLoggedInNavigationEvents() {
-    const btn = document.getElementById("btn-logout");
-    if (btn) {
-      btn.addEventListener("click", () => {
+    
+    // Mobile sidebar - hiển thị user profile section
+    const mobileLoginSection = document.getElementById("mobile-login-section");
+    const mobileUserProfileSection = document.getElementById("mobile-user-profile-section");
+    
+    if (mobileLoginSection) mobileLoginSection.classList.add("hidden");
+    if (mobileUserProfileSection) mobileUserProfileSection.classList.remove("hidden");
+    
+    // Update mobile sidebar user info
+    const mobileSidebarUserName = document.getElementById("mobile-sidebar-user-name");
+    const mobileSidebarAvatar = document.getElementById("mobile-sidebar-avatar");
+    
+    if (mobileSidebarUserName) mobileSidebarUserName.textContent = username;
+    if (mobileSidebarAvatar) mobileSidebarAvatar.src = `https://i.pravatar.cc/150?u=${encodeURIComponent(username)}`;
+    
+    // Load custom avatar for mobile sidebar
+    try {
+      const stored = localStorage.getItem("userAvatar");
+      if (stored && mobileSidebarAvatar) mobileSidebarAvatar.src = stored;
+      if (!stored && mobileSidebarAvatar) {
+        const raw = localStorage.getItem("loggedUserInfo");
+        const info = raw ? JSON.parse(raw) : null;
+        const candidate = info?.MaCaNhan || info?.MSSV || info?.MaSV || info?.TenTK;
+        if (candidate) {
+          fetch(`${API_BASE}/api/sinhvien/${encodeURIComponent(candidate)}`)
+            .then(r => r.ok ? r.json() : null)
+            .then(data => {
+              if (data && data.AnhDD) {
+                const url = `data:image/jpeg;base64,${data.AnhDD}`;
+                try { localStorage.setItem("userAvatar", url); } catch {}
+                mobileSidebarAvatar.src = url;
+              }
+            })
+            .catch(() => {});
+        }
+      }
+    } catch {}
+    
+    // Setup mobile sidebar logout button
+    const mobileSidebarLogoutBtn = document.getElementById("mobile-sidebar-logout");
+    if (mobileSidebarLogoutBtn) {
+      mobileSidebarLogoutBtn.addEventListener("click", () => {
         localStorage.removeItem("loggedUser");
         localStorage.removeItem("loggedUserInfo");
         localStorage.removeItem("userAvatar");
         renderLoggedOutUI();
+        // Close mobile sidebar
+        const mobileSidebar = document.getElementById("mobile-sidebar");
+        const mobileOverlay = document.getElementById("mobile-sidebar-overlay");
+        if (mobileSidebar) mobileSidebar.classList.add("-translate-x-full");
+        if (mobileOverlay) mobileOverlay.classList.add("hidden");
       });
     }
-    
-    const rankingBtn = document.getElementById("btn-ranking");
-    if (rankingBtn) {
-      rankingBtn.addEventListener("click", () => {
-        showStudentRanking();
-      });
-    }
-    
-    const ava = document.querySelector(".user-avatar");
-    if (ava) {
-      ava.classList.add("cursor-pointer");
-      ava.setAttribute("title", "Xem / chỉnh sửa thông tin sinh viên");
-      ava.addEventListener("click", (e) => {
-        e.preventDefault();
-        openCurrentStudentProfile();
-      });
-    }
+  }
 
+  function setupLoggedInNavigationEvents() {
+    // Tất cả event listeners đã được xử lý bằng event delegation ở trên
+    
     // Try load custom avatar from localStorage or fetch from server
     const headerImg = document.getElementById("header-avatar");
     try {
@@ -278,36 +407,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   function setupLoggedInMobileNavigationEvents() {
-    const btn = document.getElementById("btn-logout-mobile");
-    if (btn) {
-      btn.addEventListener("click", () => {
-        localStorage.removeItem("loggedUser");
-        localStorage.removeItem("loggedUserInfo");
-        localStorage.removeItem("userAvatar");
-        mobileMenu.classList.add("hidden");
-        renderLoggedOutUI();
-      });
-    }
+    // Tất cả event listeners đã được xử lý bằng event delegation ở trên
     
-    const rankingBtn = document.getElementById("btn-ranking-mobile");
-    if (rankingBtn) {
-      rankingBtn.addEventListener("click", () => {
-        showStudentRanking();
-        mobileMenu.classList.add("hidden");
-      });
-    }
-    
-    const ava = document.querySelector(".user-avatar-mobile");
-    if (ava) {
-      ava.classList.add("cursor-pointer");
-      ava.setAttribute("title", "Xem / chỉnh sửa thông tin sinh viên");
-      ava.addEventListener("click", (e) => {
-        e.preventDefault();
-        mobileMenu.classList.add("hidden");
-        openCurrentStudentProfile();
-      });
-    }
-
     // Try load custom avatar for mobile
     const headerImg = document.getElementById("header-avatar-mobile");
     try {
@@ -341,6 +442,11 @@ document.addEventListener("DOMContentLoaded", async () => {
       return;
     }
     noActivity.classList.add("hidden");
+    
+    // Lưu dữ liệu gốc để tìm kiếm/lọc (chỉ khi là dữ liệu gốc từ API)
+    if (!window.allActivities || list === dbCache.HoatDongTruong) {
+      window.allActivities = list;
+    }
 
     list.forEach((act, idx) => {
       const card = document.createElement("div");
@@ -459,6 +565,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   // ====== modal hoạt động với thiết kế đẹp hơn ======
   function openModalHD(act) {
+    console.log("openModalHD called with:", act);
     document.getElementById("modal-title").textContent = act.TenHD || "(Chưa có tên hoạt động)";
     
     // Format dates for better display
@@ -570,7 +677,7 @@ document.addEventListener("DOMContentLoaded", async () => {
              Quét QR code để đăng ký tham gia hoạt động này
            </p>
            <button onclick="openQRScanner()" 
-                   data-activity-id="${activity.MaHD}"
+                   data-activity-id="${act.MaHD}"
                    class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2">
              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
@@ -590,7 +697,9 @@ document.addEventListener("DOMContentLoaded", async () => {
          </div>
       </div>
     `;
+    console.log("About to show modal");
     document.getElementById("modal").classList.remove("hidden");
+    console.log("Modal should be visible now");
   }
   window.closeModal = () => document.getElementById("modal").classList.add("hidden");
 
@@ -610,12 +719,210 @@ document.addEventListener("DOMContentLoaded", async () => {
       sessionStorage.setItem("preload", JSON.stringify(dbCache));
 
       renderActivities(dbCache.HoatDongTruong);
+      
+      // Thêm chức năng tìm kiếm và lọc
+      setupSearchAndFilter();
     } catch (e) {
       console.error(e);
       activitiesContainer.innerHTML = "";
       noActivity.classList.remove("hidden");
       noActivity.querySelector("p.text-lg").textContent = "Không tải được dữ liệu từ máy chủ.";
     }
+  }
+  
+  // ====== Chức năng tìm kiếm và lọc hoạt động ======
+  function setupSearchAndFilter() {
+    const searchInput = document.getElementById("search");
+    const filterSelect = document.getElementById("filter");
+    
+    if (!searchInput || !filterSelect) return;
+    
+    // Event listener cho tìm kiếm
+    searchInput.addEventListener("input", (e) => {
+      const searchTerm = e.target.value.toLowerCase().trim();
+      filterActivities(searchTerm, filterSelect.value);
+    });
+    
+    // Event listener cho lọc
+    filterSelect.addEventListener("change", (e) => {
+      const filterValue = e.target.value;
+      filterActivities(searchInput.value.toLowerCase().trim(), filterValue);
+    });
+  }
+  
+  // Hàm lọc hoạt động
+  function filterActivities(searchTerm, filterValue) {
+    if (!window.allActivities) return;
+    
+    let filteredActivities = [...window.allActivities];
+    
+    // Lọc theo từ khóa tìm kiếm
+    if (searchTerm && searchTerm.trim() !== '') {
+      filteredActivities = filteredActivities.filter(activity => {
+        const tenHD = (activity.TenHD || '').toLowerCase();
+        const ndHD = (activity.NDHD || '').toLowerCase();
+        const diaDiem = (activity.DiaDiem || '').toLowerCase();
+        const maHD = (activity.MaHD || '').toLowerCase();
+        
+        return tenHD.includes(searchTerm) || 
+               ndHD.includes(searchTerm) || 
+               diaDiem.includes(searchTerm) ||
+               maHD.includes(searchTerm);
+      });
+    }
+    
+    // Lọc theo loại hoạt động
+    if (filterValue && filterValue.trim() !== '') {
+      filteredActivities = filteredActivities.filter(activity => {
+        const tenHD = (activity.TenHD || '').toLowerCase();
+        const ndHD = (activity.NDHD || '').toLowerCase();
+        const filterLower = filterValue.toLowerCase();
+        
+        // Tìm kiếm trong cả tên hoạt động và nội dung
+        return tenHD.includes(filterLower) || ndHD.includes(filterLower);
+      });
+    }
+    
+    // Hiển thị kết quả tìm kiếm
+    console.log(`Tìm thấy ${filteredActivities.length} hoạt động`);
+    
+    // Render lại danh sách đã lọc (không cập nhật allActivities)
+    renderFilteredActivities(filteredActivities);
+  }
+  
+  // Hàm render hoạt động đã lọc (không cập nhật allActivities)
+  function renderFilteredActivities(filteredList) {
+    activitiesContainer.innerHTML = "";
+    if (!filteredList || filteredList.length === 0) {
+      noActivity.classList.remove("hidden");
+      return;
+    }
+    noActivity.classList.add("hidden");
+
+    filteredList.forEach((act, idx) => {
+      const card = document.createElement("div");
+      card.className = "bg-white p-6 rounded-xl shadow-md hover:shadow-xl transition-all duration-300 cursor-pointer fade-up border border-gray-100";
+      card.style.animationDelay = `${idx * 0.05}s`;
+      
+      // Format dates for better display
+      const formatDate = (dateStr) => {
+        if (!dateStr || dateStr === "-") return "Chưa có thông tin";
+        try {
+          const date = new Date(dateStr);
+          return date.toLocaleDateString('vi-VN', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+          });
+        } catch {
+          return dateStr;
+        }
+      };
+
+      // Format points with better styling
+      const formatPoints = (points) => {
+        if (!points || points === "-") return "Chưa có điểm";
+        return `${points} điểm`;
+      };
+
+      // Get activity status based on dates
+      const getActivityStatus = (activity) => {
+        const now = new Date();
+        const startDate = activity.NgayBD ? new Date(activity.NgayBD) : null;
+        const endDate = activity.NgayKT ? new Date(activity.NgayKT) : null;
+
+        if (!startDate || !endDate) {
+          return { text: "Chưa có lịch", class: "bg-gray-500" };
+        }
+
+        if (now < startDate) {
+          return { text: "Sắp diễn ra", class: "bg-blue-500" };
+        } else if (now >= startDate && now <= endDate) {
+          return { text: "Đang diễn ra", class: "bg-green-500" };
+        } else {
+          return { text: "Đã kết thúc", class: "bg-red-500" };
+        }
+      };
+
+      card.innerHTML = `
+        <div class="space-y-4">
+          <!-- Title with better typography -->
+          <div class="border-b border-gray-200 pb-3">
+            <h3 class="text-xl font-bold text-gray-800 leading-tight mb-1">
+              ${act.TenHD || "(Chưa có tên hoạt động)"}
+            </h3>
+            <p class="text-xs text-gray-400 font-medium tracking-wide uppercase">
+              Mã hoạt động: ${act.MaHD || "N/A"}
+            </p>
+          </div>
+
+                     <!-- Points section with highlight -->
+           <div class="bg-gradient-to-r from-blue-50 to-indigo-50 p-3 rounded-lg border-l-4 border-blue-400">
+             <p class="text-sm font-medium text-gray-600 mb-1">Điểm rèn luyện</p>
+             <p class="text-lg font-bold text-blue-600">
+               ${formatPoints(act.DiemRL)}
+             </p>
+           </div>
+
+           <!-- Activity Status -->
+           <div class="flex items-center justify-between">
+             <div class="activity-status ${getActivityStatus(act).class}">
+               ${getActivityStatus(act).text}
+             </div>
+           </div>
+
+           <!-- Date information with icons -->
+           <div class="space-y-3">
+             <div class="flex items-center space-x-3">
+               <div class="w-2 h-2 bg-green-500 rounded-full"></div>
+               <div>
+                 <p class="text-xs font-medium text-gray-500 uppercase tracking-wide">Ngày bắt đầu</p>
+                 <p class="text-sm font-semibold text-gray-800">${formatDate(act.NgayBD)}</p>
+               </div>
+             </div>
+             
+             <div class="flex items-center space-x-3">
+               <div class="w-2 h-2 bg-red-500 rounded-full"></div>
+               <div>
+                 <p class="text-xs font-medium text-gray-500 uppercase tracking-wide">Ngày kết thúc</p>
+                 <p class="text-sm font-semibold text-gray-800">${formatDate(act.NgayKT)}</p>
+               </div>
+             </div>
+           </div>
+
+          <!-- Action buttons -->
+          <div class="pt-3 border-t border-gray-100 space-y-2">
+            <button onclick="event.stopPropagation(); openQRScanner();" 
+                    class="w-full px-3 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center space-x-2">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+              </svg>
+              <span>Quét QR Code</span>
+            </button>
+            <p class="text-xs text-gray-400 text-center">
+              👆 Nhấp để xem chi tiết
+            </p>
+          </div>
+        </div>
+      `;
+      
+      // Click vào card để xem chi tiết (trừ khi click vào nút)
+      card.addEventListener("click", (e) => {
+        console.log("Card clicked!", e.target, e.target.closest('button'));
+        // Chỉ mở modal nếu không click vào nút bên trong
+        if (!e.target.closest('button')) {
+          console.log("Opening modal for activity:", act.TenHD);
+          openModalHD(act);
+        } else {
+          console.log("Clicked on button, not opening modal");
+        }
+      });
+      
+      activitiesContainer.appendChild(card);
+    });
+    
+    // Kiểm tra trạng thái đăng ký sau khi render xong
+    checkRegistrationStatus();
   }
 
   // ====== LOGIN: gọi server để kiểm tra (an toàn) ======
@@ -1350,7 +1657,37 @@ document.addEventListener("DOMContentLoaded", async () => {
       
       const rankingData = await res.json();
       
-      if (!rankingData || rankingData.length === 0) {
+      // Debug logging để kiểm tra dữ liệu
+      console.log("=== RANKING DEBUG ===");
+      console.log("Ranking data received:", rankingData);
+      console.log("Data type:", typeof rankingData);
+      console.log("Is array:", Array.isArray(rankingData));
+      console.log("Length:", rankingData ? rankingData.length : "null/undefined");
+      
+      if (rankingData && rankingData.length > 0) {
+        console.log("First student data:", rankingData[0]);
+        console.log("Available fields:", Object.keys(rankingData[0]));
+        console.log("Khoas field:", rankingData[0].Khoas, "Type:", typeof rankingData[0].Khoas);
+        console.log("HocKi field:", rankingData[0].HocKi, "Type:", typeof rankingData[0].HocKi);
+        console.log("NamHoc field:", rankingData[0].NamHoc, "Type:", typeof rankingData[0].NamHoc);
+        console.log("TenKhoa field:", rankingData[0].TenKhoa, "Type:", typeof rankingData[0].TenKhoa);
+        console.log("TenLop field:", rankingData[0].TenLop, "Type:", typeof rankingData[0].TenLop);
+        
+        // Kiểm tra tất cả giá trị Khoas
+        const allKhoas = rankingData.map(s => s.Khoas).filter(k => k != null);
+        console.log("All Khoas values:", allKhoas);
+        console.log("Unique Khoas:", [...new Set(allKhoas)]);
+      }
+      console.log("=== END RANKING DEBUG ===");
+      
+      // Kiểm tra nếu dữ liệu có cấu trúc khác (wrapped trong object)
+      let actualData = rankingData;
+      if (rankingData.data && Array.isArray(rankingData.data)) {
+        actualData = rankingData.data;
+        console.log("Data is wrapped in object, using rankingData.data");
+      }
+
+      if (!actualData || actualData.length === 0) {
         document.getElementById("modal-body").innerHTML = `
           <div class="text-center py-8 text-gray-500">
             <svg xmlns="http://www.w3.org/2000/svg" class="mx-auto h-16 w-16 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -1364,7 +1701,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       }
 
       // Sort by điểm (descending) - sử dụng trường TongDRL từ API
-      const sortedRanking = rankingData.sort((a, b) => {
+      const sortedRanking = actualData.sort((a, b) => {
         const pointsA = parseFloat(a.TongDRL || 0);
         const pointsB = parseFloat(b.TongDRL || 0);
         return pointsB - pointsA;
@@ -1390,28 +1727,48 @@ document.addEventListener("DOMContentLoaded", async () => {
             </div>
 
             <!-- Filter Controls -->
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+              <div>
+                <label class="block text-xs font-bold text-gray-600 uppercase tracking-wide mb-1">Khóa</label>
+                <select id="filter-khoa-hoc-ranking" class="w-full border rounded-md px-3 py-2 text-sm">
+                  <option value="">Tất cả khóa</option>
+                  <option value="">Đang tải...</option>
+                </select>
+              </div>
               <div>
                 <label class="block text-xs font-bold text-gray-600 uppercase tracking-wide mb-1">Khoa</label>
                 <select id="filter-khoa-ranking" class="w-full border rounded-md px-3 py-2 text-sm">
                   <option value="">Tất cả khoa</option>
-                  ${dbCache.KHOA.map(k =>
-                    `<option value="${k.MaKH}">${k.TenKhoa}</option>`
-                  ).join('')}
+                  <option value="">Đang tải...</option>
                 </select>
               </div>
               <div>
                 <label class="block text-xs font-bold text-gray-600 uppercase tracking-wide mb-1">Lớp</label>
                 <select id="filter-lop-ranking" class="w-full border rounded-md px-3 py-2 text-sm">
                   <option value="">Tất cả lớp</option>
-                  ${dbCache.Lop.map(k =>
-                    `<option value="${k.MaLop}">${k.TenLop}</option>`
-                  ).join('')}
+                  <option value="">Đang tải...</option>
                 </select>
               </div>
-              <div class="flex items-end">
-                <button id="btn-apply-ranking-filter" class="w-full px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm">Lọc</button>
+              <div>
+                <label class="block text-xs font-bold text-gray-600 uppercase tracking-wide mb-1">Học kì</label>
+                <select id="filter-hocki-ranking" class="w-full border rounded-md px-3 py-2 text-sm">
+                  <option value="">Tất cả học kì</option>
+                  <option value="1">Học kì 1</option>
+                  <option value="2">Học kì 2</option>
+                  <option value="3">Học kì 3</option>
+                </select>
               </div>
+              <div>
+                <label class="block text-xs font-bold text-gray-600 uppercase tracking-wide mb-1">Năm học</label>
+                <select id="filter-namhoc-ranking" class="w-full border rounded-md px-3 py-2 text-sm">
+                  <option value="">Tất cả năm học</option>
+                  <option value="">Đang tải...</option>
+                </select>
+              </div>
+            </div>
+            
+            <div class="flex justify-center mt-4">
+              <button id="btn-apply-ranking-filter" class="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm">Lọc</button>
             </div>
 
             <!-- Ranking Table -->
@@ -1422,8 +1779,11 @@ document.addEventListener("DOMContentLoaded", async () => {
                     <th>Thứ hạng</th>
                     <th>Sinh viên</th>
                     <th>MSSV</th>
+                    <th>Khóa</th>
                     <th>Lớp</th>
                     <th>Khoa</th>
+                    <th>Học kì</th>
+                    <th>Năm học</th>
                     <th>Điểm</th>
                     <th>Xếp loại</th>
                   </tr>
@@ -1488,8 +1848,11 @@ document.addEventListener("DOMContentLoaded", async () => {
                 </div>
               </td>
               <td class="text-sm font-mono text-gray-900">${student.MSSV || 'N/A'}</td>
+              <td class="text-sm text-gray-900">${student.Khoas || 'N/A'}</td>
               <td class="text-sm text-gray-900">${student.TenLop || student.MaLop || 'N/A'}</td>
               <td class="text-sm text-gray-900">${student.TenKhoa || student.MaKhoa || 'N/A'}</td>
+              <td class="text-sm text-gray-900">${student.HocKi || 'N/A'}</td>
+              <td class="text-sm text-gray-900">${student.NamHoc || 'N/A'}</td>
               <td>
                 <span class="points-display">
                   ${points} điểm
@@ -1599,6 +1962,9 @@ document.addEventListener("DOMContentLoaded", async () => {
         
         // Add filter functionality
         addFilterEventListeners();
+        
+        // Load dữ liệu cho các dropdown từ API
+        loadFilterData();
       }
 
       // Hàm thêm event listeners cho phân trang
@@ -1636,22 +2002,103 @@ document.addEventListener("DOMContentLoaded", async () => {
         });
       }
 
+      // Hàm load dữ liệu cho các dropdown filter
+      async function loadFilterData() {
+        try {
+          console.log("Loading filter data...");
+          
+          // Load dữ liệu từ API preload (chứa khoa, lớp, khóa học)
+          const preloadResponse = await fetch(`${API_BASE}/api/preload`);
+          if (preloadResponse.ok) {
+            const preloadData = await preloadResponse.json();
+            console.log("Preload data:", preloadData);
+            
+            // Load dữ liệu khóa học
+            if (preloadData.khoaHoc && preloadData.khoaHoc.length > 0) {
+              const khoasSelect = document.getElementById("filter-khoa-hoc-ranking");
+              if (khoasSelect) {
+                khoasSelect.innerHTML = '<option value="">Tất cả khóa</option>' + 
+                  preloadData.khoaHoc.map(k => `<option value="${k.TenKhoa}">${k.TenKhoa}</option>`).join('');
+              }
+              console.log("Loaded khoas from preload:", preloadData.khoaHoc.map(k => k.TenKhoa));
+            }
+            
+            // Load dữ liệu khoa
+            if (preloadData.khoa && preloadData.khoa.length > 0) {
+              const khoaSelect = document.getElementById("filter-khoa-ranking");
+              if (khoaSelect) {
+                khoaSelect.innerHTML = '<option value="">Tất cả khoa</option>' + 
+                  preloadData.khoa.map(k => `<option value="${k.TenKhoa}">${k.TenKhoa}</option>`).join('');
+              }
+              console.log("Loaded khoa from preload:", preloadData.khoa.map(k => k.TenKhoa));
+            }
+            
+            // Load dữ liệu lớp
+            if (preloadData.lop && preloadData.lop.length > 0) {
+              const lopSelect = document.getElementById("filter-lop-ranking");
+              if (lopSelect) {
+                lopSelect.innerHTML = '<option value="">Tất cả lớp</option>' + 
+                  preloadData.lop.map(l => `<option value="${l.TenLop}">${l.TenLop}</option>`).join('');
+              }
+              console.log("Loaded lop from preload:", preloadData.lop.map(l => l.TenLop));
+            }
+          }
+          
+          // Load dữ liệu năm học từ API ranking
+          const namhocResponse = await fetch(`${API_BASE}/api/luutrudiemsv/ranking`);
+          if (namhocResponse.ok) {
+            const namhocData = await namhocResponse.json();
+            const uniqueNamHoc = [...new Set(namhocData.map(s => s.NamHoc).filter(n => n && n.toString().trim() !== ''))].sort((a, b) => b - a);
+            
+            const namhocSelect = document.getElementById("filter-namhoc-ranking");
+            if (namhocSelect) {
+              namhocSelect.innerHTML = '<option value="">Tất cả năm học</option>' + 
+                uniqueNamHoc.map(namhoc => `<option value="${namhoc}">${namhoc}</option>`).join('');
+            }
+            console.log("Loaded namhoc:", uniqueNamHoc);
+          }
+          
+          console.log("Filter data loaded successfully!");
+        } catch (error) {
+          console.error("Error loading filter data:", error);
+        }
+      }
+
       // Hàm thêm event listeners cho filter
       function addFilterEventListeners() {
         const applyFilterBtn = document.getElementById("btn-apply-ranking-filter");
         if (applyFilterBtn) {
           applyFilterBtn.addEventListener("click", () => {
+            const selectedKhoaHoc = document.getElementById("filter-khoa-hoc-ranking").value;
             const selectedKhoa = document.getElementById("filter-khoa-ranking").value;
             const selectedLop = document.getElementById("filter-lop-ranking").value;
+            const selectedHocKi = document.getElementById("filter-hocki-ranking").value;
+            const selectedNamHoc = document.getElementById("filter-namhoc-ranking").value;
             
             let filteredData = [...sortedRanking];
             
+            if (selectedKhoaHoc) {
+              // Lọc theo khóa học - cần kiểm tra cả Khoas và TenKhoa
+              filteredData = filteredData.filter(s => 
+                s.Khoas === selectedKhoaHoc || 
+                (s.Khoas === null && selectedKhoaHoc === 'N/A')
+              );
+            }
+            
             if (selectedKhoa) {
-              filteredData = filteredData.filter(s => (s.TenKhoa || s.MaKhoa) === selectedKhoa);
+              filteredData = filteredData.filter(s => s.TenKhoa === selectedKhoa);
             }
             
             if (selectedLop) {
-              filteredData = filteredData.filter(s => (s.TenLop || s.MaLop) === selectedLop);
+              filteredData = filteredData.filter(s => s.TenLop === selectedLop);
+            }
+            
+            if (selectedHocKi) {
+              filteredData = filteredData.filter(s => s.HocKi === parseInt(selectedHocKi));
+            }
+            
+            if (selectedNamHoc) {
+              filteredData = filteredData.filter(s => s.NamHoc === parseInt(selectedNamHoc));
             }
             
             // Reset về trang 1 khi filter
@@ -1742,8 +2189,11 @@ document.addEventListener("DOMContentLoaded", async () => {
             </div>
           </td>
           <td class="text-sm font-mono text-gray-900">${student.MSSV || 'N/A'}</td>
+          <td class="text-sm text-gray-900">${student.Khoas || 'N/A'}</td>
           <td class="text-sm text-gray-900">${student.TenLop || student.MaLop || 'N/A'}</td>
           <td class="text-sm text-gray-900">${student.TenKhoa || student.MaKhoa || 'N/A'}</td>
+          <td class="text-sm text-gray-900">${student.HocKi || 'N/A'}</td>
+          <td class="text-sm text-gray-900">${student.NamHoc || 'N/A'}</td>
           <td>
             <span class="points-display">
               ${points.toFixed(1)} điểm
@@ -1761,7 +2211,26 @@ document.addEventListener("DOMContentLoaded", async () => {
     tbody.innerHTML = tableHTML;
   }
 
-  let mediaRecorder, recordedChunks = [];
+  let mediaRecorder, recordedChunks = [], currentStream = null;
+
+  // Hàm helper để tắt camera hoàn toàn
+  function stopCamera() {
+    if (currentStream) {
+      currentStream.getTracks().forEach(track => {
+        track.stop();
+        console.log('✓ Đã tắt camera track:', track.kind);
+      });
+      currentStream = null;
+    }
+    
+    // Xóa video preview
+    const preview = document.getElementById("video-preview");
+    if (preview) {
+      preview.srcObject = null;
+    }
+    
+    console.log('✓ Camera đã được tắt hoàn toàn');
+  }
 
 // Wizard điều hướng
 document.getElementById("choose-video").addEventListener("click", () => {
@@ -1776,9 +2245,39 @@ document.getElementById("choose-cert").addEventListener("click", () => {
 
 // Start quay video
 document.getElementById("btn-start").addEventListener("click", async () => {
-  const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-  const preview = document.getElementById("video-preview");
-  preview.srcObject = stream;
+  try {
+    // Tắt camera cũ trước khi bắt đầu camera mới
+    stopCamera();
+    
+    // Thử sử dụng camera sau trước
+    let stream;
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ 
+        video: { 
+          facingMode: 'environment', // Sử dụng camera sau
+          width: { ideal: 1280 },
+          height: { ideal: 720 }
+        }, 
+        audio: true 
+      });
+    } catch (backCameraError) {
+      console.log('Camera sau không khả dụng, thử camera trước...', backCameraError);
+      // Fallback về camera trước nếu camera sau không khả dụng
+      stream = await navigator.mediaDevices.getUserMedia({ 
+        video: { 
+          facingMode: 'user', // Camera trước
+          width: { ideal: 1280 },
+          height: { ideal: 720 }
+        }, 
+        audio: true 
+      });
+    }
+    
+    const preview = document.getElementById("video-preview");
+    preview.srcObject = stream;
+    
+    // Lưu stream để có thể tắt sau này
+    currentStream = stream;
 
   recordedChunks = [];
   mediaRecorder = new MediaRecorder(stream, { mimeType: "video/webm" });
@@ -1794,14 +2293,25 @@ document.getElementById("btn-start").addEventListener("click", async () => {
     document.getElementById("btn-send").classList.remove("hidden");
   };
 
-  mediaRecorder.start();
-  document.getElementById("btn-start").classList.add("hidden");
-  document.getElementById("btn-stop").classList.remove("hidden");
+    mediaRecorder.start();
+    document.getElementById("btn-start").classList.add("hidden");
+    document.getElementById("btn-stop").classList.remove("hidden");
+  } catch (error) {
+    console.error('Lỗi khi khởi động camera:', error);
+    alert('Không thể khởi động camera. Vui lòng kiểm tra quyền truy cập và thử lại.');
+  }
 });
 
 // Stop quay
 document.getElementById("btn-stop").addEventListener("click", () => {
-  mediaRecorder.stop();
+  // Dừng ghi video
+  if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+    mediaRecorder.stop();
+  }
+  
+  // Tắt camera hoàn toàn
+  stopCamera();
+  
   document.getElementById("btn-stop").classList.add("hidden");
 });
 
@@ -1834,8 +2344,13 @@ document.getElementById("btn-send").addEventListener("click", async () => {
         // Kiểm tra user có đăng nhập chưa
         const savedUser = localStorage.getItem("loggedUser");
         if (savedUser) {
-          const userObj = JSON.parse(savedUser);
-          renderLoggedInUI(userObj.TenNguoiDung || "Người dùng");
+          try {
+            const userObj = JSON.parse(savedUser);
+            renderLoggedInUI(userObj.TenNguoiDung || "Người dùng");
+          } catch (e) {
+            // Nếu không phải JSON, coi như string thông thường
+            renderLoggedInUI(savedUser);
+          }
         } else {
           renderLoggedOutUI();
         }
@@ -2371,7 +2886,17 @@ function openEvidenceModal(maHD) {
 // Kiểm tra trạng thái đăng ký của sinh viên khi load trang
 async function checkRegistrationStatus() {
   try {
-    const loggedUser = JSON.parse(localStorage.getItem('loggedUser') || '{}');
+    const loggedUserStr = localStorage.getItem('loggedUser');
+    if (!loggedUserStr) return;
+    
+    let loggedUser;
+    try {
+      loggedUser = JSON.parse(loggedUserStr);
+    } catch (e) {
+      // Nếu không phải JSON, coi như string thông thường
+      loggedUser = { TenNguoiDung: loggedUserStr };
+    }
+    
     const mssv = loggedUser.mssv;
     
     if (!mssv) return;
