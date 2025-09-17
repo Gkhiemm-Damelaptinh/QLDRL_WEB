@@ -1,4 +1,4 @@
-﻿using Microsoft.Data.SqlClient;
+using Microsoft.Data.SqlClient;
 using System.Data;
 using System.Linq;
 using QRCoder;
@@ -145,6 +145,80 @@ app.MapGet("/api/preload", async () =>
         khoaHoc = khoaHoc,
         hoatDongTruong = hoatDongTruong
     });
+});
+
+// AI: Kiểm tra video minh chứng
+app.MapPost("/api/ai/check-video", async (HttpRequest req) =>
+{
+	try
+	{
+		if (!req.HasFormContentType)
+		{
+			return Results.BadRequest(new { message = "Yêu cầu phải là multipart/form-data" });
+		}
+
+		var form = await req.ReadFormAsync();
+		var file = form.Files.GetFile("video");
+		var name = form["name"].ToString();
+		var desc = form["desc"].ToString();
+
+		if (file == null || file.Length == 0)
+		{
+			return Results.BadRequest(new { message = "Thiếu file video" });
+		}
+
+		var webRoot = app.Environment.WebRootPath ?? "wwwroot";
+		var evidenceDir = System.IO.Path.Combine(webRoot, "evidence");
+		System.IO.Directory.CreateDirectory(evidenceDir);
+
+		var ext = System.IO.Path.GetExtension(file.FileName);
+		var stamp = DateTime.UtcNow.ToString("yyyyMMdd_HHmmss");
+		var guid = Guid.NewGuid().ToString("N").Substring(0, 8);
+		var newFileName = $"{stamp}_{guid}{ext}";
+		var savePath = System.IO.Path.Combine(evidenceDir, newFileName);
+
+		using (var fs = new System.IO.FileStream(savePath, System.IO.FileMode.Create))
+		{
+			await file.CopyToAsync(fs);
+		}
+
+		var sizeMb = file.Length / 1024d / 1024d;
+		var verdict = sizeMb >= 0.2 ? "Hợp lệ" : "Không rõ ràng";
+		var explanation = sizeMb >= 0.2
+			? "Video có dung lượng đủ lớn, khả năng là minh chứng hợp lệ."
+			: "Video quá ngắn/nhẹ, có thể không đủ để xác minh.";
+
+		using var con = new SqlConnection(connStr);
+		await con.OpenAsync();
+
+		var notes = $"Tên: {name}; Mô tả: {desc}; SizeMB: {sizeMb:F2}";
+		using (var cmd = new SqlCommand(@"INSERT INTO ActivityEvidence
+			(RegistrationId, VideoFileName, VideoPath, VideoSize, Duration, Status, Notes)
+			VALUES (@reg, @fn, @path, @size, @dur, @status, @notes);", con))
+		{
+			cmd.Parameters.Add(new SqlParameter("@reg", DBNull.Value));
+			cmd.Parameters.Add(new SqlParameter("@fn", newFileName));
+			cmd.Parameters.Add(new SqlParameter("@path", $"/evidence/{newFileName}"));
+			cmd.Parameters.Add(new SqlParameter("@size", file.Length));
+			cmd.Parameters.Add(new SqlParameter("@dur", DBNull.Value));
+			cmd.Parameters.Add(new SqlParameter("@status", "PENDING"));
+			cmd.Parameters.Add(new SqlParameter("@notes", (object?)notes ?? DBNull.Value));
+			await cmd.ExecuteNonQueryAsync();
+		}
+
+		await LogAsync(app.Services.GetRequiredService<IHttpContextAccessor>()?.HttpContext!, con, "AI_CHECK_VIDEO");
+
+		return Results.Ok(new
+		{
+			message = $"{verdict}. {explanation}",
+			path = $"/evidence/{newFileName}",
+			sizeBytes = file.Length
+		});
+	}
+	catch (Exception ex)
+	{
+		return Results.BadRequest(new { message = "Lỗi xử lý video", error = ex.Message });
+	}
 });
 
 // 2.2) Đăng nhập: kiểm tra trên server (không gửi mật khẩu ra client)

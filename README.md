@@ -111,6 +111,9 @@ dotnet run
 - `POST /api/diem` - Thêm/sửa điểm
 - `GET /api/luutrudiemsv/ranking` - Bảng xếp hạng
 
+### AI minh chứng
+- `POST /api/ai/check-video` - Tải video minh chứng (multipart/form-data: video, name, desc). Trả về đánh giá AI sơ bộ và lưu file vào `/wwwroot/evidence/` đồng thời ghi nhận vào bảng `ActivityEvidence`.
+
 ### Hoạt động
 - `GET /api/preload` - Dữ liệu cơ bản (khoa, lớp, hoạt động)
 - `POST /api/hoatdong` - Thêm hoạt động mới
