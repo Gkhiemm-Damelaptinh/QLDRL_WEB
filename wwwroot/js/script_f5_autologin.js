@@ -5,50 +5,379 @@ window.addEventListener('unhandledrejection', event => {
   event.preventDefault();
 });
 
-// For testing with testMSSV parameter, auto-clear old session data
-const urlParamsInit = new URLSearchParams(window.location.search);
-const testMSSVInit = urlParamsInit.get('testMSSV');
-if (testMSSVInit) {
-  console.log('[TEST MODE] testMSSV detected:', testMSSVInit);
-  console.log('[TEST MODE] Clearing sessionStorage/localStorage for clean test');
-  try {
-    sessionStorage.clear();
-    localStorage.clear();
-  } catch (e) {
-    console.warn('[TEST MODE] Could not clear storage:', e);
+// ✅ F5 AUTO-LOGIN FUNCTION (defined OUTSIDE DOMContentLoaded so it's available early)
+function triggerF5AutoLogin() {
+  // ✅ FIX: Use correct key names (savedTenTK, not F5_AUTO_LOGIN_TenTK)
+  const F5_TenTK = localStorage.getItem("savedTenTK");
+  const F5_MatKhau = localStorage.getItem("savedMatKhau");
+  
+  if (!F5_TenTK || !F5_MatKhau) {
+    console.log('🔄 [F5-AUTO-LOGIN] No saved credentials found');
+    return;
+  }
+  
+  const usernameInput = document.getElementById("username");
+  const passwordInput = document.getElementById("password");
+  const loginForm = document.getElementById("login-form");
+  const loginModal = document.getElementById("login-modal");
+  
+  if (usernameInput && passwordInput && loginForm) {
+    // Clear F5 auto-login flags
+    localStorage.removeItem("F5_AUTO_LOGIN_PENDING");
+    localStorage.removeItem("F5_AUTO_LOGIN_TenTK");
+    localStorage.removeItem("F5_AUTO_LOGIN_MatKhau");
+    
+    // Fill form
+    usernameInput.value = F5_TenTK;
+    passwordInput.value = F5_MatKhau;
+    
+    // Show modal if hidden
+    if (loginModal && loginModal.classList.contains("hidden")) {
+      loginModal.classList.remove("hidden");
+    }
+    
+    // Submit form after delay
+    setTimeout(() => {
+      console.log('🔄 [F5-AUTO-LOGIN] Submitting form...');
+      loginForm.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+    }, 150);
+  } else {
+    // Retry if form not ready
+    console.log('🔄 [F5-AUTO-LOGIN] Form not ready, retrying...');
+    setTimeout(triggerF5AutoLogin, 300);
   }
 }
 
-document.addEventListener("DOMContentLoaded", async () => {
-  // ====== GLOBAL EVENT DELEGATION FOR BUTTONS ======
-  document.addEventListener('click', function(e) {
-    const uploadBtn = e.target.closest('.btn-upload-proof');
-    if (uploadBtn) {
-      const maTC = uploadBtn.getAttribute("data-matc");
-      const maSo = uploadBtn.getAttribute("data-maso") || "";
-      const ten = uploadBtn.getAttribute("data-ten") || "";
-      console.log('[GLOBAL-BTN-CLICK] .btn-upload-proof clicked:', {maTC, maSo, ten});
-      if (typeof openUploadProofDialog === 'function') {
-        openUploadProofDialog(maTC, maSo, ten);
-      }
-    }
-  }, true);
+// ✅ DISPLAY AI RESULTS FOR ATTENDANCE MODAL - Defined here to ensure it's available BEFORE being called
+function displayAIResultsAttendance(result) {
+  console.log('🎬 displayAIResultsAttendance() called with result:', result);
   
-  // ====== F5 RELOAD HANDLING ======
-  // On F5 reload, we DON'T clear data - we keep login session
-  // The session-restore.js script in <head> already restored sessionStorage from localStorage
-  console.log('� [INIT] Page load detected - session should be restored by session-restore.js');
-  
-  // Check if session was restored
-  const sessionUser = sessionStorage.getItem("loggedUser");
-  const sessionInfo = sessionStorage.getItem("loggedUserInfo");
-  console.log('✅ [INIT] Session state:', { 
-    sessionRestored: !!(sessionUser && sessionInfo),
-    hasSessionUser: !!sessionUser,
-    hasSessionInfo: !!sessionInfo
-  });
+  // Helper to convert to percentage
+  const toPct = (v) => {
+    if (v == null) return null;
+    let n = v;
+    if (typeof v === 'string') { n = parseFloat(v); if (!isFinite(n)) return null; }
+    if (typeof n !== 'number' || !isFinite(n)) return null;
+    if (n <= 1) n = n * 100;
+    n = Math.max(0, Math.min(100, Math.round(n)));
+    return n;
+  };
 
+  // Get attendance-specific elements
+  const aiResultEl = document.getElementById("ai-result-attendance");
+  const statusIconEl = document.getElementById("ai-status-icon-attendance");
+  const statusTitleEl = document.getElementById("ai-status-title-attendance");
+  const confidenceScoreEl = document.getElementById("confidence-score-attendance");
+  const confidenceBarEl = document.getElementById("confidence-bar-attendance");
   
+  // Face, Context, Device elements
+  const faceScoreEl = document.getElementById("face-score-attendance");
+  const faceStatusEl = document.getElementById("face-status-attendance");
+  const bannerScoreEl = document.getElementById("banner-score-attendance");
+  const bannerStatusEl = document.getElementById("banner-status-attendance");
+  const deviceScoreEl = document.getElementById("device-score-attendance");
+  const deviceStatusEl = document.getElementById("device-status-attendance");
+  
+  // Analysis details
+  const analysisDetailsEl = document.getElementById("analysis-details-attendance");
+  
+  console.log('🔍 Elements:', { aiResultEl, faceScoreEl, bannerScoreEl, deviceScoreEl });
+
+  if (!aiResultEl || !statusIconEl) {
+    console.warn('❌ Missing key elements');
+    return;
+  }
+
+  // Extract raw decimal scores (0.0-1.0 or percentage)
+  const scores = result.scores || result.Scores || {};
+  let faceScore = result.face_score || scores.face;  // Keep as decimal
+  let contextScore = result.context_score || result.banner_score || scores.context || scores.banner;  // Keep as decimal
+  let deviceScore = result.device_score || scores.device;  // Keep as decimal
+  let interactionScore = result.interaction_score || scores.interaction || 0.0;  // Default 0
+  
+  // Convert to percentages for display
+  let faceScorePct = toPct(faceScore);
+  let bannerScorePct = toPct(contextScore);
+  let deviceScorePct = toPct(deviceScore);
+  let interactionScorePct = toPct(interactionScore);
+  
+  // Calculate weighted score using exact formula: Face 50% + Context 30% + Device 10% + Interaction 10%
+  let weightedScorePct = null;
+  if (result.weighted_score != null || result.weightedScore != null) {
+    // Use backend-calculated weighted score if available
+    weightedScorePct = toPct(result.weighted_score || result.weightedScore);
+  } else if (faceScore != null && contextScore != null && deviceScore != null) {
+    // Calculate using weighted formula (convert decimals to 0-1 range if needed)
+    let f = faceScore <= 1 ? faceScore : faceScore / 100;
+    let c = contextScore <= 1 ? contextScore : contextScore / 100;
+    let d = deviceScore <= 1 ? deviceScore : deviceScore / 100;
+    let i = interactionScore <= 1 ? interactionScore : interactionScore / 100;
+    let weighted = (f * 0.50) + (c * 0.30) + (d * 0.10) + (i * 0.10);
+    weightedScorePct = Math.round(Math.max(0, Math.min(100, weighted * 100)));
+  }
+
+  console.log('📊 Scores (raw):', { faceScore, contextScore, deviceScore, interactionScore });
+  console.log('📊 Scores (%):', { faceScorePct, bannerScorePct, deviceScorePct, interactionScorePct, weightedScorePct });
+
+  // Set verdict
+  let verdict = result.verdict || result.Verdict || 'Pending';
+  let isApproved = result.isValid === true || verdict === 'Approved' || verdict === 'Đạt' || weightedScorePct >= 60;
+
+  if (isApproved) {
+    statusIconEl.innerHTML = `<svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`;
+    statusTitleEl.textContent = 'Hợp lệ ✅';
+    statusTitleEl.className = "text-lg font-semibold text-green-800";
+  } else {
+    statusIconEl.innerHTML = `<svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`;
+    statusTitleEl.textContent = 'Không hợp lệ ❌';
+    statusTitleEl.className = "text-lg font-semibold text-red-800";
+  }
+
+  // Update score display
+  if (confidenceScoreEl && weightedScorePct != null) {
+    confidenceScoreEl.textContent = `${weightedScorePct}%`;
+  }
+  
+  if (confidenceBarEl && weightedScorePct != null) {
+    confidenceBarEl.style.width = `${Math.min(100, weightedScorePct)}%`;
+    if (weightedScorePct >= 80) {
+      confidenceBarEl.className = "h-2 rounded-full transition-all duration-500 bg-green-500";
+    } else if (weightedScorePct >= 60) {
+      confidenceBarEl.className = "h-2 rounded-full transition-all duration-500 bg-yellow-500";
+    } else {
+      confidenceBarEl.className = "h-2 rounded-full transition-all duration-500 bg-red-500";
+    }
+  }
+
+  // Render categories with bars and details
+  function renderCategory(elScore, elStatus, elBar, elDetails, scorePct, name, detailsData) {
+    if (!elScore || !elStatus) return;
+    if (scorePct == null) { 
+      elScore.textContent = '—'; 
+      elStatus.textContent = 'Không có';
+      if (elBar) elBar.style.width = '0%';
+      if (elDetails) elDetails.classList.add('hidden');
+      return; 
+    }
+    
+    // Update score & status
+    elScore.textContent = `${scorePct}%`;
+    let statusText, statusClass, barColor;
+    if (scorePct >= 80) {
+      statusText = '✅ Đạt';
+      statusClass = 'text-sm font-semibold text-green-700';
+      barColor = 'bg-green-500';
+    } else if (scorePct >= 60) {
+      statusText = '⚠️ Cảnh báo';
+      statusClass = 'text-sm font-semibold text-yellow-700';
+      barColor = 'bg-yellow-500';
+    } else {
+      statusText = '❌ Thất bại';
+      statusClass = 'text-sm font-semibold text-red-700';
+      barColor = 'bg-red-500';
+    }
+    elStatus.textContent = statusText;
+    elStatus.className = statusClass;
+    
+    // Update progress bar
+    if (elBar) {
+      elBar.style.width = `${Math.min(100, scorePct)}%`;
+      elBar.className = `h-1.5 rounded-full transition-all duration-500 ${barColor}`;
+    }
+    
+    // Show/hide details section
+    if (elDetails && detailsData) {
+      elDetails.classList.remove('hidden');
+    } else if (elDetails) {
+      elDetails.classList.add('hidden');
+    }
+  }
+
+  // Populate details for Face
+  const faceDetailsEl = document.getElementById("face-details-attendance");
+  if (faceDetailsEl && result.details && result.details.face) {
+    const faceInfo = result.details.face;
+    const detailHtml = `
+      <div class="flex justify-between">
+        <span class="font-semibold">Trạng thái:</span>
+        <span class="font-mono">${faceInfo.note ? '✓ Phát hiện' : '✗ Không phát hiện'}</span>
+      </div>
+      <div class="text-gray-500 italic text-xs">${faceInfo.note || 'Không có khuôn mặt trong video'}</div>
+      ${faceInfo.timings_ms ? `<div class="text-gray-400 text-xs">Xử lý: ${faceInfo.timings_ms.total_ms?.toFixed(0)}ms</div>` : ''}
+    `;
+    faceDetailsEl.innerHTML = detailHtml;
+  }
+
+  // Populate details for Context/Bối cảnh
+  const bannerDetailsEl = document.getElementById("banner-details-attendance");
+  if (bannerDetailsEl && result.details && result.details.context) {
+    const ctxInfo = result.details.context;
+    let probsHtml = '';
+    if (ctxInfo.context_probs) {
+      probsHtml = '<div class="text-xs text-gray-500 space-y-0.5 mt-1">';
+      Object.entries(ctxInfo.context_probs).sort((a,b) => b[1] - a[1]).slice(0, 3).forEach(([k, v]) => {
+        probsHtml += `<div><span class="font-mono">${k}</span>: <strong>${(v*100).toFixed(0)}%</strong></div>`;
+      });
+      probsHtml += '</div>';
+    }
+    
+    const detailHtml = `
+      <div class="flex justify-between">
+        <span class="font-semibold">Dự đoán:</span>
+        <span class="font-mono font-semibold text-amber-700">${ctxInfo.predicted_context || '—'}</span>
+      </div>
+      <div class="flex justify-between">
+        <span class="font-semibold">Mong đợi:</span>
+        <span class="font-mono">${result.expected_context || '—'}</span>
+      </div>
+      ${probsHtml}
+      ${ctxInfo.people_count_avg ? `<div class="text-xs text-gray-500 mt-1">Người: ${ctxInfo.people_count_avg.toFixed(1)}, Chuyển động: ${ctxInfo.motion_score.toFixed(2)}</div>` : ''}
+    `;
+    bannerDetailsEl.innerHTML = detailHtml;
+  }
+
+  // Populate details for GPS/Device
+  const deviceDetailsEl = document.getElementById("device-details-attendance");
+  if (deviceDetailsEl && result.details && result.details.device) {
+    const devInfo = result.details.device;
+    const hasGps = result.lat && result.lng;
+    let distanceHtml = '';
+    if (result.gps_distance_km != null) {
+      const distM = (result.gps_distance_km * 1000).toFixed(0);
+      const distKm = result.gps_distance_km.toFixed(2);
+      distanceHtml = `<div id="device-detail-distance" class="text-amber-700 font-semibold">📍 Cách ${distKm}km (${distM}m)</div>`;
+    }
+    
+    let coordsHtml = '';
+    if (result.lat && result.lng && result.activity_lat && result.activity_lng) {
+      coordsHtml = `<div id="device-detail-coords" class="text-xs text-gray-400 mt-1">
+        Video: (${parseFloat(result.lat).toFixed(4)}, ${parseFloat(result.lng).toFixed(4)}) →
+        Hoạt động: (${parseFloat(result.activity_lat).toFixed(4)}, ${parseFloat(result.activity_lng).toFixed(4)})
+      </div>`;
+    }
+    
+    const detailHtml = `
+      <div class="flex justify-between">
+        <span class="font-semibold">GPS:</span>
+        <span class="font-mono">${hasGps ? '✓ Có' : '✗ Không'}</span>
+      </div>
+      ${distanceHtml}
+      ${coordsHtml}
+    `;
+    deviceDetailsEl.innerHTML = detailHtml;
+  }
+
+  // Call render with bar and details elements
+  const faceBarEl = document.getElementById("face-bar-attendance");
+  const bannerBarEl = document.getElementById("banner-bar-attendance");
+  const deviceBarEl = document.getElementById("device-bar-attendance");
+  
+  renderCategory(faceScoreEl, faceStatusEl, faceBarEl, faceDetailsEl, faceScorePct, 'Face', result.details?.face);
+  renderCategory(bannerScoreEl, bannerStatusEl, bannerBarEl, bannerDetailsEl, bannerScorePct, 'Context', result.details?.context);
+  renderCategory(deviceScoreEl, deviceStatusEl, deviceBarEl, deviceDetailsEl, deviceScorePct, 'Device', result.details?.device);
+
+  // ✅ POPULATE CHI TIẾT PHÂN TÍCH (New detailed section)
+  const detailFaceScoreEl = document.getElementById("detail-face-score");
+  const detailContextScoreEl = document.getElementById("detail-context-score");
+  const detailContextInfoEl = document.getElementById("detail-context-info");
+  const detailDeviceScoreEl = document.getElementById("detail-device-score");
+  const detailDeviceInfoEl = document.getElementById("detail-device-info");
+  
+  if (detailFaceScoreEl) {
+    detailFaceScoreEl.textContent = faceScorePct != null ? `${faceScorePct}%` : '—';
+  }
+  
+  if (detailContextScoreEl) {
+    detailContextScoreEl.textContent = bannerScorePct != null ? `${bannerScorePct}%` : '—';
+  }
+  
+  if (detailContextInfoEl && result.details && result.details.context) {
+    const ctxInfo = result.details.context;
+    const predicted = ctxInfo.predicted_context || 'Không xác định';
+    const expectedContext = result.expected_context;
+    const prob = ctxInfo.context_probs?.[predicted] || 0;
+    const probPct = Math.round(prob * 100);
+    
+    if (expectedContext === predicted) {
+      detailContextInfoEl.innerHTML = `✅ Khớp: <span class="text-green-600 font-semibold">${predicted}</span> | ${probPct}%`;
+    } else {
+      detailContextInfoEl.innerHTML = `❌ Sai bối cảnh<br/><span class="text-xs text-gray-600">Dự đoán: ${predicted} | Mong đợi: ${expectedContext || 'N/A'}</span>`;
+    }
+  } else if (detailContextInfoEl) {
+    detailContextInfoEl.textContent = result.predicted_context || 'Không xác định';
+  }
+  
+  if (detailDeviceScoreEl) {
+    detailDeviceScoreEl.textContent = deviceScorePct != null ? `${deviceScorePct}%` : '—';
+  }
+  
+  if (detailDeviceInfoEl) {
+    const hasGps = result.lat && result.lng;
+    if (hasGps) {
+      const distKm = result.gps_distance_km || 0;
+      detailDeviceInfoEl.textContent = distKm > 0 ? `✓ Rõ: ${distKm.toFixed(2)}km` : '✓ Có GPS';
+    } else {
+      detailDeviceInfoEl.textContent = 'Thiếu / sai';
+    }
+  }
+
+  // ✅ BUILD ANALYSIS DETAILS - Show user-friendly information only
+  if (analysisDetailsEl) {
+    let detailsHTML = '<div class="space-y-2">';
+    
+    // Show Face analysis
+    if (faceScorePct != null) {
+      detailsHTML += '<div class="border-b pb-2"><strong>Khương mặt:</strong>';
+      detailsHTML += ` ${faceScorePct}%</div>`;
+    }
+    
+    // Show Context analysis with Expected vs Actual (only user-relevant info)
+    if (result.expected_context || bannerScorePct != null) {
+      detailsHTML += '<div class="border-b pb-2"><strong>Bối cảnh:</strong>';
+      
+      if (result.expected_context === result.predicted_context) {
+        // Context matches
+        detailsHTML += ` ✅ Khớp: <span class="text-green-600">${result.expected_context}</span>`;
+      } else if (result.predicted_context) {
+        // Context mismatch
+        detailsHTML += ` ❌ Sai bối cảnh<br/>`;
+        detailsHTML += `<span class="text-xs text-gray-700">Dự đoán: ${result.predicted_context}</span><br/>`;
+        detailsHTML += `<span class="text-xs text-gray-700">Mong đợi: ${result.expected_context}</span>`;
+      }
+      
+      if (bannerScorePct != null) {
+        detailsHTML += ` | ${bannerScorePct}%`;
+      }
+      
+      detailsHTML += '</div>';
+    }
+    
+    // Show Device/GPS analysis
+    if (deviceScorePct != null) {
+      detailsHTML += '<div><strong>Thiết bị / Vị trị:</strong>';
+      
+      if (result.gps_distance != null && result.gps_distance > 0) {
+        detailsHTML += ` ${Math.round(result.gps_distance)}m`;
+      }
+      
+      detailsHTML += ` | ${deviceScorePct}%</div>`;
+    }
+    
+    detailsHTML += '</div>';
+    
+    analysisDetailsEl.innerHTML = detailsHTML;
+    console.log('✅ Analysis details populated');
+  }
+
+  console.log('✅ displayAIResultsAttendance() DONE');
+}
+
+// ✅ CẢI THIỆN: Đơn giản hóa - chỉ load từ API, không cần cache phức tạp
+// Dữ liệu API sẽ hiển thị ngay khi fetch xong
+console.log('%c🔥 [GLOBAL-SCOPE] script_f5_autologin.js loaded! 🔥', 'color: red; font-size: 16px; font-weight: bold');
+
+document.addEventListener("DOMContentLoaded", async () => {
+  console.log('%c🔥 [GLOBAL-SCOPE→DOMContentLoaded] Event handler called! 🔥', 'color: red; font-size: 16px; font-weight: bold');
   // ==== cấu hình API ====
   // Cho phép override qua localStorage (api_base_url); mặc định cùng origin
   let API_BASE = (() => {
@@ -56,43 +385,48 @@ document.addEventListener("DOMContentLoaded", async () => {
       const v = localStorage.getItem('api_base_url');
       if (v && typeof v === 'string') return v.replace(/\/$/, '');
     } catch {}
-    // Fallback: Use current origin for absolute API URLs
-    return window.location.origin;
+    return ""; // dùng đường dẫn tuyệt đối /api/... theo cùng origin
   })();
 
-  // ====== Login state is already restored by session-restore.js in <head> ======
-  // No need to restore again here - sessionStorage is already populated  // ==== Logout on window/tab close ====
-  // When user closes tab/window, logout from server (clear server session)
-  // But keep localStorage intact so next login can still access it
-  window.addEventListener('pagehide', (event) => {
-    // pagehide fires when:
-    // - persisted=true: page reload (F5) or navigation
-    // - persisted=false: tab/window closing
+  // ==== Logout khi tab/window đóng (xóa server session) ====
+  // Phân biệt F5 reload vs Close tab:
+  // - F5/Ctrl+R: user intent reload → giữ localStorage (auto-login)
+  // - Close tab/Alt+F4: user intent logout → xóa localStorage
+  
+  let isReloading = false;
+  
+  // Detect reload/navigate actions
+  window.addEventListener('beforeunload', (event) => {
+    // Nếu user nhấn F5, Ctrl+R, Ctrl+W (reload/navigate) → set flag
+    // Nhưng close tab không trigger sự kiện này đủ sớm
+    // Vì vậy ta dùng khác cách: detect keyboard/click intent
     
-    if (!event.persisted) {
-      console.log('� [LOGOUT] Tab/window closing - sending logout to server');
-      try {
-        // Send logout signal to server (keep-alive ensures it sends)
-        fetch(`${API_BASE}/api/auth/logout`, { 
-          method: 'POST', 
-          keepalive: true 
-        }).catch(() => {});
-      } catch {}
-      
-      // Clear session data
-      try {
-        sessionStorage.clear();
-        console.log('✅ [LOGOUT] Cleared session data on window close');
-      } catch {}
-      
-      // NOTE: We do NOT clear localStorage here, so if user navigates back,
-      // they can still be logged in. This matches other pages behavior.
-    } else {
-      console.log('🔄 [RELOAD] Page reload/navigate detected - keeping all data');
-      // On reload or navigate, we keep everything
-      // sessionStorage was restored from localStorage by session-restore.js
-    }
+    // Check nếu user nhấn F5 hoặc reload button
+    // Thực tế: beforeunload không thể phân biệt F5 vs close
+    // Nên ta dùng visibilitychange + unload combination
   });
+  
+  // Better approach: track reload via sessionStorage flag
+  // Nếu page reload (F5), sessionStorage vẫn tồn tại
+  // Nếu close tab + reopen, sessionStorage mất
+  
+  // Khi page load, check xem có session data không
+  try {
+    const savedUser = localStorage.getItem("loggedUser");
+    const savedInfo = localStorage.getItem("loggedUserInfo");
+    
+    if (savedUser && savedInfo) {
+      // Restore sessionStorage từ localStorage (người dùng vẫn đang login)
+      sessionStorage.setItem("loggedUser", savedUser);
+      sessionStorage.setItem("loggedUserInfo", savedInfo);
+      console.log('✅ Auto-restored login state from localStorage (F5 detected)');
+    }
+  } catch {}
+  
+  // REMOVED: pagehide listener
+  // Reason: pagehide event.persisted is unreliable for detecting F5 vs tab close
+  // The backend keepalive endpoint will clear session cookies on actual tab close
+  // We'll let localStorage persist - it will be cleared only on true logout action
 
   // ==== Persisted student activity registration state (survives refresh, cleared on tab close) ====
   function loadRegState(){
@@ -130,119 +464,135 @@ document.addEventListener("DOMContentLoaded", async () => {
   // ==== phần tử UI có sẵn trong index.html ====
   const activitiesContainer = document.getElementById("activities");
   const noActivity = document.getElementById("no-activity");
-  const loginModal = document.getElementById("login-modal");
   
-  // ========== SHARED CRITERIA MODEL (Đánh giá rèn luyện + Hoạt động ngoại khóa) ==========
-  window.SharedCriteria = {
-    data: null,           // Cached criteria data
-    isLoaded: false,
-    
-    async load() {
-      if (this.isLoaded) {
-        return this.data;
-      }
-      
-      try {
-        const url = `${API_BASE}/api/tieuchi`;
-        const res = await fetch(url);
-        
-        if (!res.ok) {
-          throw new Error(`HTTP ${res.status}`);
-        }
-        
-        this.data = await res.json();
-        this.isLoaded = true;
-        return this.data;
-      } catch (e) {
-        console.error('❌ Lỗi tải tiêu chí:', e.message);
-        this.data = [];
-        return [];
-      }
-    },
-    
-    // Helper: Get property (supports both PascalCase and camelCase)
-    get(obj, keys) {
-      for (const k of keys) {
-        if (obj && obj[k] !== undefined && obj[k] !== null) return obj[k];
-      }
-      return undefined;
-    },
-    
-    // Parse criteria for dropdown (Activities - Hoạt động ngoại khóa)
-    getDropdownOptions() {
-      const opts = [];
-      if (!this.data) return opts;
-      
-      this.data.forEach((group, gi) => {
-        const gCode = (this.get(group, ["MaSo", "maSo"]) || (gi+1)).toString();
-        const items = Array.isArray(group.TieuChi) ? group.TieuChi 
-                      : (Array.isArray(group.tieuChi) ? group.tieuChi : []);
-        
-        items.forEach((item, ii) => {
-          const maTC = this.get(item, ["MaTC", "maTC"]);
-          const iCode = (this.get(item, ["MaSo", "maSo"]) || `${gi+1}.${ii+1}`).toString();
-          const iName = this.get(item, ["TenTC", "tenTC"]) || `Tiêu chí ${iCode}`;
-          
-          // Check if requires proof - support both boolean and numeric values
-          const rawProof = this.get(item, ["CoMinhChung", "coMinhChung"]);
-          const needsProof = rawProof === true || rawProof === 1 || rawProof === '1' || rawProof === 'true';
-          
-          if (maTC && needsProof) {
-            opts.push({
-              value: Number(maTC),
-              label: `${iCode} — ${iName}`,
-              code: iCode,
-              maTC: maTC
-            });
-          }
-        });
-      });
-      
-      return opts;
-    },
-    
-    // Get formatted data for table view (Evaluation - Đánh giá rèn luyện)
-    getTableData() {
-      return this.data || [];
-    }
-  };
-
+  // 🔥 FIX: Create login modal if not exists (might be missing from index.html)
+  let loginModal = document.getElementById("login-modal");
+  if (!loginModal) {
+    console.log('🔴 [INIT] Login modal not found in HTML, creating it dynamically...');
+    loginModal = document.createElement('div');
+    loginModal.id = 'login-modal';
+    loginModal.className = 'modal hidden';
+    loginModal.innerHTML = `
+      <div class="modal-overlay"></div>
+      <div class="modal-content">
+        <h2 class="modal-title">Đăng nhập</h2>
+        <form id="login-form">
+          <div class="form-group">
+            <label for="username">Tên đăng nhập</label>
+            <input type="text" id="username" class="form-control" placeholder="Nhập tên đăng nhập" required>
+          </div>
+          <div class="form-group">
+            <label for="password">Mật khẩu <span id="toggle-password-label" class="toggle-password-label">
+              <input type="checkbox" id="toggle-password" class="toggle-password" title="Hiển thị mật khẩu">
+              Hiện
+            </span></label>
+            <input type="password" id="password" class="form-control" placeholder="Nhập mật khẩu" required>
+          </div>
+          <div id="login-error" class="login-error hidden"></div>
+          <div class="form-group">
+            <button type="submit" class="btn btn-primary w-full">Đăng nhập</button>
+          </div>
+        </form>
+        <button id="cancel-login" class="btn-close">×</button>
+      </div>
+    `;
+    document.body.appendChild(loginModal);
+    console.log('✅ Login modal created successfully');
+  }
+  
   // Global variable để lưu pending action khi user chưa login
   let pendingWizardAction = null;
+  const cancelLogin = document.getElementById("cancel-login");
+  const loginForm = document.getElementById("login-form");
+  const loginError = document.getElementById("login-error");
   const navRight = document.getElementById("nav-right");
+  const passwordInput = document.getElementById("password");
+  const togglePassword = document.getElementById("toggle-password");
   const btnRanking = document.getElementById("btn-ranking");
   const btnHome = document.getElementById("btn-home");
   const btnActivities = document.getElementById("btn-activities");
   const closeWizard = document.getElementById("close-wizard");
   const mobileMenuBtn = document.getElementById("mobile-menu-btn");
-  const mobileMenu = document.getElementById("mobile-menu");
+  
+  if (togglePassword && passwordInput) {
+    togglePassword.addEventListener("change", () => {
+      passwordInput.type = togglePassword.checked ? "text" : "password";
+    });
+  }
 
-  // Mobile menu toggle - sử dụng mobile sidebar
-  if (mobileMenuBtn) {
-    mobileMenuBtn.addEventListener("click", () => {
+  // Mobile menu toggle - Using Event Delegation (attach to document, not to button)
+  // This way it works even if button is re-rendered during login/logout
+  document.addEventListener("click", (e) => {
+    if (e.target && e.target.id === "mobile-menu-btn") {
+      console.log('🔍 Mobile menu button clicked');
       const mobileSidebar = document.getElementById("mobile-sidebar");
       const mobileOverlay = document.getElementById("mobile-sidebar-overlay");
       
       if (mobileSidebar && mobileOverlay) {
         mobileSidebar.classList.toggle("-translate-x-full");
         mobileOverlay.classList.toggle("hidden");
+        console.log('📱 Mobile sidebar toggled');
+      } else {
+        console.warn('⚠️ Mobile sidebar or overlay not found!');
       }
-    });
-  }
+    }
+  });
   
   // Close mobile sidebar when clicking overlay
-  const mobileSidebarOverlay = document.getElementById("mobile-sidebar-overlay");
-  if (mobileSidebarOverlay) {
-    mobileSidebarOverlay.addEventListener("click", () => {
+  document.addEventListener("click", (e) => {
+    if (e.target && e.target.id === "mobile-sidebar-overlay") {
       const mobileSidebar = document.getElementById("mobile-sidebar");
       if (mobileSidebar) {
         mobileSidebar.classList.add("-translate-x-full");
-        mobileSidebarOverlay.classList.add("hidden");
+        e.target.classList.add("hidden");
       }
-    });
+    }
+  });
+
+  // Helper function to setup desktop navigation events
+  function setupNavigationEvents() {
+    const btn = document.getElementById("btn-login");
+    if (btn) {
+      btn.addEventListener("click", (e) => {
+        e.preventDefault();
+        loginModal.classList.remove("hidden");
+        hideLoginError();
+      });
+    }
+    // ✅ Removed: btn-home listener moved to event delegation below
+    // Open evaluation when clicking "Đánh giá rèn luyện" is now handled by event delegation (line 339)
+    
+    // Các event listeners khác đã được xử lý bằng event delegation ở trên
   }
-  // Note: Login-related navigation now always redirects to login.html
-  // No need for setupNavigationEvents() anymore since renderLoggedOutUI() is not used
+
+  // Helper function to setup mobile navigation events
+  function setupMobileNavigationEvents() {
+    const btn = document.getElementById("btn-login-mobile");
+    if (btn) {
+      btn.addEventListener("click", (e) => {
+        e.preventDefault();
+        loginModal.classList.remove("hidden");
+        mobileMenu.classList.add("hidden"); // Close mobile menu
+        hideLoginError();
+      });
+    }
+    // Open evaluation when clicking in mobile nav
+    const btnHomeMobile = document.getElementById("btn-home-mobile");
+    if (btnHomeMobile) {
+      btnHomeMobile.addEventListener("click", (e) => {
+        e.preventDefault();
+        if (ensureLoggedIn()) {
+          openTrainingEvaluation();
+        }
+        const mobileSidebar = document.getElementById("mobile-sidebar");
+        const mobileOverlay = document.getElementById("mobile-sidebar-overlay");
+        if (mobileSidebar) mobileSidebar.classList.add("-translate-x-full");
+        if (mobileOverlay) mobileOverlay.classList.add("hidden");
+      });
+    }
+    
+    // Các event listeners khác đã được xử lý bằng event delegation ở trên
+  }
 
   // Add event listener for ranking button
   if (btnRanking) {
@@ -274,9 +624,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         // Handle menu actions
         if (menuText === 'Lưu minh chứng') {
           if (ensureLoggedIn()) {
-            const wizardModal = document.getElementById("wizard-modal");
-            if (wizardModal) wizardModal.classList.remove("hidden");
-            try { loadCriteriaOptions(); } catch (e) { console.error('Failed to load criteria options:', e); }
+            document.getElementById("wizard-modal").classList.remove("hidden");
           }
           // Close mobile sidebar
           const mobileSidebar = document.getElementById("mobile-sidebar");
@@ -291,9 +639,7 @@ document.addEventListener("DOMContentLoaded", async () => {
           if (mobileSidebar) mobileSidebar.classList.add("-translate-x-full");
           if (mobileOverlay) mobileOverlay.classList.add("hidden");
         } else if (menuText === 'Đánh giá rèn luyện') {
-          console.log('[DEBUG-SIDEBAR] Mobile sidebar: Đánh giá rèn luyện clicked');
           if (ensureLoggedIn()) {
-            console.log('[DEBUG-SIDEBAR] User logged in, calling openTrainingEvaluation()');
             openTrainingEvaluation();
           }
           const mobileSidebar = document.getElementById("mobile-sidebar");
@@ -308,10 +654,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (e.target.closest('.user-avatar') || e.target.closest('.user-avatar-mobile')) {
       e.preventDefault();
       e.stopPropagation();
-      
-      // Close mobile menu if open
-      const mobileMenu = document.getElementById("mobile-menu");
-      if (mobileMenu) mobileMenu.classList.add("hidden");
       
       // Close mobile sidebar if open
       const mobileSidebar = document.getElementById("mobile-sidebar");
@@ -341,36 +683,30 @@ document.addEventListener("DOMContentLoaded", async () => {
     // Legacy button handling (for backward compatibility)
     if (e.target && e.target.id === "btn-activities") {
       if (ensureLoggedIn()) {
-        const wizardModal = document.getElementById("wizard-modal");
-        if (wizardModal) wizardModal.classList.remove("hidden");
+        document.getElementById("wizard-modal").classList.remove("hidden");
         try { loadCriteriaOptions(); } catch {}
       }
     } else if (e.target && e.target.id === "btn-activities-mobile") {
       if (ensureLoggedIn()) {
-        const wizardModal = document.getElementById("wizard-modal");
-        if (wizardModal) wizardModal.classList.remove("hidden");
+        document.getElementById("wizard-modal").classList.remove("hidden");
         try { loadCriteriaOptions(); } catch {}
       }
-      if (mobileMenu) mobileMenu.classList.add("hidden");
+      mobileMenu.classList.add("hidden");
     } else if (e.target && e.target.id === "btn-home") {
       e.preventDefault();
-      console.log('[DEBUG-HANDLER] btn-home clicked, calling openTrainingEvaluation()');
       if (ensureLoggedIn()) {
-        console.log('[DEBUG-HANDLER] User logged in, about to call openTrainingEvaluation()');
         openTrainingEvaluation();
       }
     } else if (e.target && e.target.id === "btn-home-mobile") {
       e.preventDefault();
-      console.log('[DEBUG-HANDLER] btn-home-mobile clicked');
       if (ensureLoggedIn()) {
-        console.log('[DEBUG-HANDLER] User logged in, about to call openTrainingEvaluation()');
         openTrainingEvaluation();
       }
     } else if (e.target && e.target.id === "btn-ranking") {
       showStudentRanking();
     } else if (e.target && e.target.id === "btn-ranking-mobile") {
       showStudentRanking();
-      if (mobileMenu) mobileMenu.classList.add("hidden");
+      mobileMenu.classList.add("hidden");
     } else if (e.target && e.target.id === "btn-logout") {
       // Call server logout endpoint to clear session
       fetch(`${API_BASE}/api/auth/logout`, { method: 'POST' }).catch(() => {});
@@ -387,10 +723,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       localStorage.removeItem("loggedUser");
       localStorage.removeItem("loggedUserInfo");
       localStorage.removeItem("userAvatar");
-      localStorage.removeItem("_lastPassword"); // security: clear any saved credentials
-      // Redirect to login page
-      console.log('🔐 [LOGOUT] User logged out - redirecting to login page');
-      window.location.href = "login.html";
+      renderLoggedOutUI();
     } else if (e.target && e.target.id === "btn-logout-mobile") {
       // Call server logout endpoint to clear session
       fetch(`${API_BASE}/api/auth/logout`, { method: 'POST' }).catch(() => {});
@@ -407,44 +740,92 @@ document.addEventListener("DOMContentLoaded", async () => {
       localStorage.removeItem("loggedUser");
       localStorage.removeItem("loggedUserInfo");
       localStorage.removeItem("userAvatar");
-      localStorage.removeItem("_lastPassword"); // security: clear any saved credentials
-      // Redirect to login page
-      console.log('🔐 [LOGOUT] User logged out - redirecting to login page');
-      window.location.href = "login.html";
+      mobileMenu.classList.add("hidden");
+      renderLoggedOutUI();
     }
   });
   // Load danh sách tiêu chí ĐGRL vào selector của wizard (chỉ dùng khi không ở attendance/QR)
-  // ✅ NOW USING SHARED CRITERIA MODEL
   async function loadCriteriaOptions(){
     try {
       const sel = document.getElementById('criterion-select');
       if (!sel) return;
       
-      // Clear existing except first placeholder
-      sel.querySelectorAll('option:not(:first-child)').forEach(o => o.remove());
+      // clear existing except first placeholder
+      sel.querySelectorAll('option:not(:first-child)').forEach(o=>o.remove());
       
-      // ✅ Load from shared criteria model (caches data after first fetch)
-      await window.SharedCriteria.load();
-      const opts = window.SharedCriteria.getDropdownOptions();
+      // ✅ Load tiêu chí từ /api/tieuchi (NhomTieuChi + TieuChiCon)
+      let groups = null;
       
-      // Populate dropdown
+      try {
+        console.log('🔍 Fetching criteria from /api/tieuchi...');
+        const res = await fetch(`${API_BASE}/api/tieuchi`);
+        console.log('� API response status:', res.status);
+        
+        if (res.ok) {
+          const data = await res.json();
+          console.log('📋 API response data:', data);
+          groups = Array.isArray(data) ? data : [];
+          console.log('✅ Loaded', groups.length, 'groups from /api/tieuchi');
+          
+          if (groups.length > 0) {
+            console.log('📊 First group:', groups[0]);
+            console.log('📊 First group TieuChi:', groups[0].TieuChi);
+          }
+        } else {
+          console.warn('❌ API error status:', res.status);
+          const errText = await res.text();
+          console.warn('❌ Error response:', errText);
+        }
+      } catch (e) {
+        console.error('❌ Failed to fetch /api/tieuchi:', e);
+      }
+      
+      // Parse dữ liệu thành options (giữ lại mã tiêu chí rõ ràng)
+      const opts = [];
+      if (groups && Array.isArray(groups)) {
+        console.log('🔍 Groups data:', groups);  // Debug: xem cấu trúc dữ liệu
+        groups.forEach((g, gi) => {
+          const gCode = (g.MaSo || g.maSo || (gi+1)).toString();
+          // ✅ Kiểm tra TieuChi (từ API, chứa dữ liệu từ bảng TieuChiCon)
+          const items = Array.isArray(g.TieuChi) ? g.TieuChi : (Array.isArray(g.tieuChi) ? g.tieuChi : []);
+          console.log('📋 Group', gi, 'TieuChi:', items?.length, 'items');  // Debug
+          items.forEach((it, ii) => {
+            const maTC = it.MaTC ?? it.maTC;
+            const iCode = (it.MaSo || it.maSo || `${gi+1}.${ii+1}`).toString();
+            const iName = it.TenTC || it.tenTC || `Tiêu chí ${iCode}`;
+            // ✅ CHỈ hiển thị tiêu chí có CoMinhChung = 1/true (cần minh chứng)
+            const needsProof = (it.CoMinhChung ?? it.coMinhChung) === 1 || (it.CoMinhChung ?? it.coMinhChung) === true;
+            if (maTC && needsProof) {
+              // Format: "1.1 — Tên tiêu chí" để sinh viên dễ nhận biết
+              opts.push({ 
+                value: Number(maTC), 
+                label: `${iCode} — ${iName}`,
+                code: iCode
+              });
+            }
+          });
+        });
+      }
+      
+      // Thêm options vào dropdown
       if (opts.length === 0) {
         const o = document.createElement('option');
         o.value = '';
         o.textContent = 'Không có tiêu chí yêu cầu minh chứng';
         sel.appendChild(o);
+        console.warn('No criteria with proof requirement found');
       } else {
         opts.forEach(opt => { 
           const o = document.createElement('option'); 
           o.value = String(opt.value); 
           o.textContent = opt.label;
-          o.setAttribute('data-code', opt.code);
-          o.setAttribute('data-matc', opt.maTC);
+          o.setAttribute('data-code', opt.code);  // ← Lưu mã để dễ trace
           sel.appendChild(o); 
         });
+        console.log('Loaded', opts.length, 'criteria options');
       }
     } catch (e) {
-      console.error('❌ Lỗi tải dropdown tiêu chí:', e.message);
+      console.error('loadCriteriaOptions error:', e);
     }
   }
   
@@ -497,6 +878,50 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
   }
 
+  // ✅ NEW: Close listener cho attendance-wizard-modal
+  const closeAttendanceWizard = document.getElementById("close-attendance-wizard");
+  if (closeAttendanceWizard) {
+    closeAttendanceWizard.addEventListener("click", () => {
+      console.log('🔍 closeAttendanceWizard handler called');
+      // Tắt camera khi đóng modal và reset UI
+      try { stopCamera(); } catch {}
+
+      // Reset các trạng thái nút và video (attendance-specific)
+      const btnStartAtt = document.getElementById("btn-start-attendance");
+      const btnStopAtt = document.getElementById("btn-stop-attendance");
+      const btnSendAtt = document.getElementById("btn-send-attendance");
+      const previewAtt = document.getElementById("video-preview-attendance");
+      const resultVideoAtt = document.getElementById("video-result-attendance");
+      const aiResultAtt = document.getElementById("ai-result-attendance");
+      const faceUploadAtt = document.getElementById("face-upload-section-attendance");
+      const cameraOverlayAtt = document.getElementById("camera-overlay-attendance");
+      try { if (btnStartAtt) btnStartAtt.classList.remove("hidden"); } catch {}
+      try { if (btnStopAtt) btnStopAtt.classList.add("hidden"); } catch {}
+      try { if (btnSendAtt) btnSendAtt.classList.add("hidden"); } catch {}
+      try { if (aiResultAtt) { aiResultAtt.classList.add("hidden"); aiResultAtt.innerHTML = ''; } } catch {}
+      try { if (resultVideoAtt) { resultVideoAtt.pause?.(); resultVideoAtt.removeAttribute("src"); resultVideoAtt.load?.(); resultVideoAtt.classList.add("hidden"); } } catch {}
+      try { if (previewAtt) { previewAtt.classList.remove("hidden"); previewAtt.srcObject = null; } } catch {}
+      try { if (faceUploadAtt) faceUploadAtt.classList.add("hidden"); } catch {}
+      try { if (cameraOverlayAtt) cameraOverlayAtt.classList.add("opacity-0"); } catch {}
+
+      // ✅ RESET MODAL STATE
+      try { const attModal = document.getElementById("attendance-wizard-modal"); if (attModal) attModal.classList.add("hidden"); } catch {}
+      try { const sv = document.getElementById("step-2-attendance-video"); if (sv) sv.classList.add("hidden"); } catch {}
+      
+      // ✅ XÓA TRẠNG THÁI VIDEO
+      if (typeof window.lastBlob !== 'undefined') window.lastBlob = null;
+      if (typeof window.recordedChunks !== 'undefined') window.recordedChunks = [];
+      
+      // ✅ XÓA ID HOẠT ĐỘNG TRONG SESSION ĐỂ LẦN SAU KHÔNG BỊ DÍNH
+      sessionStorage.removeItem('qr_maHD');
+      sessionStorage.removeItem('qr_tenHD');
+      
+      // 🔧 RESET WIRING FLAG: Allow modal to be wired again when reopened
+      window._attendanceModalWired = false;
+      console.log('ℹ️ Reset _attendanceModalWired flag for next modal open');
+    });
+  }
+
 
   // ==== cache dữ liệu preload ====
   const dbCache = {
@@ -543,9 +968,15 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   function ensureLoggedIn() {
     if (isLoggedIn()) return true;
-    // Redirect to login page
-    console.log('🔐 [ensureLoggedIn] User not logged in - redirecting to login page');
-    window.location.href = "login.html";
+    // Open login modal and focus username
+    if (loginModal) {
+      loginModal.classList.remove("hidden");
+      hideLoginError?.();
+      setTimeout(() => {
+        const u = document.getElementById("username");
+        if (u) u.focus();
+      }, 0);
+    }
     return false;
   }
 
@@ -553,28 +984,74 @@ document.addEventListener("DOMContentLoaded", async () => {
   window.isLoggedIn = isLoggedIn;
   window.ensureLoggedIn = ensureLoggedIn;
 
-  // Show login error message (script.js context - loginModal is used here, not loginError)
+  // Show login error message
   function showLoginError(message) {
-    const el = document.getElementById("login-error") || loginModal;
-    if (!el) return;
-    const errorText = el.querySelector("p");
-    if (errorText) errorText.textContent = message;
-    el.classList.remove("hidden");
-    el.classList.add("fade-up");
+    const errorText = loginError.querySelector("p");
+    errorText.textContent = message;
+    loginError.classList.remove("hidden");
+    loginError.classList.add("fade-up");
   }
 
   // Hide login error message
   function hideLoginError() {
-    const el = document.getElementById("login-error") || loginModal;
-    if (!el) return;
-    el.classList.add("hidden");
-    el.classList.remove("fade-up");
+    loginError.classList.add("hidden");
+    loginError.classList.remove("fade-up");
   }
 
   function renderLoggedOutUI() {
-    // Redirect to login page instead of showing logged out UI
-    console.log('� [renderLoggedOutUI] Redirecting to login page');
-    window.location.href = "login.html";
+    // Desktop navigation (giữ nguyên)
+    const desktopNav = `
+      <button id="btn-home" class="nav-btn">Đánh giá rèn luyện</button>
+      <button id="btn-ranking" class="hover-link bg-transparent border-none cursor-pointer">Bảng xếp hạng</button>
+      <a id="btn-login" href="#" class="btn-outline">Đăng nhập</a>
+    `;
+    
+    const mobileNav = `
+      <button id="btn-home-mobile" class="nav-btn">Đánh giá rèn luyện</button>
+      <button id="btn-ranking-mobile" class="nav-btn">Bảng xếp hạng</button>
+      <a id="btn-login-mobile" href="#" class="nav-btn">Đăng nhập</a>
+    `;
+
+    fadeReplace(navRight, desktopNav, () => {
+      setupNavigationEvents();
+    });
+    
+    const navRightMobile = document.getElementById("nav-right-mobile");
+    if (navRightMobile) {
+      fadeReplace(navRightMobile, mobileNav, () => {
+        setupMobileNavigationEvents();
+      });
+    }
+    
+    // Mobile sidebar - hiển thị login section
+    const mobileLoginSection = document.getElementById("mobile-login-section");
+    const mobileUserProfileSection = document.getElementById("mobile-user-profile-section");
+    
+    if (mobileLoginSection) mobileLoginSection.classList.remove("hidden");
+    if (mobileUserProfileSection) mobileUserProfileSection.classList.add("hidden");
+    
+    // Setup mobile sidebar login button
+    const mobileSidebarLoginBtn = document.getElementById("mobile-sidebar-login");
+    if (mobileSidebarLoginBtn) {
+      mobileSidebarLoginBtn.addEventListener("click", (e) => {
+        e.preventDefault();
+        loginModal.classList.remove("hidden");
+        hideLoginError();
+        // Close mobile sidebar
+        const mobileSidebar = document.getElementById("mobile-sidebar");
+        const mobileOverlay = document.getElementById("mobile-sidebar-overlay");
+        if (mobileSidebar) mobileSidebar.classList.add("-translate-x-full");
+        if (mobileOverlay) mobileOverlay.classList.add("hidden");
+      });
+    }
+    
+    // ✅ Trigger F5 auto-login if pending
+    if (localStorage.getItem("F5_AUTO_LOGIN_PENDING") === "true") {
+      console.log('🔄 [renderLoggedOutUI] Login form rendered, will trigger F5 auto-login...');
+      setTimeout(() => {
+        triggerF5AutoLogin();
+      }, 200);
+    }
   }
 
   function renderLoggedInUI(username) {
@@ -582,29 +1059,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     const desktopNav = `
       <button id="btn-home" class="nav-btn">Đánh giá rèn luyện</button>
       <button id="btn-ranking" class="hover-link bg-transparent border-none cursor-pointer">Bảng xếp hạng</button>
-      <!-- Notifications -->
-      <div class="relative z-50 notifications-container inline-block">
-        <button id="btn-notifications" class="relative p-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors" title="Thông báo">
-          <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V4a2 2 0 10-4 0v1.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-          </svg>
-          <span id="notifications-badge" class="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[10px] rounded-full hidden items-center justify-center">0</span>
-        </button>
-        <div id="notifications-menu" class="hidden absolute right-0 mt-2 w-[28rem] sm:w-[30rem] max-w-[calc(100vw-2rem)] bg-white rounded-lg shadow-xl border border-gray-200 z-[9999]">
-          <div class="px-4 py-2 border-b">
-            <div class="flex items-center justify-between">
-              <span class="text-sm font-semibold text-gray-700">Thông báo</span>
-              <button id="notifications-mark-read" class="text-xs text-gray-500 hover:text-gray-700">Đánh dấu đã đọc</button>
-            </div>
-          </div>
-          <div id="notifications-list" class="max-h-[24rem] overflow-auto divide-y divide-gray-100">
-            <div class="p-3 text-sm text-gray-500 text-center">Chưa có thông báo</div>
-          </div>
-          <div class="px-4 py-2 border-t text-right">
-            <button class="text-sm text-blue-600 hover:underline" id="notifications-view-all">Xem tất cả</button>
-          </div>
-        </div>
-      </div>
+      <!-- Notifications are now handled by notification-widget.js -->
       <div class="user-avatar slide-in-right">
         <img id="header-avatar" src="https://ui-avatars.com/api/?background=0D8ABC&color=fff&name=${encodeURIComponent(username)}" alt="Avatar">
         <span>${username}</span>
@@ -691,10 +1146,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         localStorage.removeItem("loggedUser");
         localStorage.removeItem("loggedUserInfo");
         localStorage.removeItem("userAvatar");
-        localStorage.removeItem("_lastPassword"); // security: clear any saved credentials
-        // Redirect to login page
-        console.log('🔐 [LOGOUT] User logged out - redirecting to login page');
-        window.location.href = "login.html";
+        renderLoggedOutUI();
         // Close mobile sidebar
         const mobileSidebar = document.getElementById("mobile-sidebar");
         const mobileOverlay = document.getElementById("mobile-sidebar-overlay");
@@ -732,12 +1184,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         // try replace space with T (e.g., "2025-10-31 12:30:00")
         d = new Date(s.replace(' ', 'T'));
         if (!isNaN(d)) return d;
-        // try DD/MM/YYYY
-        const m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
-        if (m) {
-          d = new Date(+m[3], +m[2] - 1, +m[1]);
-          if (!isNaN(d)) return d;
-        }
       }
     }catch{}
     return null;
@@ -1410,13 +1856,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     try { data = JSON.parse(_lastQrText); } catch {
       try { const obj = {}; _lastQrText.split(/[;&]/).forEach(kv => { const [k,v] = kv.split('='); if (k && v) obj[k.trim()] = decodeURIComponent(v.trim()); }); if (Object.keys(obj).length) data = obj; } catch {}
     }
-    // Fallback: parse URL dạng /api/activities/{maHD}/checkin (QR cũ)
-    if (!data || !(data.maHD || data.MaHD || data.mhd)) {
-      try {
-        const urlMatch = _lastQrText.match(/\/api\/activities\/([^/?\s]+)\/checkin/i);
-        if (urlMatch && urlMatch[1]) data = { maHD: decodeURIComponent(urlMatch[1]) };
-      } catch {}
-    }
     const maHD = (data && (data.maHD || data.MaHD || data.mhd)) ? String(data.maHD || data.MaHD || data.mhd).trim() : null;
     const tenHD = (data && (data.tenHD || data.TenHD)) ? String(data.tenHD || data.TenHD) : '';
     if (!maHD) { showQrError('QR không hợp lệ (thiếu mã hoạt động).'); return; }
@@ -1442,17 +1881,38 @@ document.addEventListener("DOMContentLoaded", async () => {
             window._svRegSet.add(String(maHD));
             if (!window._svRegDetail) window._svRegDetail = {};
             const det = window._svRegDetail[String(maHD)] || {};
-            window._svRegDetail[String(maHD)] = Object.assign({}, det, { Eligible: true, Status: 'PENDING', TenHD: tenHD||'' });
+            window._svRegDetail[String(maHD)] = Object.assign({}, det, { Registered: true, Eligible: true, Status: 'PENDING', TenHD: tenHD||'' });
           try { saveRegState(); } catch {}
-            // Re-render danh sách để hiện nút "Nộp video minh chứng"
-            try { if (Array.isArray(window.allActivities)) renderActivities(window.allActivities); } catch {}
-            // Chuẩn hoá hành vi đa nền tảng: sau khi quét & đăng ký thành công → mở ngay wizard nộp minh chứng
+            
+            // ✅ CẬP NHẬT NÚT HOẠT ĐỘNG CỤ THỂ NGAY LẬP TỨC
             try {
-              // Đảm bảo QR modal đóng hẳn trước khi mở wizard
-              closeQRModal();
-              // Mở wizard cho đúng hoạt động
-              openEvidenceWizard(String(maHD));
-            } catch(e){ console.warn('auto openEvidenceWizard failed', e); }
+              const card = document.querySelector(`[data-activity-id="${maHD}"]`);
+              if (card) {
+                // Cập nhật nút cho hoạt động này mà không cần re-render toàn bộ
+                const actionWrap = card.querySelector('.pt-3.border-t') || card.querySelector('.pt-3');
+                if (actionWrap) {
+                  actionWrap.innerHTML = `
+                    <button onclick="event.stopPropagation(); openAttendanceEvidenceModal('${maHD}');" 
+                            class="w-full px-3 py-2 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center space-x-2">
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                      </svg>
+                      <span>Nộp minh chứng</span>
+                    </button>
+                    <p class="text-xs text-gray-400 text-center">👆 Nhấp để xem chi tiết</p>
+                  `;
+                }
+              }
+            } catch(e) { console.warn('Lỗi cập nhật nút hoạt động:', e); }
+            
+            // Fallback: Re-render toàn bộ danh sách nếu cập nhật card không thành công
+            try { if (Array.isArray(window.allActivities)) await renderActivities(window.allActivities); } catch {}
+            
+            // Cập nhật giao diện thành công, không đóng QR modal ngay
+            try {
+              // ✅ Không auto-open modal attendance - để người dùng tự bấm khi sẵn sàng
+              console.log('✅ QR quét thành công, đã đăng ký hoạt động. Bạn có thể nộp minh chứng ngay hoặc sau.');
+            } catch(e){ console.warn('Lỗi xử lý QR success:', e); }
           } catch {}
         }
       }
@@ -1475,22 +1935,18 @@ document.addEventListener("DOMContentLoaded", async () => {
       await startQrScan();
     });
     document.getElementById('submit-evidence-btn')?.addEventListener('click', () => {
-      // Đóng QR và mở wizard attendance (ẩn chọn tiêu chí)
+      // Đóng QR và mở wizard attendance (nộp minh chứng hoạt động)
       closeQRModal();
       let theMaHD = null;
       try { theMaHD = sessionStorage.getItem('qr_maHD') || new URLSearchParams(location.search).get('maHD') || null; } catch {}
-      
-      if (typeof window.openAttendanceEvidenceModal === 'function') {
-        window.openAttendanceEvidenceModal(theMaHD || undefined);
-      } else if (typeof openEvidenceWizard === 'function') {
-        openEvidenceWizard(theMaHD || undefined);
+      if (typeof openAttendanceEvidenceModal === 'function') {
+        openAttendanceEvidenceModal(theMaHD || undefined);
       } else {
-        // Fallback: mở wizard tối thiểu
-        const wz = document.getElementById('wizard-modal');
-        if (wz) {
-          wz.classList.remove('hidden');
-          document.getElementById('step-2-video')?.classList.remove('hidden');
-          document.getElementById('step-1')?.classList.add('hidden');
+        // Fallback: mở modal tối thiểu
+        const attModal = document.getElementById('attendance-wizard-modal');
+        if (attModal) {
+          attModal.classList.remove('hidden');
+          document.getElementById('step-2-attendance-video')?.classList.remove('hidden');
         }
       }
     });
@@ -1508,12 +1964,25 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
   window.openQRScanner = openQRScanner;
 
-  // Mở wizard nộp video minh chứng trực tiếp (không cần quét lại QR nếu đã đăng ký)
-  function openEvidenceWizard(maHD){
+  // ✅ CRITERION-BASED: Mở wizard lưu minh chứng vào tiêu chí
+  function openEvidenceWizard(maHD) {
+    console.log('Chuyển hướng openEvidenceWizard -> openAttendanceEvidenceModal');
+    if (typeof window.openAttendanceEvidenceModal === 'function') {
+      window.openAttendanceEvidenceModal(maHD);
+    } else if (typeof openAttendanceEvidenceModal === 'function') {
+      openAttendanceEvidenceModal(maHD);
+    } else {
+      alert('Lỗi: Tính năng nộp minh chứng đang được cập nhật. Vui lòng nhấn Ctrl + F5 để tải lại.');
+    }
+  }
+  window.openEvidenceWizard = openEvidenceWizard;
+
+  // ✅ ATTENDANCE-BASED: Mở wizard nộp minh chứng hoạt động (quét QR)
+  function openAttendanceEvidenceModal(maHD){
     // ✅ CHECK LOGIN - OPEN LOGIN MODAL IF NOT LOGGED IN
     if (!isLoggedIn()) {
       // Lưu action pending để sau khi login xong sẽ execute
-      pendingWizardAction = { action: 'openEvidenceWizard', maHD: maHD };
+      pendingWizardAction = { action: 'openAttendanceEvidenceModal', maHD: maHD };
       ensureLoggedIn();
       return;
     }
@@ -1521,108 +1990,51 @@ document.addEventListener("DOMContentLoaded", async () => {
     // Clear pending action vì đã login
     pendingWizardAction = null;
 
-    try {
-      // ❌ BỎ: Không set qr_maHD từ parameter nữa
-      // Chỉ dùng qr_maHD khi quét QR (attendance mode)
-      // Parameter maHD chỉ dùng cho pending action sau login
-    } catch {}
-    const wz = document.getElementById('wizard-modal');
-    if (!wz){ console.error('Không tìm thấy cửa sổ nộp minh chứng wizard-modal'); return; }
+    const attModal = document.getElementById('attendance-wizard-modal');
+    if (!attModal) { alert('Không tìm thấy cửa sổ nộp minh chứng hoạt động'); return; }
     
-    // ✅ RESET MODAL CONTENT - SHOW EVERYTHING FIRST
-    try {
-      const step2video = document.getElementById('step-2-video');
-      if (step2video) {
-        step2video.classList.remove('hidden');
-        console.log('✅ Made step-2-video visible');
-      }
-    } catch {}
-    
-    // Mở wizard modal
-    wz.classList.remove('hidden');
-    try { document.getElementById('step-1')?.classList.add('hidden'); } catch {}
-    try { document.getElementById('step-2-cert')?.classList.add('hidden'); } catch {}
-    try { document.getElementById('step-2-video')?.classList.remove('hidden'); } catch {}
+    // Mở modal
+    attModal.classList.remove('hidden');
 
-    // 🔧 LUÔN GỌI loadCriteriaOptions() KHI MỞ MODAL (để dropdown có dữ liệu)
-    try { 
-      if (typeof loadCriteriaOptions === 'function') {
-        loadCriteriaOptions();
-        console.log('✅ Loaded criteria options for wizard modal');
-      }
-    } catch (e) {
-      console.warn('Failed to load criteria options:', e);
-    }
-
-    // Attendance mode UI: ẩn input tên/mô tả và hiển thị thông tin hoạt động
+    // 🔧 POPULATE ACTIVITY INFO từ maHD hoặc sessionStorage.qr_maHD
     try {
-      // ✅ CHỈ KIỂM TRA sessionStorage.qr_maHD (attendance mode) 
-      // BỎ QUA maHD parameter (dùng để track hoạt động cho pending action sau login)
-      const theMaHD = String(sessionStorage.getItem('qr_maHD') || '').trim();
-      console.log('🔍 openEvidenceWizard - theMaHD:', theMaHD, 'maHD param:', maHD);
-      // Ẩn/Hiện chọn tiêu chí tùy theo attendance mode
-      try {
-        const wrap = document.getElementById('criterion-select-wrap');
-        console.log('🔍 criterion-select-wrap element:', wrap, 'hidden status:', wrap?.classList.contains('hidden'));
-        if (wrap) {
-          if (theMaHD) {
-            console.log('⚠️ Attendance mode - HIDING criterion-select-wrap');
-            wrap.classList.add('hidden');  // Hide dropdown in attendance mode
-          } else {
-            console.log('✅ Normal mode - SHOWING criterion-select-wrap');
-            wrap.classList.remove('hidden');  // Show dropdown in non-attendance mode
-          }
-        }
-      } catch (e) {
-        console.error('Error managing criterion-select-wrap:', e);
-      }
-      const nameInput = document.getElementById('activity-name');
-      const descInput = document.getElementById('activity-desc');
-      let infoBox = document.getElementById('attendance-activity-info');
+      const theMaHD = maHD || String(sessionStorage.getItem('qr_maHD') || '').trim();
+      
+      // ✅ FIX: SAVE maHD to sessionStorage for Send button to use later
       if (theMaHD) {
-        let tenHD = sessionStorage.getItem('qr_tenHD') || '';
-        try {
-          const acts = (window.dbCache && Array.isArray(window.dbCache.HoatDongTruong)) ? window.dbCache.HoatDongTruong : (JSON.parse(sessionStorage.getItem('preload')||'{}').hoatDongTruong||[]);
-          const found = Array.isArray(acts) ? acts.find(a => (a.MaHD||'').toString() === theMaHD) : null;
-          if (found && found.TenHD) tenHD = found.TenHD;
-        } catch {}
-        if (nameInput) { nameInput.parentElement.classList.add('hidden'); }
-        if (descInput) { descInput.parentElement.classList.add('hidden'); }
-        if (!infoBox) {
-          infoBox = document.createElement('div');
-          infoBox.id = 'attendance-activity-info';
-          infoBox.className = 'p-3 rounded border bg-slate-50 text-sm';
-          const container = document.querySelector('#step-2-video .grid');
-          if (container) container.parentElement.insertBefore(infoBox, container);
-        }
-        infoBox.innerHTML = `<div><span class="font-semibold">Hoạt động:</span> ${tenHD || '(Chưa rõ tên)'} <span class="ml-2 text-xs text-gray-500">(Mã: ${theMaHD})</span></div>`;
-      } else {
-        // ✅ NOT ATTENDANCE MODE - ENSURE criterion-select-wrap IS VISIBLE
-        console.log('✅ Final check: NOT attendance mode, criterion-select-wrap should be visible');
-        const finalWrap = document.getElementById('criterion-select-wrap');
-        if (finalWrap) {
-          finalWrap.classList.remove('hidden');
-          console.log('✅ CONFIRMED criterion-select-wrap is visible');
-        }
+        sessionStorage.setItem('qr_maHD', theMaHD);
+        console.log('[openAttendanceEvidenceModal] ✅ Set qr_maHD to:', theMaHD);
       }
-    } catch {}
-
-    // ✅ FINAL DEBUG: CHECK criterion-select-wrap visibility at END OF FUNCTION
-    try {
-      const finalCheckWrap = document.getElementById('criterion-select-wrap');
-      const isHidden = finalCheckWrap?.classList.contains('hidden');
-      console.log('🔍 FINAL CHECK at END of openEvidenceWizard():');
-      console.log('   criterion-select-wrap found:', !!finalCheckWrap);
-      console.log('   criterion-select-wrap hidden:', isHidden);
-      console.log('   qr_maHD:', sessionStorage.getItem('qr_maHD'));
+      
+      let tenHD = sessionStorage.getItem('qr_tenHD') || localStorage.getItem('qr_tenHD') || '';
+      
+      // Tìm tên hoạt động từ cache
+      try {
+        const acts = (window.dbCache && Array.isArray(window.dbCache.HoatDongTruong)) ? window.dbCache.HoatDongTruong : (JSON.parse(sessionStorage.getItem('preload')||'{}').hoatDongTruong||[]);
+        const found = Array.isArray(acts) ? acts.find(a => (a.MaHD||'').toString() === theMaHD) : null;
+        if (found && found.TenHD) tenHD = found.TenHD;
+      } catch {}
+      
+      // Cập nhật info box
+      const infoNameEl = document.getElementById('attendance-activity-name');
+      const infoCodeEl = document.getElementById('attendance-activity-code');
+      if (infoNameEl) infoNameEl.textContent = tenHD || '(Chưa rõ tên)';
+      if (infoCodeEl) infoCodeEl.textContent = `(Mã: ${theMaHD || '-'})`;
+      
+      console.log('✅ Attendance modal - Activity:', tenHD, 'Code:', theMaHD);
     } catch (e) {
-      console.error('Final check error:', e);
+      console.error('Error populating activity info:', e);
     }
 
+    // ✅ Re-wire event listeners khi modal mở (để chắc chắn click listener được gắn)
+    wireAttendanceModalButtons();
+    
     // Tự động bật camera để SV có thể quay ngay
-    try { document.getElementById('btn-start')?.click(); } catch {}
+    setTimeout(() => {
+      try { document.getElementById('btn-start-attendance')?.click(); } catch {}
+    }, 100);
   }
-  window.openEvidenceWizard = openEvidenceWizard;
+  window.openAttendanceEvidenceModal = openAttendanceEvidenceModal;
 
   // Đăng ký tham gia hoạt động trực tiếp (không cần quét QR)
   async function registerActivity(maHD){
@@ -1650,7 +2062,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       } catch {}
       alert((data && data.message) || 'Đăng ký thành công!');
       // Re-render danh sách để phản ánh nút "Nộp video minh chứng"
-      try { if (Array.isArray(window.allActivities)) renderActivities(window.allActivities); } catch {}
+      try { if (Array.isArray(window.allActivities)) await renderActivities(window.allActivities); } catch {}
     } catch (e){
       console.error('registerActivity error', e);
       alert('Không thể đăng ký do lỗi kết nối.');
@@ -1666,6 +2078,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   window.closeQRModal = closeQRModal;
 
   // ====== render hoạt động từ dbCache ======
+  // ====== Render activity list ======
   async function renderActivities(list) {
     activitiesContainer.innerHTML = "";
     if (!list || list.length === 0) {
@@ -1753,7 +2166,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       const isRejected = evidenceVerdict === 'rejected';
       const isLowQuality = evidenceVerdict === 'lowquality';
       const isApproved = evidenceVerdict === 'approved';
-      const canResubmit = isRejected || isLowQuality;  // Chỉ cho phép nộp lại khi bị từ chối hoặc quality thấp
+      const canResubmit = isRejected || isLowQuality;  // Nếu bị từ chối hoặc quality thấp, cho phép nộp lại
       let actionBtnHtml = '';
       
       if (!ended) {
@@ -1824,9 +2237,6 @@ document.addEventListener("DOMContentLoaded", async () => {
              <div class="activity-status ${getActivityStatus(act).class}">
                ${getActivityStatus(act).text}
              </div>
-             <div class="reg-status-badge">
-               ${registered ? `<span class="bg-green-100 text-green-800 text-xs font-semibold px-2.5 py-0.5 rounded border border-green-200 flex items-center shadow-sm"><svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg> Đã đăng ký</span>` : ''}
-             </div>
            </div>
 
            <!-- Date information with icons -->
@@ -1860,26 +2270,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   // Identify card by activity id so we can update action area after async status checks
   try { card.dataset.activityId = String(act.MaHD || ''); } catch(e) { console.warn('Failed to set data-activity-id', e); }
       
-      card.addEventListener('click', () => {
-        if (typeof window.openActivityModal === 'function') {
-          const det = window._svRegDetail ? window._svRegDetail[String(act.MaHD)] : null;
-          const rg = det && det.Registered !== undefined ? det.Registered : (window.isRegistered && window.isRegistered(act.MaHD));
-          const el = det ? det.Eligible !== false : true;
-          const sub = det ? (String(det.EvidenceVerdict || '').toUpperCase() === 'APPROVED' || String(det.Status || '').toUpperCase() === 'EVIDENCE_SUBMITTED') : false;
-          const hs = rg && (!el || sub);
-          const endObj = eD ? new Date(eD.getFullYear(), eD.getMonth(), eD.getDate(), 23, 59, 59, 999) : null;
-          const isEnd = endObj ? (todayStart > endObj) : false;
-          window.__amOnRegister = (m) => { window.closeActivityModal(); if(typeof openQRScanner==='function') openQRScanner(m); };
-          window.__amOnEvidence = (m) => { window.closeActivityModal(); if(typeof window.openAttendanceEvidenceModal==='function') window.openAttendanceEvidenceModal(m); };
-          window.openActivityModal(act, {
-            isRegistered: rg, isEligible: el, hasSubmitted: hs,
-            onRegister: !isEnd && !rg ? true : false,
-            onEvidence: !isEnd && rg && el && !hs ? true : false
-          });
-        } else if (typeof openModalHD === 'function') {
-          openModalHD(act);
-        }
-      });
+      card.addEventListener("click", () => openModalHD(act));
       activitiesContainer.appendChild(card);
       } catch(err) {
         console.error('[activities] failed to render activity', act?.MaHD, err);
@@ -1905,25 +2296,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     console.warn('[renderActivities] DOM now has ' + cards.length + ' cards with data-activity-id');
     const buttons = document.querySelectorAll('button span');
     console.warn('[renderActivities] DOM has ' + buttons.length + ' total buttons');
-
-    // Cập nhật số lượng hoạt động "Đang diễn ra"
-    try {
-      const activeCount = list.filter(act => {
-        if (typeof parseDateLoose === 'function') {
-          const sD = parseDateLoose(act.NgayBD);
-          const eD = parseDateLoose(act.NgayKT);
-          if (!sD || !eD) return false;
-          const today = new Date();
-          const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 0, 0, 0, 0);
-          const startOnly = new Date(sD.getFullYear(), sD.getMonth(), sD.getDate(), 0, 0, 0, 0);
-          const endOnly = new Date(eD.getFullYear(), eD.getMonth(), eD.getDate(), 23, 59, 59, 999);
-          return todayStart >= startOnly && todayStart <= endOnly;
-        }
-        return false;
-      }).length;
-      const counterEl = document.getElementById("sv-active-activities-count");
-      if (counterEl) counterEl.textContent = activeCount;
-    } catch(e) { console.error('Failed to update active activities count', e); }
   }
 
   // ====== modal hoạt động với thiết kế đẹp hơn ======
@@ -2095,8 +2467,11 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   // ====== PRELOAD dữ liệu cần cho cả phiên ======
   async function preloadData() {
+    console.error('🔥🔥🔥 [preloadData] START - THIS IS INSIDE preloadData FUNCTION 🔥🔥🔥');
+    console.warn('[preloadData] ⏳ START preloadData()');
     activitiesContainer.innerHTML = `<div class="text-gray-500">Đang tải dữ liệu...</div>`;
     try {
+      console.warn('[preloadData] 🔍 Inside try block');
   // Cache-buster to avoid stale data after admin changes, and include mssv for server-side registrations
   let mssv = '';
   try {
@@ -2137,11 +2512,14 @@ document.addEventListener("DOMContentLoaded", async () => {
 
       // lưu sessionStorage theo đúng shape của API
       try {
-        sessionStorage.setItem('preload', JSON.stringify({
+        const preloadData = {
           khoa: dbCache.KHOA,
           lop: dbCache.Lop,
           hoatDongTruong: dbCache.HoatDongTruong
-        }));
+        };
+        sessionStorage.setItem('preload', JSON.stringify(preloadData));
+        // Also save to localStorage as fallback
+        try { localStorage.setItem('PRELOAD_CACHE', JSON.stringify(preloadData)); } catch {}
       } catch {}
 
       // Nếu server trả danh sách đăng ký → hydrate ngay để đồng bộ đa nền tảng
@@ -2178,8 +2556,14 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
       } catch {}
 
-      renderActivities(dbCache.HoatDongTruong);
+      // ✅ CẢI THIỆN: Render list TRƯỚC, rồi sau đó cập nhật button từ API
+      // Bước 1: Render danh sách hoạt động + cập nhật button từ API
+      console.warn('[preload] About to call renderActivities with', dbCache.HoatDongTruong?.length || 0, 'activities');
+      console.warn('[preload] 🔄 NOW renderActivities()');
+      await renderActivities(dbCache.HoatDongTruong);
+      console.warn('[preload] ✅ renderActivities() done - all buttons updated from API');
       console.debug('[preload] rendered activities:', dbCache.HoatDongTruong.length);
+      
       // Nếu đã từng quét QR → giữ trạng thái đã đăng ký đến khi hoạt động kết thúc
       try {
         const saved = sessionStorage.getItem('qr_maHD');
@@ -2466,43 +2850,24 @@ document.addEventListener("DOMContentLoaded", async () => {
       const registered = isRegistered(act.MaHD);
       const regDetail = window._svRegDetail ? window._svRegDetail[String(act.MaHD)] : null;
       const eligible = regDetail ? regDetail.Eligible !== false : true;
-      // Nếu minh chứng bị từ chối (Rejected), cho phép nộp lại
-      const evidenceVerdict = regDetail ? (regDetail.EvidenceVerdict || '').toLowerCase() : '';
-      const isRejected = evidenceVerdict === 'rejected';
-      const isApproved = evidenceVerdict === 'approved';
-      const canResubmit = isRejected;  // Nếu bị từ chối, cho phép nộp lại
+      // ✅ CẢI THIỆN: Hiển thị placeholder, để checkRegistrationStatus() update từ server
+      // Điều này tránh hiển thị sai khi dữ liệu local cũ
       let actionBtnHtml = '';
-      if (!ended) {
-        if (!isLoggedIn) {
-          // Chưa đăng nhập → không hiển thị button
-          actionBtnHtml = `<p class="text-xs text-gray-500 text-center">Đăng nhập để đăng ký hoạt động này</p>`;
-        } else if (!registered) {
-          // Đã đăng nhập nhưng chưa đăng ký → hiển thị Quét QR
-          actionBtnHtml = `
-            <button onclick="event.stopPropagation(); openQRScanner('${act.MaHD}');" 
-                    class="w-full px-3 py-2 bg-indigo-600 text-white text-sm rounded-lg hover:bg-indigo-700 transition-colors flex items-center justify-center space-x-2">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
-              </svg>
-              <span>Đăng ký tham gia</span>
-            </button>`;
-        } else if (isApproved) {
-          // Minh chứng đã được duyệt → hiển thị "Đã nộp minh chứng"
-          actionBtnHtml = `<p class="text-xs text-gray-500 text-center">Đã nộp minh chứng.</p>`;
-        } else if (canResubmit || (registered && eligible)) {
-          // Minh chứng bị từ chối hoặc chưa nộp → hiển thị Nộp minh chứng (cho phép nộp lại)
-          actionBtnHtml = `
-            <button onclick="event.stopPropagation(); openEvidenceWizard('${act.MaHD}');" 
-                    class="w-full px-3 py-2 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center space-x-2">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
-              </svg>
-              <span>${isRejected ? 'Nộp lại minh chứng' : 'Nộp minh chứng'}</span>
-            </button>`;
-        } else if (registered && !eligible) {
-          // Đã đăng ký và đã nộp → hiển thị "Đã nộp minh chứng"
-          actionBtnHtml = `<p class="text-xs text-gray-500 text-center">Đã nộp minh chứng.</p>`;
-        }
+      
+      // Nếu hoạt động kết thúc, hiển thị ngay (không cần gọi API)
+      if (ended) {
+        actionBtnHtml = `<p class="text-xs text-gray-500 text-center">Hoạt động đã kết thúc.</p>`;
+      } else {
+        // Chưa biết trạng thái → Hiển thị placeholder
+        // checkRegistrationStatus() sẽ cập nhật sau
+        actionBtnHtml = `
+          <div class="flex items-center justify-center space-x-2 text-gray-500">
+            <svg class="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <span class="text-xs">Đang tải...</span>
+          </div>
+        `;
       }
 
       card.innerHTML = `
@@ -2580,9 +2945,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     checkRegistrationStatus();
   }
 
-  // ====== Kiểm tra trạng thái đăng ký (stub an toàn) ======
-  // Hàm này trước đây dùng để đánh dấu trạng thái đăng ký/đã tham gia cho từng hoạt động.
-  // Tạm thời triển khai an toàn để không chặn việc render nếu backend/chức năng chưa sẵn sàng.
+  // ====== Kiểm tra trạng thái đăng ký (từ API server) ======
+  // Sử dụng API làm source of truth: /api/students/{mssv}/registration-status/{maHD}
   async function checkRegistrationStatus(activitiesList = null) {
     try {
       // Lấy MSSV từ session/local storage
@@ -2687,8 +3051,8 @@ document.addEventListener("DOMContentLoaded", async () => {
             } else if (data.evidenceVerdict && String(data.evidenceVerdict).toLowerCase() === 'approved') {
               // Minh chứng đã được phê duyệt
               actionBtnHtml = `<p class="text-xs text-gray-500 text-center">Đã nộp minh chứng.</p>`;
-            } else if (data.evidenceVerdict && ['rejected', 'lowquality'].includes(String(data.evidenceVerdict).toLowerCase())) {
-              // Minh chứng bị từ chối / low quality → Nút Nộp lại
+            } else if (data.evidenceVerdict && String(data.evidenceVerdict).toLowerCase() === 'rejected') {
+              // Minh chứng bị từ chối → Nút Nộp lại
               actionBtnHtml = `
                 <button onclick="event.stopPropagation(); openAttendanceEvidenceModal('${maHD}');" 
                         class="w-full px-3 py-2 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center space-x-2">
@@ -2713,16 +3077,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             }
 
             // Giữ helper text dưới nút
-            actionWrap.innerHTML = actionBtnHtml + '\n<p class="text-xs text-gray-400 text-center mt-2">👆 Nhấp để xem chi tiết</p>';
-            
-            const regBadgeWrap = card.querySelector('.reg-status-badge');
-            if (regBadgeWrap) {
-              if (data.registered) {
-                regBadgeWrap.innerHTML = `<span class="bg-green-100 text-green-800 text-xs font-semibold px-2.5 py-0.5 rounded border border-green-200 flex items-center shadow-sm"><svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg> Đã đăng ký</span>`;
-              } else {
-                regBadgeWrap.innerHTML = '';
-              }
-            }
+            actionWrap.innerHTML = actionBtnHtml + '\n<p class="text-xs text-gray-400 text-center">👆 Nhấp để xem chi tiết</p>';
           } catch (e) {
             console.warn('[checkRegistrationStatus] Error processing activity ' + maHD + ':', e);
           }
@@ -2735,10 +3090,219 @@ document.addEventListener("DOMContentLoaded", async () => {
       console.warn('checkRegistrationStatus error (ignored):', err);
     }
   }
-  // ====== LOGIN: Đã được di chuyển sang login.html và js/login.js ======
-  // Trang index.html chỉ xử lý các chức năng cho những người đã đăng nhập
-  // Nếu chưa đăng nhập, ensureLoggedIn() sẽ redirect sang login.html
 
+  // ====== LOGIN: gọi server để kiểm tra (an toàn) ======
+  cancelLogin.addEventListener("click", () => {
+    loginModal.classList.add("hidden");
+    hideLoginError(); // Ẩn lỗi khi đóng modal
+  });
+  
+  loginForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const user = document.getElementById("username").value.trim();
+    const pass = document.getElementById("password").value.trim();
+    
+    // Ẩn lỗi cũ khi submit form mới
+    hideLoginError();
+    
+    if (!user || !pass) {
+      showLoginError("Vui lòng nhập đầy đủ tên đăng nhập và mật khẩu!");
+      return;
+    }
+
+    try {
+      // Gọi API đăng nhập thực tế
+      const res = await fetch(`${API_BASE}/api/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ TenTK: user, MatKhau: pass })
+      });
+      
+      if (res.status === 401) {
+        showLoginError("Sai tài khoản hoặc mật khẩu. Vui lòng kiểm tra lại!");
+        return;
+      }
+      
+      if (res.status === 400) {
+        try {
+          const errorData = await res.json();
+          showLoginError(errorData.message || "Tài khoản đã bị khóa!");
+        } catch {
+          showLoginError("Tài khoản đã bị khóa!");
+        }
+        return;
+      }
+      
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+      const userInfo = await res.json();
+      console.log("API Response:", userInfo); // Debug: xem response từ API
+      
+      // Kiểm tra xem API có trả về MaQT không
+      if (!userInfo.MaQT) {
+        console.warn("API không trả về MaQT, sử dụng giá trị mặc định");
+        // Nếu API không có MaQT, có thể set giá trị mặc định hoặc báo lỗi
+        showLoginError("API không trả về thông tin phân quyền (MaQT). Vui lòng liên hệ admin!");
+        return;
+      }
+
+      // Lưu thông tin người dùng vào cả localStorage và sessionStorage
+      localStorage.setItem("loggedUser", userInfo.TenNguoiDung || userInfo.TenTK || user);
+      localStorage.setItem("loggedUserInfo", JSON.stringify(userInfo));
+      sessionStorage.setItem("loggedUser", userInfo.TenNguoiDung || userInfo.TenTK || user);
+      sessionStorage.setItem("loggedUserInfo", JSON.stringify(userInfo));
+      
+      // ✅ IMPORTANT: Save credentials for F5 auto-refresh
+      localStorage.setItem("savedTenTK", user);
+      localStorage.setItem("savedMatKhau", pass);
+      console.log('💾 [LOGIN] Saved credentials for F5 auto-refresh');
+      
+      // Phân quyền dựa trên MaQT từ API
+      const maQT = userInfo.MaQT;
+      console.log("MaQT từ API:", maQT); // Debug: xem MaQT nhận được
+      
+      if (maQT === "AD01") {
+        // Admin - Chuyển đến giao diện admin
+        console.log("Chuyển hướng đến giao diện Admin");
+        window.location.href = "admin.html";
+        return;
+      } else if (maQT === "GV01") {
+        // Giảng viên - Chuyển đến giao diện giảng viên
+        console.log("Chuyển hướng đến giao diện Giảng viên");
+        window.location.href = "giangvien.html";
+        return;
+      } else if (maQT === "TR01") {
+        // Cấp trường - Chuyển đến giao diện trường
+        console.log("Chuyển hướng đến giao diện Trường");
+        window.location.href = "truong.html";
+        return;
+      } else if (maQT === "KH01") {
+        // Cán bộ Khoa - Chuyển đến giao diện Khoa
+        console.log("Chuyển hướng đến giao diện Khoa");
+        window.location.href = "khoa.html";
+        return;
+      } else {
+        // Sinh viên hoặc vai trò khác
+        console.log("Xử lý vai trò sinh viên hoặc khác:", maQT);
+        try {
+          // Kiểm tra CBLop: nếu là cán bộ lớp thì chuyển giao diện CBL
+          const mssvCandidateRaw = (userInfo.MaCaNhan || userInfo.MSSV || userInfo.MaSV || userInfo.TenTK || user || '').toString();
+          const mssvCandidate = mssvCandidateRaw.trim();
+          if (mssvCandidate) {
+            const svRes = await fetch(`${API_BASE}/api/sinhvien/${encodeURIComponent(mssvCandidate)}`);
+            if (svRes.ok) {
+              const sv = await svRes.json();
+              const isCBL = sv && (sv.CBLop === true || sv.CBLop === 1 || sv.CBLop === '1');
+              if (isCBL) {
+                console.log("CBLop=true → chuyển đến canbolop.html");
+                window.location.href = "cblop.html";
+                return;
+              }
+            } else if (svRes.status === 404 && userInfo.TenTK && userInfo.TenTK !== mssvCandidate) {
+              // Fallback: thử với TenTK đã trim nếu khác
+              const tk = (userInfo.TenTK || '').toString().trim();
+              if (tk) {
+                const svRes2 = await fetch(`${API_BASE}/api/sinhvien/${encodeURIComponent(tk)}`);
+                if (svRes2.ok) {
+                  const sv2 = await svRes2.json();
+                  const isCBL2 = sv2 && (sv2.CBLop === true || sv2.CBLop === 1 || sv2.CBLop === '1');
+                  if (isCBL2) {
+                    window.location.href = "cblop.html";
+                    return;
+                  }
+                }
+              }
+            }
+          }
+        } catch (e) {
+          console.warn("Không kiểm tra được CBLop, sẽ ở lại giao diện SV:", e);
+        }
+
+        // Mặc định: Ở lại trang chủ (SV)
+        renderLoggedInUI(localStorage.getItem("loggedUser"));
+        loginModal.classList.add("hidden");
+        hideLoginError();
+        showRoleMessage(maQT, userInfo.TenNguoiDung || userInfo.TenTK);
+        
+        // ✅ EXECUTE PENDING ACTION (nếu có - ví dụ openEvidenceWizard hoặc openAttendanceEvidenceModal)
+        if (pendingWizardAction) {
+          const action = pendingWizardAction;
+          pendingWizardAction = null;
+          if (action.action === 'openEvidenceWizard') {
+            // Delay nhỏ để đảm bảo UI đã render xong
+            setTimeout(() => {
+              openEvidenceWizard(action.maHD);
+            }, 100);
+          } else if (action.action === 'openAttendanceEvidenceModal') {
+            setTimeout(() => {
+              openAttendanceEvidenceModal(action.maHD);
+            }, 100);
+          }
+        }
+        
+        // 🔥 STEP 1: Nạp activities + registrations từ server
+        console.log('[login] STEP 1: Loading activities + registrations from API');
+        try {
+          const preloadRes = await fetch(`${API_BASE}/api/preload?t=${Date.now()}`, { cache: 'no-store' });
+          if (preloadRes.ok) {
+            const preloadData = await preloadRes.json();
+            console.log('[login] Preload API returned:', preloadData.hoatDongTruong?.length || 0, 'activities');
+            
+            // Set activities
+            if (Array.isArray(preloadData.hoatDongTruong)) {
+              window.allActivities = preloadData.hoatDongTruong;
+              window.dbCache = preloadData; // Also cache full data
+              sessionStorage.setItem('preload', JSON.stringify(preloadData));
+              console.log('[login] ✅ Set window.allActivities:', window.allActivities.length, 'items');
+            }
+            
+            // Set registrations from preload
+            if (Array.isArray(preloadData.studentRegistrations)) {
+              window._svRegSet = new Set();
+              window._svRegDetail = {};
+              preloadData.studentRegistrations.forEach(it => {
+                const ma = String(it.MaHD||''); if (!ma) return;
+                window._svRegSet.add(ma);
+                window._svRegDetail[ma] = {
+                  RegisteredAt: it.RegisteredAt,
+                  TenHD: it.TenHD || '',
+                  Status: it.Status || 'PENDING',
+                  Eligible: (typeof it.IsEligibleForEvidence === 'boolean') ? it.IsEligibleForEvidence : true,
+                  EvidenceVerdict: it.EvidenceVerdict || it.evidenceVerdict || ''
+                };
+              });
+              console.log('[login] ✅ Set registrations:', window._svRegSet.size, 'items');
+            }
+          } else {
+            console.warn('[login] Preload API failed:', preloadRes.status);
+          }
+        } catch (e) {
+          console.warn('[login] Error loading preload data:', e);
+        }
+        
+        // 🔥 STEP 2: Re-render activities với button status
+        console.log('[login] STEP 2: Re-rendering activities with registration status');
+        try {
+          if (Array.isArray(window.allActivities)) {
+            console.log('[login] Re-rendering', window.allActivities.length, 'activities with', window._svRegSet?.size || 0, 'registrations');
+            await renderActivities(window.allActivities);
+            console.log('[login] ✅ Activities re-rendered successfully');
+          } else {
+            console.warn('[login] window.allActivities not available yet');
+          }
+        } catch (e) {
+          console.warn('[login] Error re-rendering activities:', e);
+        }
+      }
+      
+    } catch (err) {
+      console.error("Lỗi khi gọi API:", err);
+      
+      // Fallback: sử dụng demo data nếu API không hoạt động
+      console.log("API không hoạt động, sử dụng demo data");
+      handleDemoLogin(user, pass);
+    }
+  });
 
   // Hàm hiển thị thông báo về vai trò
   function showRoleMessage(maQT, username) {
@@ -2877,6 +3441,15 @@ document.addEventListener("DOMContentLoaded", async () => {
               <a href="/ekyc.html" class="bg-orange-500 hover:bg-orange-600 text-white font-bold py-2 px-4 rounded text-sm no-underline whitespace-nowrap ml-4">Xác thực ngay</a>
             </div>
           </div>` : ""}
+
+          <!-- Trạng thái eKYC -->
+          <div class="mt-6 border-t border-gray-200 pt-4">
+             <h4 class="text-sm font-bold text-gray-700 uppercase tracking-wide mb-3">Xác thực danh tính (eKYC)</h4>
+             <div id="preview-ekyc-status-display" class="bg-gray-50 p-4 rounded-lg border flex items-center justify-center">
+                 <div class="spinner-border spinner-border-sm text-primary mr-2" role="status"></div> Đang tải trạng thái...
+             </div>
+          </div>
+
           <!-- Student Info Section -->
           <div class="flex items-start gap-6">
             <div class="flex flex-col items-center gap-3 relative">
@@ -2927,16 +3500,8 @@ document.addEventListener("DOMContentLoaded", async () => {
             </div>
           </div>
 
-          <!-- Trạng thái eKYC -->
-          <div class="mt-6 border-t border-gray-200 pt-4">
-             <h4 class="text-sm font-bold text-gray-700 uppercase tracking-wide mb-3">Xác thực danh tính (eKYC)</h4>
-             <div id="preview-ekyc-status-display" class="bg-gray-50 p-4 rounded-lg border flex items-center justify-center">
-                 <div class="spinner-border spinner-border-sm text-primary mr-2" role="status"></div> Đang tải trạng thái...
-             </div>
-          </div>
-
           <!-- Academic Performance Section -->
-          <div class="space-y-4 mt-6 border-t border-gray-200 pt-4">
+          <div class="space-y-4">
             <h4 class="text-sm font-bold text-gray-700 uppercase tracking-wide border-b border-gray-200 pb-2">
               Kết quả học tập
             </h4>
@@ -3117,10 +3682,6 @@ document.addEventListener("DOMContentLoaded", async () => {
              const newGrades = await res.json();
              console.log(`Filtered grades:`, newGrades);
             
-            // Ẩn lịch sử điểm khi đổi filter
-            const histDisplay = document.getElementById("history-display");
-            if (histDisplay) histDisplay.classList.add("hidden");
-
             // Update the grades display
             const gradesDisplay = document.getElementById("grades-display");
             if (gradesDisplay && newGrades.length > 0) {
@@ -3179,6 +3740,8 @@ document.addEventListener("DOMContentLoaded", async () => {
                 </div>
               `;
             }
+            // Hide history if filter changes
+            document.getElementById('history-display')?.classList.add('hidden');
           } catch (err) {
             console.error(err);
             let errorMsg = "Không thể tải dữ liệu điểm. Vui lòng thử lại!";
@@ -3190,23 +3753,23 @@ document.addEventListener("DOMContentLoaded", async () => {
         });
       }
 
-      const historyBtn = document.getElementById("btn-history");
-      if (historyBtn) {
-        historyBtn.addEventListener("click", async () => {
-          const disp = document.getElementById("history-display");
+      const btnHistory = document.getElementById('btn-history');
+      if (btnHistory) {
+        btnHistory.addEventListener('click', async () => {
+          const disp = document.getElementById('history-display');
           if (!disp) return;
-          if (!disp.classList.contains("hidden")) {
-              disp.classList.add("hidden");
+          if (!disp.classList.contains('hidden')) {
+              disp.classList.add('hidden');
               return;
           }
-          disp.classList.remove("hidden");
+          disp.classList.remove('hidden');
           disp.innerHTML = '<div class="text-center text-xs text-gray-500 py-4">Đang tải lịch sử...</div>';
           try {
-              const y = document.getElementById("filter-namhoc").value;
-              const hk = document.getElementById("filter-hocki").value;
-              const resHist = await fetch(`${API_BASE}/api/sinhvien/${encodeURIComponent(mssv)}/points-history?namHoc=${y}&hocKi=${hk}`);
-              if (!resHist.ok) throw new Error(`HTTP ${resHist.status}`);
-              const history = await resHist.json();
+              const y = document.getElementById('filter-namhoc').value;
+              const hk = document.getElementById('filter-hocki').value;
+              const res = await fetch(`${API_BASE}/api/sinhvien/${encodeURIComponent(mssv)}/points-history?${new URLSearchParams({ namHoc: y, hocKi: hk }).toString()}`);
+              if (!res.ok) throw new Error(`HTTP ${res.status}`);
+              const history = await res.json();
               if (Array.isArray(history) && history.length > 0) {
                   disp.innerHTML = `
                     <div class="overflow-hidden rounded-lg border border-gray-200 bg-white">
@@ -3280,14 +3843,13 @@ document.addEventListener("DOMContentLoaded", async () => {
       document.getElementById("modal-body").innerHTML = `
         <form id="sv-form" class="space-y-6">
           <div class="flex items-start gap-6">
-            <div class="flex flex-col items-center gap-3 relative">
-              <img id="sv-avatar-img" class="w-24 h-24 rounded-full object-cover ${studentEkycApproved ? 'border-4 border-green-500' : 'border'}" src="${sv.AnhDD ? `data:image/jpeg;base64,${sv.AnhDD}` : `https://ui-avatars.com/api/?name=${encodeURIComponent(sv.TenSV || sv.MSSV || mssv)}&background=0D8ABC&color=fff`}" alt="Avatar">
-              ${studentEkycApproved ? `
-              <div class="absolute bg-green-500 text-white rounded-full p-1" style="bottom: 30px; right: 0; box-shadow: 0 0 0 2px white;">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
-              </div>` : `
-              <label class="text-xs font-medium">Đổi ảnh đại diện</label>
-              <input id="sv-avatar" type="file" accept="image/*" class="text-xs" />
+            <div class="flex flex-col items-center gap-3">
+              <img id="sv-avatar-img" class="w-24 h-24 rounded-full object-cover ${window.isEkycApproved ? 'border-4 border-green-500' : 'border'}" src="${sv.AnhDD ? `data:image/jpeg;base64,${sv.AnhDD}` : `https://ui-avatars.com/api/?name=${encodeURIComponent(sv.TenSV || sv.MSSV || mssv)}&background=0D8ABC&color=fff`}" alt="Avatar">
+              ${window.isEkycApproved ? `
+                <span class="text-xs font-medium text-green-600 mt-2 text-center px-2"><i class="bi bi-shield-lock"></i> Ảnh đại diện đã được khóa bởi eKYC</span>
+              ` : `
+                <label class="text-xs font-medium mt-1">Đổi ảnh đại diện</label>
+                <input id="sv-avatar" type="file" accept="image/*" class="text-xs" />
               `}
             </div>
             <div class="flex-1 space-y-4">
@@ -3430,16 +3992,163 @@ document.addEventListener("DOMContentLoaded", async () => {
   window.openCurrentStudentProfile = openCurrentStudentProfile;
   window.showStudentRanking = showStudentRanking;
 
-  // ====== Khởi động: luôn fetch dữ liệu mới từ server (F5 cần update sau khi admin sửa) ======
-  // Xóa cache cũ để buộc fetch từ server khi F5 hoạt động
+  // ====== AUTO-RESTORE LOGIN STATE FIRST (trước preloadData) ======
+  console.log('🔍 [INIT] Checking auto-restore login state...');
+  const savedUser = localStorage.getItem("loggedUser");
+  const savedInfo = localStorage.getItem("loggedUserInfo");
+  const savedTenTK = localStorage.getItem("savedTenTK");
+  const savedMatKhau = localStorage.getItem("savedMatKhau");
+  
+  // Detect F5 using Performance API
+  let isF5Reload = false;
+  if (performance.getEntriesByType && performance.getEntriesByType("navigation").length > 0) {
+    const navTiming = performance.getEntriesByType("navigation")[0];
+    isF5Reload = navTiming.type === "reload";
+  }
+  
+  // Confirm F5: if reload AND all credentials exist
+  isF5Reload = isF5Reload && savedUser && savedInfo && savedTenTK && savedMatKhau;
+  
+  if (isF5Reload) {
+    console.log('🔄 [INIT] F5 reload detected');
+    // Clear most session state to force fresh login but PRESERVE registration/QR cache
+    // (Important: users expect their "đã đăng ký" state to survive a refresh)
+    let _preserve_sv_reg_set = null;
+    let _preserve_sv_reg_detail = null;
+    let _preserve_qr_maHD = null;
+    let _preserve_qr_tenHD = null;
+    let _preserve_loggedUser = null;
+    let _preserve_loggedUserInfo = null;
+    try {
+      _preserve_sv_reg_set = sessionStorage.getItem('sv_reg_set');
+      _preserve_sv_reg_detail = sessionStorage.getItem('sv_reg_detail');
+      _preserve_qr_maHD = sessionStorage.getItem('qr_maHD');
+      _preserve_qr_tenHD = sessionStorage.getItem('qr_tenHD');
+      _preserve_loggedUser = sessionStorage.getItem('loggedUser');
+      _preserve_loggedUserInfo = sessionStorage.getItem('loggedUserInfo');
+    } catch {}
+    // Clear sessionStorage but we'll restore the preserved keys below
+    try { sessionStorage.clear(); } catch {}
+    try {
+      if (_preserve_sv_reg_set) sessionStorage.setItem('sv_reg_set', _preserve_sv_reg_set);
+      if (_preserve_sv_reg_detail) sessionStorage.setItem('sv_reg_detail', _preserve_sv_reg_detail);
+      if (_preserve_qr_maHD) sessionStorage.setItem('qr_maHD', _preserve_qr_maHD);
+      if (_preserve_qr_tenHD) sessionStorage.setItem('qr_tenHD', _preserve_qr_tenHD);
+      if (_preserve_loggedUser) {
+        sessionStorage.setItem('loggedUser', _preserve_loggedUser);
+        localStorage.setItem('loggedUser', _preserve_loggedUser); // ✅ Also restore to localStorage
+      }
+      if (_preserve_loggedUserInfo) {
+        sessionStorage.setItem('loggedUserInfo', _preserve_loggedUserInfo);
+        localStorage.setItem('loggedUserInfo', _preserve_loggedUserInfo); // ✅ Also restore to localStorage
+      }
+    } catch {}
+    // DO NOT remove login data from localStorage - it's used for F5 auto-restore!
+    localStorage.removeItem("preload");
+    localStorage.removeItem("studentData");
+    localStorage.removeItem("userAvatarFor");
+    localStorage.removeItem("currentMSSV");
+    
+    // Set F5 auto-login flags
+    localStorage.setItem("F5_AUTO_LOGIN_PENDING", "true");
+    localStorage.setItem("F5_AUTO_LOGIN_TenTK", savedTenTK);
+    localStorage.setItem("F5_AUTO_LOGIN_MatKhau", savedMatKhau);
+    
+    // Show login form and trigger auto-login
+    renderLoggedOutUI();
+    return; // Skip rest of init
+  }
+  
+  if (savedUser && savedInfo) {
+    // RESTORE sessionStorage từ localStorage (normal case, not F5)
+    try {
+      sessionStorage.setItem("loggedUser", savedUser);
+      sessionStorage.setItem("loggedUserInfo", savedInfo);
+      console.log('✅ [INIT] Restored login to sessionStorage from localStorage');
+    } catch (e) {
+      console.error('❌ [INIT] Failed to restore sessionStorage:', e);
+    }
+  }
+
+  // ====== Khởi động: Fetch dữ liệu từ server và render ======
+  console.warn('🔥 [INIT-BEFORE-FETCH] About to start initialization! 🔥🔥🔥');
+  // Xóa cache sessionStorage cũ để buộc fetch fresh data từ server
+  console.warn('🔥 [INIT-STEP-1] About to remove preload from sessionStorage');
   sessionStorage.removeItem("preload");
   // DON'T clear registration cache - user wants to stay registered after F5!
   // Only clear on logout (see logout handlers at lines 290, 307, 602)
-  preloadData();
+  
+  try {
+    console.warn('🔥 [INIT-STEP-3] Fetching preload data from API...');
+    
+    // Get MSSV from logged-in user info
+    const userInfoStr = sessionStorage.getItem('loggedUserInfo');
+    let mssv = '';
+    if (userInfoStr) {
+      try {
+        const userInfo = JSON.parse(userInfoStr);
+        mssv = userInfo.MaCaNhan || userInfo.MSSV || userInfo.MaSV || userInfo.TenTK || '';
+      } catch (e) {
+        console.warn('🔥 [INIT-STEP-3a] Could not parse userInfo:', e.message);
+      }
+    }
+    
+    // ✅ Fetch API preload with MSSV filter
+    const preloadUrl = mssv 
+      ? `/api/preload?t=${Date.now()}&mssv=${encodeURIComponent(mssv)}`
+      : `/api/preload?t=${Date.now()}`;
+    const res = await fetch(preloadUrl);
+    if (!res.ok) throw new Error('API returned ' + res.status);
+    
+    const data = await res.json();
+    
+    // Set global cache
+    window.dbCache = window.dbCache || {};
+    window.dbCache.KHOA = data.khoa || [];
+    window.dbCache.Lop = data.lop || [];
+    window.dbCache.HoatDongTruong = data.hoatDongTruong || [];
+    window.allActivities = window.dbCache.HoatDongTruong;
+    
+    // ✅ STEP 1: Hydrate registration state from API (like QR was scanned successfully)
+    console.warn('🔥 [INIT-STEP-5] Hydrating registration state from API...');
+    try {
+      const list = Array.isArray(data.studentRegistrations) ? data.studentRegistrations : [];
+      if (list.length > 0) {
+        window._svRegSet = new Set();
+        window._svRegDetail = {};
+        list.forEach(it => {
+          const ma = String(it.MaHD||''); if (!ma) return;
+          window._svRegSet.add(ma);
+          window._svRegDetail[ma] = {
+            Registered: true,
+            RegisteredAt: it.RegisteredAt,
+            TenHD: it.TenHD || '',
+            Status: it.Status || 'PENDING',
+            Eligible: (typeof it.IsEligibleForEvidence === 'boolean') ? it.IsEligibleForEvidence : true,
+            EvidenceVerdict: it.EvidenceVerdict || it.evidenceVerdict || ''
+          };
+        });
+        try { saveRegState(); } catch {}
+      }
+    } catch (e) {
+      console.warn('[INIT] Could not hydrate registration state:', e.message);
+    }
+    
+    // ✅ STEP 2: Render activities cards with updated registration status
+    if (typeof renderActivities === 'function') {
+      await renderActivities(window.dbCache.HoatDongTruong);
+    } else {
+      console.error('🔥 [INIT] renderActivities is NOT a function! Type:', typeof renderActivities);
+    }
+    
+  } catch (err) {
+    console.error('🔥 [INIT] Error:', err.message);
+    activitiesContainer.innerHTML = "";
+    noActivity.classList.remove("hidden");
+  }
 
   // ====== Giữ trạng thái login như cũ (kiểm tra lần nữa sau preloadData) ======
   const currentUser = sessionStorage.getItem("loggedUser") || localStorage.getItem("loggedUser");
-  console.log('🔍 [AFTER-PRELOAD] Current user:', currentUser);
   if (currentUser) {
     console.log('✅ Found saved user:', currentUser);
     // Đồng bộ sessionStorage với localStorage (cho trường hợp trang được reload)
@@ -3482,8 +4191,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     // Nếu là sinh viên hoặc không xác định được vai trò, hiển thị giao diện sinh viên
     renderLoggedInUI(currentUser);
   } else {
-    console.log('❌ [AFTER-PRELOAD] No saved user - redirecting to login page');
-    window.location.href = "login.html";
+    console.log('❌ [AFTER-PRELOAD] No saved user - showing logged out UI');
+    renderLoggedOutUI();
   }
 
   // ====== Training Evaluation (Đánh giá rèn luyện) ======
@@ -3498,338 +4207,34 @@ document.addEventListener("DOMContentLoaded", async () => {
     return false;
   }
 
-  // Wrapper: prefer shared module; fallback to legacy local implementation below (renamed)
+  // Wrapper: open phieu-list-modal menu instead of eval-modal directly
   async function openTrainingEvaluation() {
     console.log('[DEBUG] openTrainingEvaluation called');
-    // Show phiếu list modal first
-    return openPhieuListModal();
-  }
-
-  // Open phiếu list modal to select or create new form
-  // STEP 3.1: Helper function to format status
-  function getPhieuStatusColor(status) {
-    switch(status) {
-      case 'Approved':
-      case 'ApprovedByCBL':
-      case 'ApprovedByGV':
-      case 'ApprovedByFaculty':
-      case 'ApprovedBySchool': return 'bg-green-100 text-green-800';
-      case 'Submitted': return 'bg-yellow-100 text-yellow-800';
-      case 'Draft': return 'bg-gray-200 text-gray-800';
-      case 'ForwardedToCBL':
-      case 'ForwardedToGV':
-      case 'ForwardedToFaculty':
-      case 'ForwardedToSchool': return 'bg-blue-100 text-blue-800';
-      case 'Rejected': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
-  }
-
-  function getPhieuStatusLabel(status) {
-    switch(status) {
-      case 'Approved': return 'Đã duyệt';
-      case 'ApprovedByCBL': return 'CBL đã duyệt';
-      case 'ApprovedByGV': return 'GV đã duyệt';
-      case 'ApprovedByFaculty': return 'Khoa đã duyệt';
-      case 'ApprovedBySchool': return 'Trường đã duyệt';
-      case 'Submitted': return 'Đã nộp';
-      case 'Draft': return 'Chưa gửi';
-      case 'ForwardedToCBL': return 'Chờ CBL duyệt';
-      case 'ForwardedToGV': return 'Chờ GV duyệt';
-      case 'ForwardedToGVCN': return 'Chờ GVCN duyệt';
-      case 'ForwardedToFaculty': return 'Chờ Khoa duyệt';
-      case 'ForwardedToSchool': return 'Chờ Trường duyệt';
-      case 'Rejected': return 'Bị từ chối';
-      case 'RejectedByCBL': return 'CBL từ chối';
-      case 'RejectedByGVCN':
-      case 'RejectedByGV': return 'GVCN từ chối';
-      case 'RejectedByFaculty': return 'Khoa từ chối';
-      case 'NeedsFixByGVCN':
-      case 'NeedsFixByGV': return 'GVCN yêu cầu sửa';
-      case 'NeedsFixByFaculty': return 'Khoa yêu cầu sửa';
-      default: return status || 'Chưa nộp';
-    }
-  }
-
-  // Kiểm tra xem status có phải đã được duyệt (khóa form) hay không
-  // ✅ FIXED: Lock form only when it's been approved by CBL or higher levels
-  // Allow editing only for: Draft, Submitted (chưa nộp), NeedsFixByGVCN
-  function isPhieuApproved(status) {
-    // Lock form if approved by CBL or higher approval levels
-    const result = ['ApprovedByCBL', 'ApprovedByGV', 'ApprovedByFaculty', 'ApprovedBySchool'].includes(status);
-    console.log('[isPhieuApproved] Checking status:', status, '→ Result:', result);
-    return result;
-  }
-
-  // STEP 3.2: Update deadline UI
-  async function updateDeadlineUI(namHoc, hocKi) {
-    try {
-      const res = await fetch(`${API_BASE}/api/phieu-danh-gia/deadline?namHoc=${encodeURIComponent(namHoc || '2025-2026')}&hocKi=${hocKi || 1}`);
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      
-      const deadline = await res.json();
-      console.log('[DEADLINE] Fetched:', deadline);
-
-      const deadlineSection = document.getElementById('deadline-info-section');
-      const deadlineDisplay = document.getElementById('deadline-display');
-      const daysDisplay = document.getElementById('days-remaining-display');
-
-      if (deadline.isExpired) {
-        deadlineSection.classList.remove('hidden');
-        deadlineDisplay.innerHTML = `<span class="text-red-600 font-semibold">⏰ Đã quá hạn (${deadline.formattedDeadline})</span>`;
-        daysDisplay.textContent = '0';
-        daysDisplay.classList.add('text-red-700');
-      } else {
-        deadlineSection.classList.remove('hidden');
-        deadlineDisplay.textContent = `📅 ${deadline.formattedDeadline}`;
-        daysDisplay.textContent = deadline.daysRemaining;
-        daysDisplay.classList.remove('text-red-700');
-      }
-
-      return deadline;
-    } catch (error) {
-      console.error('[DEADLINE] Error:', error);
-      document.getElementById('deadline-info-section').classList.add('hidden');
-      return null;
-    }
-  }
-
-  // STEP 3.3: Update create button state
-  function updateCreatePhieuButtonState(deadline, hasApprovedForm) {
-    const btn = document.getElementById('btn-create-phieu');
-    const errorDiv = document.getElementById('create-phieu-error');
-
-    if (!btn) return;
-
-    if (!deadline || deadline.isExpired) {
-      btn.disabled = true;
-      btn.title = 'Thời hạn tạo phiếu đã qua';
-      if (deadline?.isExpired) {
-        errorDiv.textContent = '❌ Thời hạn tạo phiếu đã qua, không thể tạo phiếu mới';
-        errorDiv.classList.remove('hidden');
-      }
-    } else if (hasApprovedForm) {
-      btn.disabled = true;
-      btn.title = 'Phiếu đã được duyệt cho học kì này';
-      errorDiv.textContent = '❌ Phiếu đã được duyệt cho học kì này, không thể tạo phiếu mới';
-      errorDiv.classList.remove('hidden');
-    } else {
-      btn.disabled = false;
-      btn.title = 'Tạo phiếu đánh giá mới';
-      errorDiv.classList.add('hidden');
-    }
-  }
-
-  // Tạo danh sách năm học tự động: từ (năm hiện tại - 2) đến (năm hiện tại + 1)
-  function populateNamHocSelect() {
-    const sel = document.getElementById('new-phieu-namhoc');
-    if (!sel) return;
-
-    const now = new Date();
-    const curYear = now.getFullYear();
-    const curMonth = now.getMonth() + 1; // 1-12
-    // Năm học hiện tại: nếu tháng >= 8 thì là curYear-(curYear+1), ngược lại là (curYear-1)-curYear
-    const currentAcadStart = curMonth >= 8 ? curYear : curYear - 1;
-
-    // Giữ giá trị đang chọn (nếu có)
-    const prevVal = sel.value;
-
-    sel.innerHTML = '';
-    // Sinh 4 năm học: từ 2 năm trước đến 1 năm sau năm hiện tại
-    for (let start = currentAcadStart - 2; start <= currentAcadStart + 1; start++) {
-      const label = `${start}-${start + 1}`;
-      const opt = document.createElement('option');
-      opt.value = label;
-      opt.textContent = label;
-      if (label === `${currentAcadStart}-${currentAcadStart + 1}`) {
-        opt.selected = true; // mặc định chọn năm học hiện tại
-      }
-      sel.appendChild(opt);
-    }
-
-    // Khôi phục giá trị cũ nếu vẫn còn trong danh sách
-    if (prevVal && [...sel.options].some(o => o.value === prevVal)) {
-      sel.value = prevVal;
-    }
-  }
-
-  async function openPhieuListModal() {
-    console.log('[PHIEU-LIST] Opening phiếu list modal');
-    const modal = document.getElementById('phieu-list-modal');
-    const mssv = getCurrentMSSV();
+    // ✅ Close any other modals first to prevent overlaps
+    document.getElementById('modal')?.classList.add('hidden');
+    document.getElementById('qr-modal')?.classList.add('hidden');
+    document.getElementById('wizard-modal')?.classList.add('hidden');
+    document.getElementById('attendance-wizard-modal')?.classList.add('hidden');
+    document.getElementById('evidence-modal')?.classList.add('hidden');
+    document.getElementById('evidence-preview-modal')?.classList.add('hidden');
+    document.getElementById('eval-modal')?.classList.add('hidden');
+    document.getElementById('sv-attach-evidence-modal')?.classList.add('hidden');
     
-    if (!mssv) {
-      alert('Vui lòng đăng nhập.');
-      return;
-    }
-
-    if (!modal) {
-      console.error('[PHIEU-LIST] Modal not found');
-      return;
-    }
-
-    // Show loading state
-    const container = document.getElementById('phieu-list-container');
-    container.innerHTML = '<p class="text-sm text-gray-500 text-center py-4">Đang tải...</p>';
-    modal.classList.remove('hidden');
-
-    // Populate năm học combobox trước khi đọc giá trị
-    populateNamHocSelect();
-
-    try {
-      // Get selected year and semester from form inputs
-      const namHoc = document.getElementById('new-phieu-namhoc')?.value || '2025-2026';
-      const hocKi = parseInt(document.getElementById('new-phieu-hocki')?.value || 1);
-
-      // STEP 3.4: Update deadline info
-      const deadline = await updateDeadlineUI(namHoc, hocKi);
-
-      // Fetch phiếu list
-      const res = await fetch(`${API_BASE}/api/phieu-danh-gia/list?search=${encodeURIComponent(mssv)}&namHoc=${encodeURIComponent(namHoc)}&hocKi=${hocKi}`);
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      
-      const phieuList = await res.json();
-      console.log('[PHIEU-LIST] Fetched phiếu list:', phieuList);
-
-      // STEP 3.5: Check for approved form (tất cả trạng thái đã duyệt)
-      const hasApprovedForm = phieuList.some(p => isPhieuApproved(p.status) && p.hocKi === hocKi);
-      updateCreatePhieuButtonState(deadline, hasApprovedForm);
-
-      if (!Array.isArray(phieuList) || phieuList.length === 0) {
-        container.innerHTML = '<p class="text-sm text-gray-500 text-center py-4">Chưa có phiếu nào. Vui lòng tạo phiếu mới.</p>';
-      } else {
-        // Render phiếu list
-        let html = '';
-        phieuList.forEach((phieu, idx) => {
-          const statusColor = getPhieuStatusColor(phieu.status);
-          const statusLabel = getPhieuStatusLabel(phieu.status);
-          const createdDate = new Date(phieu.createdAt).toLocaleDateString('vi-VN');
-          
-          html += `
-            <div class="border rounded p-3 hover:bg-gray-50 cursor-pointer transition phieu-item" data-phieu-id="${phieu.id}">
-              <div class="flex items-start justify-between">
-                <div class="flex-1">
-                  <p class="font-semibold text-gray-900">Năm học ${phieu.namHoc}, Học kì ${phieu.hocKi}</p>
-                  <p class="text-sm text-gray-600">Ngày tạo: ${createdDate}</p>
-                  <p class="text-sm text-gray-600">Tổng điểm: <span class="font-semibold">${phieu.tongDiem}</span></p>
-                </div>
-                <span class="px-3 py-1 text-xs font-semibold rounded ${statusColor}">
-                  ${statusLabel}
-                </span>
-              </div>
-            </div>
-          `;
-        });
-        container.innerHTML = html;
-        
-        // STEP 3.6a: Add event delegation for phieu items
-        const phieuItems = container.querySelectorAll('.phieu-item');
-        phieuItems.forEach(item => {
-          item.addEventListener('click', function() {
-            const phieuId = this.getAttribute('data-phieu-id');
-            if (phieuId) {
-              openPhieuDetail(parseInt(phieuId));
-            }
-          });
-        });
-      }
-    } catch (error) {
-      console.error('[PHIEU-LIST] Error:', error);
-      container.innerHTML = `<p class="text-sm text-red-600 text-center py-4">Lỗi tải danh sách: ${error.message}</p>`;
-      document.getElementById('btn-create-phieu').disabled = true;
-    }
-  }
-
-  // Open specific phiếu for editing/viewing
-  async function openPhieuDetail(phieuId) {
-    window.openPhieuDetail = openPhieuDetail;
-    console.log('[PHIEU-DETAIL] Opening phiếu ID:', phieuId);
-    
-    try {
-      // STEP 3.7: Close list modal first
-      document.getElementById('phieu-list-modal')?.classList.add('hidden');
-      
-      // STEP 3.8: Fetch phiếu data (KHÔNG reset - giữ nguyên dữ liệu đã lưu)
-      const res = await fetch(`${API_BASE}/api/phieu-danh-gia/${phieuId}/full`);
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      
-      const phieu = await res.json();
-      console.log('[PHIEU-DETAIL] Loaded phiếu:', phieu);
-      
-      // API /full trả về { header: {...}, items: [...] }
-      const header = phieu.header || phieu;
-      const phieuItems = phieu.items || phieu.Items || [];
-      window.currentPhieuEvidences = phieu.evidences || phieu.Evidences || [];
-      
-      // ✅ DEBUG: Log tất cả header properties
-      console.log('[PHIEU-DETAIL] Header object properties:', Object.keys(header));
-      console.log('[PHIEU-DETAIL] header.NamHoc:', header.NamHoc);
-      console.log('[PHIEU-DETAIL] header.namHoc:', header.namHoc);
-      console.log('[PHIEU-DETAIL] header.HocKi:', header.HocKi);
-      console.log('[PHIEU-DETAIL] header.hocKi:', header.hocKi);
-      
-      // STEP 3.9: Set form fields from phiếu data
-      const namHoc = header.NamHoc || header.namHoc || '2025-2026';
-      const hocKi = header.HocKi || header.hocKi || '2';
-      
-      document.getElementById('eval-namhoc').value = namHoc;
-      document.getElementById('eval-hocki').value = hocKi;
-      
-      // ✅ NEW: Lưu NamHoc & HocKi vào global variables để wizard modal dùng
-      window.currentPhieuNamHoc = namHoc;
-      window.currentPhieuHocKi = parseInt(hocKi) || 2;
-      console.log('[PHIEU-DETAIL] Saved NamHoc:', namHoc, 'HocKi:', window.currentPhieuHocKi);
-      
-      // ✅ NEW: Call display function immediately if modal is already visible
-      if (typeof updateWizardYearSemesterDisplay === 'function' && !document.getElementById('wizard-modal')?.classList.contains('hidden')) {
-        updateWizardYearSemesterDisplay();
-        console.log('[PHIEU-DETAIL] Called updateWizardYearSemesterDisplay() immediately');
-      }
-      
-      // Tính lại tổng điểm từ items nếu TongDiem = 0 nhưng có chi tiết (phòng trường hợp DB bị lỗi tổng điểm)
-      const dbTongDiem = header.TongDiem ?? header.tongDiem ?? 0;
-      const calcTongDiem = phieuItems.length > 0
-        ? phieuItems.reduce((s, it) => s + Number(it.DiemSV ?? it.diemSV ?? it.diem ?? 0), 0)
-        : 0;
-      document.getElementById('eval-total').textContent = (calcTongDiem > 0 ? calcTongDiem : dbTongDiem);
-      
-      // Store phieuId and status for later use
-      window.currentPhieuId = phieuId;
-      window.currentFormId = phieuId;
-      // Lưu status để kiểm tra readonly
-      window.currentPhieuStatus = header.Status || header.status || '';
-      console.log('[PHIEU-DETAIL] Status from API:', { headerStatus: header.Status, headerStatus2: header.status, final: window.currentPhieuStatus });
-      // Lưu điểm chi tiết đã có trong phiếu để điền lại vào form
-      window.currentPhieuItems = phieuItems;
-      
-      // STEP 3.10: Open the evaluation modal
-      const modal = document.getElementById('eval-modal');
-      if (modal) {
-        modal.classList.remove('hidden');
-        // Trigger the existing evaluation load function if it exists
-        if (typeof openTrainingEvaluationLocal === 'function') {
-          openTrainingEvaluationLocal(phieuId);
-        }
-      }
-      
-    } catch (error) {
-      console.error('[PHIEU-DETAIL] Error loading phiếu:', error);
-      alert('Lỗi tải phiếu: ' + error.message);
+    // ✅ Open phieu-list-modal (menu to choose year/semester and create/select phieu)
+    const phieuListModal = document.getElementById('phieu-list-modal');
+    if (phieuListModal) {
+      phieuListModal.classList.remove('hidden');
+      console.log('[DEBUG] Opened phieu-list-modal');
     }
   }
 
   // Legacy local implementation retained as fallback
-  async function openTrainingEvaluationLocal(phieuId = null) {
-    console.log('[DEBUG-LOCAL] openTrainingEvaluationLocal() called with phieuId=', phieuId);
+  async function openTrainingEvaluationLocal() {
     const modal = document.getElementById("eval-modal");
     const tbody = document.getElementById("eval-table-body");
     const emptyEl = document.getElementById("eval-empty");
     const totalEl = document.getElementById("eval-total");
-    console.log(`[DEBUG-LOCAL] Elements found - modal: ${!!modal}, tbody: ${!!tbody}, emptyEl: ${!!emptyEl}, totalEl: ${!!totalEl}`);
-    if (!modal || !tbody) {
-      console.error('[DEBUG-LOCAL] Missing modal or tbody - returning');
-      return;
-    }
+    if (!modal || !tbody) return;
 
     // Gate by school settings (EvalStartDate .. SemesterEndDate)
     const gate = await canOpenEvaluationNow();
@@ -3871,20 +4276,24 @@ document.addEventListener("DOMContentLoaded", async () => {
     modal.classList.remove("hidden");
 
     try {
-      // ✅ Load criteria from shared model instead of direct fetch
-      console.log('[DEBUG-LOAD] Starting to load evaluation form...');
-      const data = await window.SharedCriteria.load();
-      console.log('[DEBUG-LOAD] Loaded criteria data, count:', data?.length || 0);
+      // Lấy dữ liệu nhóm + tiêu chí con theo schema mới
+      const res = await fetch(`${API_BASE}/api/tieuchi`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+
+      // Helper đọc thuộc tính hỗ trợ cả PascalCase/camelCase
+      const get = (obj, keys) => {
+        for (const k of keys) {
+          if (obj && obj[k] !== undefined && obj[k] !== null) return obj[k];
+        }
+        return undefined;
+      };
 
       if (!data || data.length === 0) {
         tbody.innerHTML = "";
         emptyEl?.classList.remove("hidden");
-        console.log('[DEBUG-LOAD] No data - showing empty state');
         return;
       }
-
-      // Helper to get property (supports both PascalCase and camelCase)
-      const get = window.SharedCriteria.get.bind(window.SharedCriteria);
 
       // Render nhóm + tiêu chí con với đánh số phân cấp (1, 1.1, 1.2, ...)
       let html = "";
@@ -3927,67 +4336,6 @@ document.addEventListener("DOMContentLoaded", async () => {
           const allowSelf = get(item, ["AllowSelfEval", "allowSelfEval"]);
           const maTC = get(item, ["MaTC", "maTC"]);
 
-          if (needProof) {
-            console.log(`[DEBUG-RENDER] Criterion ${maTC} (${iName}) needs proof`);
-          }
-
-          const savedItem = (window.currentPhieuItems || []).find(it => Number(it.MaTC ?? it.maTC) === Number(maTC));
-          const criterionEvidences = (window.currentPhieuEvidences || []).filter(e => Number(e.MaTC ?? e.maTC) === Number(maTC));
-          
-          let selectBtnHtml = '';
-          if (needProof) {
-              if (criterionEvidences.length > 0) {
-                  const badgeText = criterionEvidences.length === 1 ? '1 minh chứng' : criterionEvidences.length + ' minh chứng';
-                  let listHtml = '';
-                  criterionEvidences.forEach(ev => {
-                      const evId = ev.EvidenceId || ev.evidenceId;
-                      const fName = ev.OriginalFileName || ev.originalFileName || 'minhchung.jpg';
-                      const sName = fName.length > 20 ? fName.substring(0, 20) + '...' : fName;
-                      listHtml += `
-                        <div class="flex items-center justify-between px-3 py-2 hover:bg-gray-50 group/item relative">
-                            <span class="text-xs text-gray-700 truncate cursor-pointer hover:text-blue-600 font-medium" onclick="if(window.openEvidencePreview) { window.openEvidencePreview({evidenceId: '${evId}', originalFileName: '${fName}'}, ${window.currentPhieuId || window.currentFormId}); } else { window.openStudentEvidencePreview(${window.currentPhieuId || window.currentFormId}, ${maTC}, '${fName}', '${evId}'); }" onmouseenter="if(window.showHoverPreview) window.showHoverPreview('${evId}', this)" onmouseleave="if(window.hideHoverPreview) window.hideHoverPreview()">${sName}</span>
-                            <button class="text-red-500 hover:text-red-700 hidden group-hover/item:block p-1 ml-2 transition-colors bg-red-50 rounded-md border border-red-100" onclick="detachEvidence(${window.currentPhieuId || window.currentFormId}, ${maTC}, '${evId}')" title="Xóa minh chứng này">
-                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                            </button>
-                        </div>
-                      `;
-                  });
-                  selectBtnHtml = `
-                    <div class="flex items-center gap-1 flex-wrap">
-                      <div class="relative inline-block" onclick="const dropdown = this.querySelector('.evidence-dropdown-menu'); if(dropdown) dropdown.classList.toggle('hidden');">
-                        <span class="inline-flex items-center gap-1 px-2 py-1 text-xs rounded-full bg-green-100 text-green-800 border border-green-300 cursor-pointer shadow-sm">
-                          <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
-                          Đã đính kèm (${badgeText})
-                          <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
-                        </span>
-                        <!-- Dropdown Menu -->
-                        <div class="evidence-dropdown-menu absolute right-0 top-full mt-1 hidden z-50 bg-white border border-gray-200 rounded-lg shadow-xl w-64 divide-y divide-gray-100" onclick="event.stopPropagation();">
-                           <div class="py-1 max-h-48 overflow-y-auto">
-                               ${listHtml}
-                           </div>
-                        </div>
-                      </div>
-                      <button class="px-2 py-1 text-xs rounded-md border bg-gray-50 text-gray-500 hover:bg-gray-100 hover:text-blue-600 transition-colors btn-upload-proof shadow-sm"
-                        data-matc="${maTC}" data-maso="${iCode}" data-ten="${iName}">
-                        + Thêm
-                      </button>
-                    </div>
-                  `;
-              } else {
-                  selectBtnHtml = `
-                    <div class="flex items-center gap-1 flex-wrap">
-                      <button class="px-3 py-1.5 text-xs font-medium rounded-md border bg-white hover:bg-blue-50 text-blue-600 border-blue-200 transition-colors btn-upload-proof shadow-sm"
-                        data-matc="${maTC}" data-maso="${iCode}" data-ten="${iName}">
-                        <div class="flex items-center gap-1">
-                          <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path></svg>
-                          Đính kèm
-                        </div>
-                      </button>
-                    </div>
-                  `;
-              }
-          }
-          
           html += `
             <tr>
               <!-- Ẩn STT cho tiêu chí con theo yêu cầu -->
@@ -4001,9 +4349,9 @@ document.addEventListener("DOMContentLoaded", async () => {
               </td>
               <td class="text-sm font-semibold text-blue-700">${iMax}</td>
               <td>
-                <div class="flex items-center gap-2 flex-wrap">
+                <div class="flex items-center gap-2">
                   ${allowSelf === false ? `<span class="text-xs text-gray-500">(tự tính)</span><span class="ml-2 text-sm font-semibold text-slate-700" data-auto-holder="1" data-matc="${maTC ?? ''}" data-group-index="${groupIndex}" data-group-max="${gMax}" data-max="${iMax}" data-code="${escapeHtml(iCode)}" data-name="${escapeHtml(iName)}"></span>` : `<input type="number" min="0" max="${iMax}" step="1" value="0" class="form-input w-24 eval-input" data-max="${iMax}" data-group-index="${groupIndex}" data-group-max="${gMax}" data-matc="${maTC ?? ''}" />`}
-                  ${selectBtnHtml}
+                  ${needProof ? `<button type="button" class="px-2 py-1 text-xs rounded-md border bg-white hover:bg-gray-50 btn-upload-proof" data-matc="${maTC ?? ''}" data-maso="${escapeHtml(iCode)}" data-ten="${escapeHtml(iName)}">Đính kèm</button>` : ''}
                 </div>
               </td>
             </tr>`;
@@ -4012,93 +4360,8 @@ document.addEventListener("DOMContentLoaded", async () => {
 
       tbody.innerHTML = html;
 
-      // === LOAD ĐIỂM ĐÃ LƯU (nếu đang xem phiếu cụ thể) ===
-      // Nếu có phieuId và có items đã lưu, điền điểm từ DB vào form (không tính lại từ GPA)
-      if (phieuId && window.currentPhieuItems && window.currentPhieuItems.length > 0) {
-        console.log('[PHIEU-DETAIL] Filling saved scores from phieuId:', phieuId, 'items:', window.currentPhieuItems.length);
-        const savedMap = new Map();
-        window.currentPhieuItems.forEach(item => {
-          const maTC = item.MaTC ?? item.maTC;
-          const diem = item.DiemSV ?? item.diemSV ?? item.diem ?? 0;
-          if (maTC != null) savedMap.set(Number(maTC), Number(diem));
-        });
-        tbody.querySelectorAll('.eval-input').forEach(inp => {
-          const maTC = Number(inp.getAttribute('data-matc') || 0);
-          if (maTC && savedMap.has(maTC)) {
-            inp.value = String(savedMap.get(maTC));
-          }
-        });
-        // Điền cả auto-holder (tiêu chí tự động)
-        tbody.querySelectorAll('[data-auto-holder]').forEach(h => {
-          const maTC = Number(h.getAttribute('data-matc') || 0);
-          if (maTC && savedMap.has(maTC)) {
-            const val = savedMap.get(maTC);
-            const iMax = Number(h.getAttribute('data-max') || 0);
-            const existing = h.parentElement?.querySelector(`input.eval-input[data-matc="${maTC}"]`);
-            if (!existing) {
-              const inp = document.createElement('input');
-              inp.type = 'hidden'; inp.className = 'eval-input';
-              inp.setAttribute('data-matc', String(maTC));
-              inp.setAttribute('data-group-index', String(h.getAttribute('data-group-index') || ''));
-              inp.setAttribute('data-group-max', String(h.getAttribute('data-group-max') || ''));
-              inp.setAttribute('data-max', String(iMax));
-              inp.value = String(val);
-              h.parentElement?.appendChild(inp);
-            } else { existing.value = String(val); }
-            h.textContent = String(val) + " điểm";
-          }
-        });
-        recalcTotal();
-      }
-
-      // === KHÓA FORM NẾU PHIẾU ĐÃ ĐƯỢC DUYỆT ===
-      const phieuApproved = isPhieuApproved(window.currentPhieuStatus);
-      if (phieuApproved) {
-        console.log('[PHIEU-DETAIL] Phiếu đã duyệt - khóa form readonly, status:', window.currentPhieuStatus);
-        // Disable tất cả input
-        tbody.querySelectorAll('.eval-input').forEach(inp => {
-          inp.setAttribute('disabled', 'true');
-          inp.style.backgroundColor = '#f3f4f6';
-          inp.style.cursor = 'not-allowed';
-        });
-        // Ẩn các nút "Đính kèm"
-        tbody.querySelectorAll('.btn-upload-proof').forEach(btn => btn.style.display = 'none');
-        // Ẩn nút submit + hiện banner thông báo
-        const submitBtn = document.getElementById('eval-submit-btn');
-        if (submitBtn) submitBtn.style.display = 'none';
-        const realSubmitBtn = document.getElementById('eval-real-submit-btn');
-        if (realSubmitBtn) realSubmitBtn.style.display = 'none';
-        const deleteBtn = document.getElementById('eval-delete-btn');
-        if (deleteBtn) deleteBtn.style.display = 'none';
-        const submitStatus = document.getElementById('eval-submit-status');
-        if (submitStatus) {
-          submitStatus.classList.remove('hidden', 'text-red-600', 'text-gray-600');
-          submitStatus.classList.add('text-green-700');
-          const statusLabel = getPhieuStatusLabel(window.currentPhieuStatus);
-          submitStatus.textContent = `✅ Phiếu đã được duyệt (${statusLabel}) - Không thể chỉnh sửa.`;
-        }
-      } else {
-        // Hiện lại nút submit (trường hợp mở lại sau khi đã xem phiếu duyệt)
-        const submitBtn = document.getElementById('eval-submit-btn');
-        if (submitBtn) submitBtn.style.display = '';
-        
-        // Chỉ hiện nút Gửi phiếu và Xóa phiếu nếu trạng thái là Draft
-        const realSubmitBtn = document.getElementById('eval-real-submit-btn');
-        const deleteBtn = document.getElementById('eval-delete-btn');
-        if (window.currentPhieuStatus === 'Draft') {
-            if (realSubmitBtn) { realSubmitBtn.style.display = ''; realSubmitBtn.classList.remove('hidden'); }
-            if (deleteBtn) { deleteBtn.style.display = ''; deleteBtn.classList.remove('hidden'); }
-            if (submitBtn) { submitBtn.innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg> Lưu nháp & Đóng'; }
-        } else {
-            if (realSubmitBtn) { realSubmitBtn.style.display = 'none'; realSubmitBtn.classList.add('hidden'); }
-            if (deleteBtn) { deleteBtn.style.display = 'none'; deleteBtn.classList.add('hidden'); }
-            if (submitBtn) { submitBtn.innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg> Lưu & Đóng'; }
-        }
-      }
-
       // Wire inputs: giới hạn theo max, cập nhật tổng chung và tổng theo nhóm
       tbody.querySelectorAll(".eval-input").forEach(inp => {
-        if (inp.hasAttribute('disabled')) return; // Bỏ qua nếu đã bị khóa
         inp.addEventListener("input", () => {
           const max = Number(inp.getAttribute("data-max"));
           let val = Number(inp.value || 0);
@@ -4110,79 +4373,18 @@ document.addEventListener("DOMContentLoaded", async () => {
         });
       });
 
-      // Wire "Cần minh chứng" badges to open evidence modal
-      tbody.querySelectorAll('span[data-ev-left-chip="1"]').forEach(badge => {
-        badge.style.cursor = 'pointer';
-        badge.style.transition = 'all 0.2s';
-        badge.addEventListener('click', function() {
-          // Find parent row to get maTC and criterion name
-          const row = badge.closest('tr');
-          if (!row) return;
-          const cells = row.querySelectorAll('td');
-          if (cells.length < 3) return;
-          const criterionCell = cells[2];
-          const iName = criterionCell.innerText.split('\n')[0] || 'Tiêu chí';
-          // Find maTC from inline evidence div
-          const inlineDiv = criterionCell.querySelector('[data-ev-inline]');
-          const maTC = inlineDiv?.getAttribute('data-ev-inline') || '';
-          if (!maTC) return;
-          openEvidenceModal(maTC, iName);
-        });
-      });
-
       // Wire evidence buttons
-      const uploadProofBtns = tbody.querySelectorAll(".btn-upload-proof");
-      console.log('[INIT] Found', uploadProofBtns.length, '.btn-upload-proof buttons in tbody');
-      uploadProofBtns.forEach((btn, idx) => {
-        console.log('[INIT] Attaching click listener to btn-upload-proof', idx);
+      tbody.querySelectorAll(".btn-upload-proof").forEach(btn => {
         btn.addEventListener("click", () => {
           const maTC = btn.getAttribute("data-matc");
           const maSo = btn.getAttribute("data-maso") || "";
           const ten = btn.getAttribute("data-ten") || "";
-          console.log('[BTN-CLICK] btn-upload-proof clicked:', {maTC, maSo, ten});
           openUploadProofDialog(maTC, maSo, ten);
         });
       });
 
-      // Wire "Chọn minh chứng" buttons (manual attachment)
-      console.log('[DEBUG] Looking for .btn-select-proof buttons...');
-      const selectProofBtns = tbody.querySelectorAll(".btn-select-proof");
-      console.log(`[DEBUG] Found ${selectProofBtns.length} .btn-select-proof buttons in table body`);
-      console.log('[DEBUG] Button details:', Array.from(selectProofBtns).map((btn, i) => ({
-        index: i,
-        class: btn.className,
-        dataMatc: btn.getAttribute("data-matc"),
-        dataTen: btn.getAttribute("data-ten"),
-        innerHTML: btn.innerHTML.substring(0, 30)
-      })));
-      
-      selectProofBtns.forEach((btn, idx) => {
-        console.log(`[DEBUG-${idx}] Attaching click listener to button: ${btn.getAttribute("data-matc")}`);
-        btn.addEventListener("click", function() {
-          console.log('[DEBUG] btn-select-proof clicked!');
-          const maTC = this.getAttribute("data-matc");
-          const tenTC = this.getAttribute("data-ten") || "";
-          console.log(`[DEBUG] Opening modal for maTC=${maTC}, tenTC=${tenTC}`);
-          openSVAttachModal(maTC, tenTC);
-        });
-      });
-
   // Auto-fill points for non-self-eval criteria based on GPA and violations; fallback to server preview if needed
-  // Nếu phiếu đã lưu: fill từ savedMap trước, nhưng vẫn chạy auto-fill cho các auto-holder chưa có giá trị
-      // Kiểm tra xem còn auto-holder nào chưa có hidden input (chưa được fill)
-      const autoHoldersAll = Array.from(tbody.querySelectorAll('[data-auto-holder]'));
-      const autoHoldersMissing = autoHoldersAll.filter(h => {
-        const maTC = h.getAttribute('data-matc');
-        return !h.parentElement?.querySelector(`input.eval-input[data-matc="${maTC}"]`);
-      });
-      if (phieuId && window.currentPhieuItems && window.currentPhieuItems.length > 0 && autoHoldersMissing.length === 0) {
-        console.log('[PHIEU-DETAIL] Skipping auto-fill from GPA - all auto-holders filled from saved phiếu', phieuId);
-        recalcTotal();
-      } else
       try {
-        if (autoHoldersMissing.length > 0)
-          console.log('[PHIEU-DETAIL] Running auto-fill for', autoHoldersMissing.length, 'missing auto-holders (not in saved phiếu)');
-
         const getCase = (obj, names) => { if (!obj) return undefined; const lower = Object.keys(obj).reduce((m,k)=>{m[k.toLowerCase()]=k;return m;},{}); for(const n of names){ const k = lower[n.toLowerCase()] || n; if (obj[k] !== undefined && obj[k] !== null) return obj[k]; } return undefined; };
         const removeDiacritics = (s)=> (s||'').normalize('NFD').replace(/\p{Diacritic}+/gu,'').replace(/đ/gi,'d');
         const norm = (s)=> removeDiacritics(String(s||'').toLowerCase());
@@ -4204,13 +4406,10 @@ document.addEventListener("DOMContentLoaded", async () => {
               if (y != null && k != null) {
                 termY = String(y);
                 termK = Number(k);
-                // Chỉ ghi đè eval-namhoc nếu KHÔNG đang xem phiếu cụ thể (tránh thay đổi NamHoc phiếu đã tạo)
-                if (!phieuId) {
-                  const yEl = document.getElementById('eval-namhoc');
-                  const kEl = document.getElementById('eval-hocki');
-                  if (yEl) yEl.value = termY;
-                  if (kEl) kEl.value = String(termK);
-                }
+                const yEl = document.getElementById('eval-namhoc');
+                const kEl = document.getElementById('eval-hocki');
+                if (yEl) yEl.value = termY;
+                if (kEl) kEl.value = String(termK);
               }
             }
           }
@@ -4278,11 +4477,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   const cntNT = Number(getCase(grade, ['viphamNT','ViPhamNT','ViPhamNoiQuy','viPhamNT','vpNT']) || 0) || 0;
   const cntXH = Number(getCase(grade, ['viphamXH','ViPhamXH','viPhamXH','vpXH']) || 0) || 0;
 
-  // Nếu phiếu đã có savedItems, chỉ auto-fill những holder chưa có giá trị (chưa lưu trước đó)
-  const holders = Array.from(tbody.querySelectorAll('[data-auto-holder]')).filter(h => {
-    const maTC = h.getAttribute('data-matc');
-    return !h.parentElement?.querySelector(`input.eval-input[data-matc="${maTC}"]`);
-  });
+  const holders = Array.from(tbody.querySelectorAll('[data-auto-holder]'));
         // NEW: lấy thông tin SV để cộng điểm cán bộ lớp & NCKH
         let svInfo = null; let isClassOfficer = false; let hasResearch = false;
         if (mssv) {
@@ -4600,14 +4795,42 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   async function openApprovedFormDetail(id){
-    // Đóng generic modal (danh sách phiếu) trước khi mở view modal
-    document.getElementById('modal')?.classList.add('hidden');
-    // Dùng phieu_view_modal để hiển thị chi tiết phiếu đã duyệt (read-only, không có nút action)
-    if (typeof window.openPhieuViewModal === 'function') {
-      window.openPhieuViewModal(id, {});
-    } else {
-      alert('Không thể mở phiếu chi tiết. Vui lòng thử lại.');
-    }
+    try {
+      const res = await fetch(`${API_BASE}/api/phieu-danh-gia/${id}/full`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      const gp = (obj, ...keys) => { if (!obj) return undefined; for (const k of keys){ if (obj[k] !== undefined && obj[k] !== null) return obj[k]; } return undefined; };
+      const header = data.header || {};
+      const itemsHtml = (data.items || []).map(it => `
+        <tr>
+          <td class="px-2 py-1 text-sm">${gp(it,'MaTC','maTC') ?? ''}</td>
+          <td class="px-2 py-1 text-sm">${gp(it,'TenTC','tenTC') || ''}</td>
+          <td class="px-2 py-1 text-sm">${gp(it,'TenNhom','tenNhom') || ''}</td>
+          <td class="px-2 py-1 text-sm text-gray-600">${gp(it,'DiemToiDaTC','diemToiDaTC') ?? ''}</td>
+          <td class="px-2 py-1 text-sm font-semibold">${gp(it,'DiemSV','diemSV') ?? 0}</td>
+        </tr>`).join('');
+      document.getElementById('modal-title').textContent = `Phiếu ĐGRL: ${gp(header,'MSSV','mssv') || ''} - ${gp(header,'TenSV','tenSV') || ''} (${gp(header,'NamHoc','namHoc') || ''} - HK ${gp(header,'HocKi','hocKi') || ''})`;
+      document.getElementById('modal-body').innerHTML = `
+        <div class="p-4 space-y-3">
+          <div class="flex justify-between text-sm">
+            <div>Trạng thái: <span class="px-2 py-0.5 text-xs rounded bg-green-100 text-green-800">Trường đã duyệt</span></div>
+            <div>Tổng điểm: <b>${gp(header,'TongDiem','tongDiem') ?? ''}</b></div>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+              <thead class="bg-gray-50"><tr>
+                <th class="px-2 py-1 text-left text-xs text-gray-500">MaTC</th>
+                <th class="px-2 py-1 text-left text-xs text-gray-500">Tiêu chí</th>
+                <th class="px-2 py-1 text-left text-xs text-gray-500">Nhóm</th>
+                <th class="px-2 py-1 text-left text-xs text-gray-500">Max</th>
+                <th class="px-2 py-1 text-left text-xs text-gray-500">Điểm SV</th>
+              </tr></thead>
+              <tbody>${itemsHtml || '<tr><td colspan="5" class="px-2 py-2 text-center text-gray-500">Không có chi tiết</td></tr>'}</tbody>
+            </table>
+          </div>
+        </div>`;
+      document.getElementById('modal')?.classList.remove('hidden');
+    } catch (e) { alert('Không tải được chi tiết phiếu: ' + (e.message || e)); }
   }
 
   function recalcTotal() {
@@ -4652,414 +4875,16 @@ document.addEventListener("DOMContentLoaded", async () => {
   function getCurrentMSSV() {
     try {
       const raw = localStorage.getItem("loggedUserInfo");
-      if (!raw) {
-        console.warn('⚠️ [getCurrentMSSV] loggedUserInfo not found in localStorage');
-        return "";
-      }
+      if (!raw) return "";
       const info = JSON.parse(raw);
       const candidate = info?.MaCaNhan || info?.MSSV || info?.MaSV || info?.TenTK;
-      const result = candidate ? String(candidate) : "";
-      console.log('✅ [getCurrentMSSV] Found MSSV:', result, 'from loggedUserInfo:', info);
-      return result;
-    } catch (e) { 
-      console.error('❌ [getCurrentMSSV] Error:', e);
-      return ""; 
-    }
+      return candidate ? String(candidate) : "";
+    } catch { return ""; }
   }
-
-  // Get or create current phiếu đánh giá ID
-  async function ensureCurrentFormId() {
-    try {
-      // Ưu tiên dùng phieuId đang mở (đã được set bởi openPhieuDetail)
-      if (window.currentPhieuId) {
-        console.log('[ensureCurrentFormId] Using existing currentPhieuId:', window.currentPhieuId);
-        return window.currentPhieuId;
-      }
-
-      const mssv = getCurrentMSSV();
-      if (!mssv) {
-        console.warn('⚠️ [ensureCurrentFormId] Could not get MSSV');
-        return null;
-      }
-
-      // Lấy namHoc và hocKi từ form đang mở để truyền đúng tham số
-      const namHoc = document.getElementById('eval-namhoc')?.value?.trim() || '';
-      const hocKi = document.getElementById('eval-hocki')?.value || '';
-
-      if (!namHoc || !hocKi) {
-        console.error('[ensureCurrentFormId] Missing namHoc/hocKi - cannot call get-or-create');
-        return null;
-      }
-
-      console.log('[ensureCurrentFormId] Fetching phieuId for MSSV:', mssv, 'namHoc:', namHoc, 'hocKi:', hocKi);
-      const res = await fetch(`${API_BASE}/api/phieu-danh-gia/get-or-create/${encodeURIComponent(mssv)}?namHoc=${encodeURIComponent(namHoc)}&hocKi=${encodeURIComponent(hocKi)}`);
-      
-      if (!res.ok) {
-        console.error('[ensureCurrentFormId] API error:', res.status);
-        return null;
-      }
-
-      const data = await res.json();
-      console.log('[ensureCurrentFormId] Got phieuId:', data.phieuId);
-      // Lưu lại để dùng tiếp
-      if (data.phieuId) {
-        window.currentPhieuId = data.phieuId;
-        window.currentFormId = data.phieuId;
-      }
-      return data.phieuId;
-    } catch (e) {
-      console.error('[ensureCurrentFormId] Error:', e.message);
-      return null;
-    }
-  }
-
-  // Open Evidence Modal with integrated list + upload
-  async function openEvidenceModal(maTC, criterionName) {
-    console.log('[OPEN-EVIDENCE-MODAL] Called with maTC=', maTC, 'criterionName=', criterionName);
-    console.log('[OPEN-EVIDENCE-MODAL] API_BASE=', API_BASE);
-    const modal = document.getElementById("evidence-modal");
-    if (!modal) {
-      console.error('[OPEN-EVIDENCE-MODAL] Modal not found');
-      return alert("Không tìm thấy form nộp minh chứng.");
-    }
-
-    // Store current maTC for later use
-    const maTCInput = document.getElementById("evidence-ma-tc");
-    const tenTCInput = document.getElementById("evidence-ten-tc");
-    
-    if (maTCInput) {
-      maTCInput.value = maTC || "";
-      console.log('[OPEN-EVIDENCE-MODAL] SET evidence-ma-tc to:', maTC, 'Current value:', maTCInput.value);
-    } else {
-      console.error('[OPEN-EVIDENCE-MODAL] Cannot find evidence-ma-tc input!');
-    }
-    
-    if (tenTCInput) {
-      tenTCInput.textContent = criterionName || "";
-      console.log('[OPEN-EVIDENCE-MODAL] SET evidence-ten-tc to:', criterionName);
-    }
-
-    // Reset note and file
-    document.getElementById("evidence-note").value = "";
-    document.getElementById("evidence-file").value = "";
-    document.getElementById("evidence-status").textContent = "";
-    document.getElementById("evidence-status").classList.add("hidden");
-
-    // Show list tab by default
-    showEvidenceTab('list');
-
-    // Fetch and display evidence list
-    try {
-      console.log('[OPEN-EVIDENCE-MODAL] Fetching evidence list for maTC=', maTC);
-      
-      // Get current user MSSV for debugging
-      let currentMSSV = getCurrentMSSV();
-      if (!currentMSSV) {
-        // Try to extract MSSV from URL query params if available (for testing)
-        const urlParams = new URLSearchParams(window.location.search);
-        const testMSSV = urlParams.get('testMSSV');
-        if (testMSSV) {
-          currentMSSV = testMSSV;
-          console.log('[OPEN-EVIDENCE-MODAL] Using test MSSV from URL:', currentMSSV);
-        }
-      }
-      
-      if (!currentMSSV) {
-        throw new Error('Không lấy được MSSV. Vui lòng đăng nhập.');
-      }
-      
-      console.log('[OPEN-EVIDENCE-MODAL] Current MSSV:', currentMSSV);
-      console.log('[OPEN-EVIDENCE-MODAL] Will send X-User header:', currentMSSV);
-      
-      // Get or create phiếu đánh giá
-      const phieuId = await ensureCurrentFormId();
-      console.log('[OPEN-EVIDENCE-MODAL] Got phieuId:', phieuId);
-      if (!phieuId) {
-        throw new Error('Không thể lấy phiếu đánh giá.');
-      }
-      
-      // Create abort controller for timeout
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
-      
-      const fetchUrl = `${API_BASE}/api/phieu-danh-gia/${phieuId}/criteria/${maTC}/pending-evidence`;
-      console.log('[OPEN-EVIDENCE-MODAL] Fetch URL:', fetchUrl);
-      console.log('[OPEN-EVIDENCE-MODAL] Fetch headers:', { 'X-User': currentMSSV, 'Content-Type': 'application/json' });
-      
-      console.log('[OPEN-EVIDENCE-MODAL] About to call fetch...');
-      const response = await fetch(
-        fetchUrl,
-        {
-          method: 'GET',
-          headers: {
-            'X-User': currentMSSV,
-            'Content-Type': 'application/json'
-          },
-          credentials: 'include',
-          signal: controller.signal
-        }
-      );
-      console.log('[OPEN-EVIDENCE-MODAL] Fetch response received:', response.status, response.statusText);
-      
-      clearTimeout(timeoutId);
-
-      if (!response.ok) {
-        const errorText = await response.text().catch(() => '');
-        console.error('[OPEN-EVIDENCE-MODAL] HTTP Error:', response.status, response.statusText);
-        console.error('[OPEN-EVIDENCE-MODAL] Response body:', errorText);
-        let errorData = {};
-        try {
-          errorData = JSON.parse(errorText);
-        } catch {}
-        throw new Error(errorData.error || errorData.message || `HTTP ${response.status}: ${response.statusText}`);
-      }
-
-      const data = await response.json();
-      console.log('[OPEN-EVIDENCE-MODAL] Data received:', data);
-      console.log('[OPEN-EVIDENCE-MODAL] Data.pending:', data.pending);
-      console.log('[OPEN-EVIDENCE-MODAL] Data.saved:', data.saved);
-
-      // Calculate total count
-      const pendingCount = data.pending?.count || 0;
-      const savedCount = data.saved?.count || 0;
-      const totalCount = pendingCount + savedCount;
-      console.log('[OPEN-EVIDENCE-MODAL] Counts: pending=', pendingCount, 'saved=', savedCount, 'total=', totalCount);
-      
-      document.getElementById('evidence-total-count').textContent = totalCount;
-
-      // Clear list
-      const list = document.getElementById('evidence-list-container');
-      list.innerHTML = '';
-      console.log('[OPEN-EVIDENCE-MODAL] List container cleared');
-
-      if (totalCount === 0) {
-        console.log('[OPEN-EVIDENCE-MODAL] No items to display');
-        list.innerHTML = '<p class="text-sm text-gray-500 text-center py-4">Không có minh chứng nào. Vui lòng upload mới.</p>';
-      } else {
-        console.log('[OPEN-EVIDENCE-MODAL] Rendering items - pending=', pendingCount, 'saved=', savedCount);
-        // 1. Show PENDING section
-        if (pendingCount > 0) {
-          console.log('[OPEN-EVIDENCE-MODAL] Rendering PENDING section with', pendingCount, 'items');
-          const pendingHeader = document.createElement('div');
-          pendingHeader.className = 'bg-yellow-50 border-l-4 border-yellow-400 p-2 mb-2';
-          pendingHeader.innerHTML = `<p class="text-sm font-semibold text-yellow-800">Đang chờ phân tích (${pendingCount})</p>`;
-          list.appendChild(pendingHeader);
-          
-          data.pending.items.forEach((item, idx) => {
-            console.log('[OPEN-EVIDENCE-MODAL] Rendering pending item', idx, 'id=', item.id, 'has imageBase64=', !!item.imageBase64);
-            
-            // Create label container
-            const labelEl = document.createElement('label');
-            labelEl.className = 'flex items-center gap-2 p-2 border rounded cursor-pointer hover:bg-yellow-50';
-            
-            // Create checkbox input
-            const checkboxInput = document.createElement('input');
-            checkboxInput.type = 'checkbox';
-            checkboxInput.className = 'evidence-checkbox w-4 h-4';
-            checkboxInput.setAttribute('data-id', String(item.id));
-            checkboxInput.setAttribute('data-status', item.status);
-            labelEl.appendChild(checkboxInput);
-            
-            // Create content div
-            const contentDiv = document.createElement('div');
-            contentDiv.className = 'flex-1 text-sm';
-            
-            if (item.imageBase64) {
-              const imgDiv = document.createElement('div');
-              imgDiv.className = 'mb-2';
-              const img = document.createElement('img');
-              img.src = `data:image/jpeg;base64,${item.imageBase64}`;
-              img.className = 'w-16 h-16 object-cover rounded border';
-              img.alt = 'preview';
-              imgDiv.appendChild(img);
-              contentDiv.appendChild(imgDiv);
-            }
-            
-            const noteP = document.createElement('p');
-            noteP.className = 'font-medium text-gray-800';
-            noteP.textContent = item.note || 'Minh chứng';
-            contentDiv.appendChild(noteP);
-            
-            const dateP = document.createElement('p');
-            dateP.className = 'text-xs text-gray-500';
-            dateP.textContent = `Ngày: ${new Date(item.createdAt).toLocaleDateString('vi-VN')}`;
-            contentDiv.appendChild(dateP);
-            
-            // ✅ NEW: Display NamHoc & HocKi if available
-            if (item.namHoc || item.NamHoc || item.hocKi || item.HocKi) {
-              const yearSemesterP = document.createElement('p');
-              yearSemesterP.className = 'text-xs text-blue-600 font-medium';
-              const namHoc = item.namHoc || item.NamHoc || 'N/A';
-              const hocKi = item.hocKi || item.HocKi || 'N/A';
-              yearSemesterP.textContent = `📅 Năm: ${namHoc} | Kì: ${hocKi}`;
-              contentDiv.appendChild(yearSemesterP);
-            }
-            
-            const statusP = document.createElement('p');
-            statusP.className = 'text-xs text-yellow-600 font-medium';
-            statusP.textContent = 'Trạng thái: Chờ phân tích';
-            contentDiv.appendChild(statusP);
-            
-            labelEl.appendChild(contentDiv);
-            list.appendChild(labelEl);
-          });
-        }
-        
-        // 2. Show SAVED section
-        if (savedCount > 0) {
-          console.log('[OPEN-EVIDENCE-MODAL] Rendering SAVED section with', savedCount, 'items');
-          if (pendingCount > 0) {
-            const divider = document.createElement('div');
-            divider.className = 'my-3 border-t';
-            list.appendChild(divider);
-          }
-          
-          const savedHeader = document.createElement('div');
-          savedHeader.className = 'bg-green-50 border-l-4 border-green-400 p-2 mb-2';
-          savedHeader.innerHTML = `<p class="text-sm font-semibold text-green-800">Đã lưu (${savedCount})</p>`;
-          list.appendChild(savedHeader);
-          
-          data.saved.items.forEach((item, idx) => {
-            console.log('[OPEN-EVIDENCE-MODAL] Rendering saved item', idx, 'id=', item.id, 'status=', item.status, 'has imageBase64=', !!item.imageBase64);
-            
-            // Create label container
-            const labelEl = document.createElement('label');
-            labelEl.className = 'flex items-center gap-2 p-2 border rounded cursor-pointer hover:bg-green-50';
-            
-            // Create checkbox input
-            const checkboxInput = document.createElement('input');
-            checkboxInput.type = 'checkbox';
-            checkboxInput.className = 'evidence-checkbox w-4 h-4';
-            checkboxInput.setAttribute('data-id', String(item.id));
-            checkboxInput.setAttribute('data-status', item.status);
-            labelEl.appendChild(checkboxInput);
-            
-            // Create content div
-            const contentDiv = document.createElement('div');
-            contentDiv.className = 'flex-1 text-sm';
-            
-            if (item.imageBase64) {
-              const imgDiv = document.createElement('div');
-              imgDiv.className = 'mb-2';
-              const img = document.createElement('img');
-              img.src = `data:image/jpeg;base64,${item.imageBase64}`;
-              img.className = 'w-16 h-16 object-cover rounded border';
-              img.alt = 'preview';
-              imgDiv.appendChild(img);
-              contentDiv.appendChild(imgDiv);
-            }
-            
-            const noteP = document.createElement('p');
-            noteP.className = 'font-medium text-gray-800';
-            noteP.textContent = item.note || 'Minh chứng';
-            contentDiv.appendChild(noteP);
-            
-            const dateP = document.createElement('p');
-            dateP.className = 'text-xs text-gray-500';
-            dateP.textContent = `Ngày: ${new Date(item.createdAt).toLocaleDateString('vi-VN')}`;
-            contentDiv.appendChild(dateP);
-            
-            // ✅ NEW: Display NamHoc & HocKi if available
-            if (item.namHoc || item.NamHoc || item.hocKi || item.HocKi) {
-              const yearSemesterP = document.createElement('p');
-              yearSemesterP.className = 'text-xs text-blue-600 font-medium';
-              const namHoc = item.namHoc || item.NamHoc || 'N/A';
-              const hocKi = item.hocKi || item.HocKi || 'N/A';
-              yearSemesterP.textContent = `📅 Năm: ${namHoc} | Kì: ${hocKi}`;
-              contentDiv.appendChild(yearSemesterP);
-            }
-            
-            const statusP = document.createElement('p');
-            statusP.className = 'text-xs text-green-600 font-medium';
-            statusP.textContent = `Trạng thái: ${item.status}`;
-            contentDiv.appendChild(statusP);
-            
-            labelEl.appendChild(contentDiv);
-            list.appendChild(labelEl);
-          });
-        }
-      }
-
-      // Reset select all checkbox
-      document.getElementById('evidence-select-all').checked = false;
-      console.log('[OPEN-EVIDENCE-MODAL] ===== RENDER COMPLETE =====');
-
-    } catch (error) {
-      console.error('[OPEN-EVIDENCE-MODAL] ===== CATCH ERROR =====');
-      console.error('[OPEN-EVIDENCE-MODAL] Error name:', error.name);
-      console.error('[OPEN-EVIDENCE-MODAL] Error message:', error.message);
-      console.error('[OPEN-EVIDENCE-MODAL] Error stack:', error.stack);
-      const list = document.getElementById('evidence-list-container');
-      
-      // Better error message based on error type
-      let errorMsg = error.message;
-      if (error.name === 'AbortError') {
-        errorMsg = 'Timeout tải danh sách. Vui lòng thử lại.';
-      } else if (error.message.includes('Failed to fetch')) {
-        errorMsg = 'Lỗi kết nối. Vui lòng kiểm tra kết nối internet.';
-      }
-      
-      list.innerHTML = `
-        <div class="text-center py-4">
-          <p class="text-sm text-red-600 font-medium mb-2">⚠️ Lỗi</p>
-          <p class="text-sm text-red-500">${errorMsg}</p>
-          <button onclick="location.reload()" class="text-xs text-blue-600 hover:underline mt-2">Làm mới trang</button>
-        </div>
-      `;
-    }
-
-    // Show modal
-    console.log('[OPEN-EVIDENCE-MODAL] Showing modal');
-    modal.classList.remove("hidden");
-  }
-
-  // Tab switching
-  function showEvidenceTab(tabName) {
-    // Hide all tabs
-    document.querySelectorAll('.evidence-tab-content').forEach(tab => {
-      tab.classList.add('hidden');
-    });
-    // Remove active class from all tab buttons
-    document.querySelectorAll('.evidence-tab-btn').forEach(btn => {
-      btn.classList.remove('active', 'border-blue-600', 'text-blue-600');
-      btn.classList.add('border-transparent', 'text-gray-600');
-    });
-
-    // Show selected tab
-    const tab = document.getElementById(`evidence-tab-${tabName}`);
-    if (tab) {
-      tab.classList.remove('hidden');
-    }
-
-    // Highlight selected tab button
-    const btn = document.querySelector(`.evidence-tab-btn[data-tab="${tabName}"]`);
-    if (btn) {
-      btn.classList.remove('border-transparent', 'text-gray-600');
-      btn.classList.add('active', 'border-blue-600', 'text-blue-600');
-    }
-  }
-
-  // Tab button listeners
-  document.querySelectorAll('.evidence-tab-btn').forEach(btn => {
-    btn.addEventListener('click', function() {
-      const tabName = this.getAttribute('data-tab');
-      showEvidenceTab(tabName);
-    });
-  });
 
   function openUploadProofDialog(maTC, maSo, tenTC) {
-    console.log('[OPEN-UPLOAD-PROOF] Called with:', {maTC, maSo, tenTC});
-    
-    // First, open evidence modal to load the list
-    console.log('[OPEN-UPLOAD-PROOF] Calling openEvidenceModal to load evidence list...');
-    openEvidenceModal(maTC, tenTC);
-    
     const modal = document.getElementById("evidence-modal");
-    if (!modal) {
-      console.error('[OPEN-UPLOAD-PROOF] Modal not found!');
-      return alert("Không tìm thấy form nộp minh chứng.");
-    }
-    console.log('[OPEN-UPLOAD-PROOF] Modal found, setting up fields...');
+    if (!modal) return alert("Không tìm thấy form nộp minh chứng.");
     const inpMaTC = document.getElementById("evidence-ma-tc");
     const inpMaSo = document.getElementById("evidence-ma-so");
     const inpTen = document.getElementById("evidence-ten-tc");
@@ -5076,11 +4901,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (inpFile) inpFile.value = "";
     if (status) { status.textContent = ""; status.classList.add("hidden"); }
 
-    console.log('[OPEN-UPLOAD-PROOF] Showing modal...');
     modal.classList.remove("hidden");
-    console.log('[OPEN-UPLOAD-PROOF] Modal displayed, switching to upload tab...');
-    showEvidenceTab('upload');
-    console.log('[OPEN-UPLOAD-PROOF] Done!');
   }
 
   const closeEvidenceBtn = document.getElementById("evidence-cancel");
@@ -5104,427 +4925,80 @@ document.addEventListener("DOMContentLoaded", async () => {
     submitEvidenceBtn.addEventListener("click", async () => {
       const modal = document.getElementById("evidence-modal");
       const inpMaTC = document.getElementById("evidence-ma-tc");
+      const inpMSSV = document.getElementById("evidence-mssv");
+      const inpNote = document.getElementById("evidence-note");
+      const inpFile = document.getElementById("evidence-file");
+      const status = document.getElementById("evidence-status");
+
       const maTC = inpMaTC?.value?.trim();
+      const mssv = inpMSSV?.value?.trim() || getCurrentMSSV();
+      const note = inpNote?.value?.trim() || "";
+      const file = inpFile?.files?.[0];
 
-      // ✅ DEBUG LOGGING
-      console.log('[EVIDENCE-SUBMIT-DEBUG]', {
-        hasMaTC: !!maTC,
-        maTCValue: maTC,
-        inpMaTCElement: !!inpMaTC,
-        inpMaTCFullValue: inpMaTC?.value,
-        inpMaTCTag: inpMaTC?.tagName,
-        inpMaTCId: inpMaTC?.id
-      });
+      if (!maTC) { alert("Thiếu mã tiêu chí (MaTC)."); return; }
+      if (!mssv) { alert("Vui lòng nhập MSSV."); return; }
+      if (!file) { alert("Vui lòng chọn ảnh minh chứng."); return; }
 
-      if (!maTC) { 
-        console.error('[EVIDENCE-SUBMIT] ERROR: Missing MaTC!', {
-          value: inpMaTC?.value,
-          element: inpMaTC?.outerHTML
-        });
-        alert("Thiếu mã tiêu chí (MaTC)."); 
-        return; 
-      }
-
-      // Check which tab is active
-      const listTab = document.getElementById('evidence-tab-list');
-      const isListTabActive = listTab && !listTab.classList.contains('hidden');
-
-      if (isListTabActive) {
-        // Handle evidence list selection
-        console.log('[EVIDENCE-SUBMIT] Handling evidence list attachment');
-        const listContainer = document.getElementById('evidence-list-container');
-        console.log('[EVIDENCE-SUBMIT] List container:', listContainer);
-        const allCheckboxes = document.querySelectorAll('input[type="checkbox"].evidence-checkbox');
-        console.log('[EVIDENCE-SUBMIT] All checkboxes found:', allCheckboxes.length);
-        allCheckboxes.forEach((cb, i) => {
-          console.log(`  [${i}] id=${cb.getAttribute('data-id')}, checked=${cb.checked}, value=${cb.value}`);
-        });
-        const selectedCheckboxes = document.querySelectorAll('input[type="checkbox"].evidence-checkbox:checked');
-        console.log('[EVIDENCE-SUBMIT] Found checked checkboxes:', selectedCheckboxes.length);
-        if (selectedCheckboxes.length === 0) {
-          alert("Vui lòng chọn ít nhất một minh chứng.");
-          return;
-        }
-
-        try {
-          // Preserve IDs as strings — GUIDs must NOT be cast to Number
-          const evidenceIds = Array.from(selectedCheckboxes).map(cb => cb.getAttribute('data-id'));
-          console.log('[EVIDENCE-SUBMIT] Selected evidence IDs:', evidenceIds);
-
-          // Get MSSV automatically
-          const mssv = getCurrentMSSV();
-          console.log('[EVIDENCE-SUBMIT] Using MSSV:', mssv);
-          if (!mssv) {
-            alert("Không lấy được MSSV. Vui lòng đăng nhập lại.");
-            return;
-          }
-
-          // Get or create current form (phiếu đánh giá)
-          const phieuId = await ensureCurrentFormId();
-          console.log('[EVIDENCE-SUBMIT] Got phieuId:', phieuId);
-          if (!phieuId) {
-            alert("Không thể lấy phiếu đánh giá. Vui lòng thử lại.");
-            return;
-          }
-
-          // Call backend to attach selected evidence
-          const formData = new FormData();
-          formData.append('evidenceIds', JSON.stringify(evidenceIds));
-          
-          const response = await fetch(
-            `${API_BASE}/api/phieu-danh-gia/${phieuId}/criteria/${maTC}/attach`,
-            {
-              method: 'POST',
-              headers: { 
-                'X-User': mssv
-              },
-              body: formData
-            }
-          );
-
-          if (!response.ok) {
-            const errorData = await response.json().catch(() => ({}));
-            throw new Error(errorData.message || 'Lỗi đính kèm minh chứng');
-          }
-
-          alert("Đã đính kèm minh chứng thành công!");
-          modal.classList.add("hidden");
-          
-          // Reload /full trước rồi mới render lại phiếu
-          if (phieuId) {
-            try {
-              if (typeof openPhieuDetail === 'function') {
-                await openPhieuDetail(phieuId);
-              }
-            } catch (e) { console.warn('[ATTACH-RELOAD]', e); }
-          }
-        } catch (error) {
-          console.error('[EVIDENCE-SUBMIT] Error:', error);
-          alert('Lỗi: ' + (error.message || 'Không thể đính kèm minh chứng'));
-        }
-      } else {
-        // Handle upload new evidence
-        console.log('[EVIDENCE-SUBMIT] Handling new evidence upload');
-        const inpMSSV = document.getElementById("evidence-mssv");
-        const inpNote = document.getElementById("evidence-note");
-        const inpFile = document.getElementById("evidence-file");
-        const status = document.getElementById("evidence-status");
-
-        const mssv = inpMSSV?.value?.trim() || getCurrentMSSV();
-        const note = inpNote?.value?.trim() || "";
-        const file = inpFile?.files?.[0];
-
-        if (!mssv) { alert("Vui lòng nhập MSSV."); return; }
-        if (!file) { alert("Vui lòng chọn ảnh minh chứng."); return; }
-
-        try {
-          const fd = new FormData();
-          fd.append("mssv", mssv);
-          fd.append("maTC", maTC);
-          fd.append("note", note);
-          fd.append("file", file);
-
-          const res = await fetch(`${API_BASE}/api/tieuchi/evidence`, {
-            method: "POST",
-            body: fd
-          });
-          if (!res.ok) {
-            let msg = `HTTP ${res.status}`;
-            try { const j = await res.json(); if (j?.error || j?.message) msg += ` - ${j.error || j.message}`; } catch {}
-            throw new Error(msg);
-          }
-          const data = await res.json();
-
-          // Tự động đính kèm minh chứng vừa upload vào phiếu hiện tại
-          try {
-            const currentPhieuId = await ensureCurrentFormId();
-            if (currentPhieuId && data.id) {
-              const attachFd = new FormData();
-              attachFd.append('evidenceIds', JSON.stringify([data.id]));
-              await fetch(`${API_BASE}/api/phieu-danh-gia/${currentPhieuId}/criteria/${maTC}/attach`, {
-                method: 'POST',
-                headers: { 'X-User': mssv },
-                body: attachFd
-              });
-              // Cập nhật lại UI sau khi đính kèm
-              if (typeof openPhieuDetail === 'function') {
-                openPhieuDetail(currentPhieuId);
-              }
-            }
-          } catch (attachErr) {
-            console.error('Lỗi auto-attach:', attachErr);
-          }
-
-          if (status) {
-            status.classList.remove("hidden");
-            status.classList.remove("text-red-600");
-            status.classList.add("text-green-600");
-            status.textContent = "Đã đính kèm minh chứng vào tiêu chí.";
-          }
-
-          // Đóng modal sau 1.2s
-          setTimeout(() => { modal?.classList.add("hidden"); }, 1200);
-        } catch (e) {
-          if (status) {
-            status.classList.remove("hidden");
-            status.classList.remove("text-green-600");
-            status.classList.add("text-red-600");
-            status.textContent = `Đính kèm minh chứng thất bại: ${e?.message || e}`;
-          }
-          console.error(e);
-        }
-      }
-    });
-  }
-
-  // ====== Evidence Preview Modal Handlers ======
-  let currentEvidenceContext = { phieuId: null, maTC: null, fileName: null };
-  
-window.currentHoverEvId = null;
-window.currentHoverObjUrl = null;
-
-window.showHoverPreview = async function(evId, element) {
-    window.currentHoverEvId = evId;
-    let tooltip = document.getElementById('evidence-hover-tooltip');
-    if (!tooltip) {
-        tooltip = document.createElement('div');
-        tooltip.id = 'evidence-hover-tooltip';
-        tooltip.className = 'fixed z-[9999] bg-white border border-gray-200 shadow-2xl rounded-md overflow-hidden p-1 pointer-events-none transition-opacity duration-200 opacity-0 flex items-center justify-center bg-gray-50';
-        tooltip.style.width = '300px';
-        tooltip.style.height = '200px';
-        document.body.appendChild(tooltip);
-    }
-    
-    tooltip.innerHTML = '<div class="text-xs text-gray-500">Đang tải...</div>';
-    
-    const rect = element.getBoundingClientRect();
-    tooltip.style.top = rect.top + 'px';
-    tooltip.style.left = (rect.right + 20) + 'px';
-    
-    if (rect.right + 20 + 300 > window.innerWidth) {
-        tooltip.style.left = (rect.left - 300 - 20) + 'px';
-    }
-    
-    tooltip.classList.remove('opacity-0');
-
-    try {
-        const res = await fetch(API_BASE + '/api/evidence/' + evId + '/preview');
-        if (!res.ok) throw new Error('Fetch failed');
-        
-        // If the user already moved away, don't show it!
-        if (window.currentHoverEvId !== evId) return;
-        
-        const blob = await res.blob();
-        const objUrl = URL.createObjectURL(blob);
-        
-        if (window.currentHoverObjUrl) {
-            URL.revokeObjectURL(window.currentHoverObjUrl);
-        }
-        window.currentHoverObjUrl = objUrl;
-        
-        tooltip.innerHTML = '';
-        
-        if (blob.type.startsWith('image/')) {
-            const img = document.createElement('img');
-            img.src = objUrl;
-            img.className = 'w-full h-full object-contain';
-            tooltip.appendChild(img);
-        } else if (blob.type.startsWith('video/')) {
-            const video = document.createElement('video');
-            video.src = objUrl;
-            video.className = 'w-full h-full object-contain';
-            video.muted = true;
-            video.autoplay = true;
-            video.loop = true;
-            tooltip.appendChild(video);
-        } else {
-            const iframe = document.createElement('iframe');
-            iframe.src = objUrl;
-            iframe.className = 'w-full h-full border-0 object-contain';
-            tooltip.appendChild(iframe);
-        }
-    } catch(e) {
-        console.error('Hover preview fetch error', e);
-        tooltip.innerHTML = '<div class="text-xs text-red-500">Lỗi tải xem trước</div>';
-    }
-};
-
-window.hideHoverPreview = function() {
-    window.currentHoverEvId = null;
-    const tooltip = document.getElementById('evidence-hover-tooltip');
-    if (tooltip) {
-        tooltip.classList.add('opacity-0');
-        tooltip.innerHTML = '';
-        
-        if (window.currentHoverObjUrl) {
-            URL.revokeObjectURL(window.currentHoverObjUrl);
-            window.currentHoverObjUrl = null;
-        }
-    }
-};
-
-window.detachEvidence = async function(phieuId, maTC, evId) {
-  try {
-    if (!confirm('Bạn chắc chắn muốn xóa minh chứng này?')) {
-      return;
-    }
-    
-    // Call detach API for the specific evidence
-    let url = `${API_BASE}/api/phieu-danh-gia/${phieuId}/criteria/${maTC}/detach`;
-    if (evId) {
-        url += `?evidenceId=${evId}`;
-    }
-    
-    const response = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' }
-    });
-    
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || 'Lỗi xóa minh chứng');
-    }
-    
-    // Refresh the Phieu Data to update UI
-    if (window.openPhieuDetail) {
-        await window.openPhieuDetail(phieuId);
-    }
-    
-  } catch (error) {
-    console.error('Error detaching evidence:', error);
-    alert('Lỗi: ' + (error.message || 'Không thể xóa minh chứng'));
-  }
-};
-
-  window.openStudentEvidencePreview = async function(phieuId, maTC, fileName, evidenceId) {
-    try {
-      // Delegate to the global advanced lightbox if available
-      if (typeof window.openEvidencePreview === 'function') {
-          window.openEvidencePreview({ evidenceId: evidenceId, originalFileName: fileName }, phieuId);
-          return;
-      }
-
-      const modal = document.getElementById("evidence-preview-modal");
-      const video = document.getElementById("preview-video");
-      const filenamEl = document.getElementById("preview-criterion");
-      const statusEl = document.getElementById("preview-status");
-      const noteEl = document.getElementById("preview-note");
-      
-      if (!modal) return;
-      
-      // Load video blob from API
-      let url = `${API_BASE}/api/evidence/${evidenceId}/preview`;
-      if (!evidenceId) {
-          // Fallback if evidenceId is missing, though this endpoint doesn't exist
-          url = `${API_BASE}/api/phieu-danh-gia/${phieuId}/evidence/${maTC}`;
-      }
-      
-      const res = await fetch(url);
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      
-      const blob = await res.blob();
-      const videoUrl = URL.createObjectURL(blob);
-      
-      if (video) {
-        video.src = videoUrl;
-        video.load();
-      }
-      
-      if (filenamEl) filenamEl.textContent = fileName || 'Minh chứng video';
-      if (statusEl) statusEl.textContent = 'Đã lưu';
-      if (noteEl) noteEl.textContent = 'Minh chứng tự động từ AI hoặc được nộp bởi sinh viên';
-      
-      // Lưu context để dùng khi xóa
-      currentEvidenceContext = { phieuId, maTC, fileName };
-      
-      // Show modal
-      modal.classList.remove("hidden");
-    } catch (e) {
-      alert('Lỗi tải minh chứng: ' + (e.message || e));
-      console.error(e);
-    }
-  }
-
-  // Event listeners for preview modal buttons
-  const previewCloseBtn = document.getElementById("preview-close");
-  if (previewCloseBtn) {
-    previewCloseBtn.addEventListener("click", () => {
-      const modal = document.getElementById("evidence-preview-modal");
-      if (modal) modal.classList.add("hidden");
-    });
-  }
-
-  const previewCloseBtnAlt = document.getElementById("preview-close-btn");
-  if (previewCloseBtnAlt) {
-    previewCloseBtnAlt.addEventListener("click", () => {
-      const modal = document.getElementById("evidence-preview-modal");
-      if (modal) modal.classList.add("hidden");
-    });
-  }
-
-  const previewDeleteBtn = document.getElementById("preview-delete");
-  if (previewDeleteBtn) {
-    previewDeleteBtn.addEventListener("click", async () => {
-      if (!confirm("Bạn có chắc chắn muốn xóa minh chứng này khỏi Phiếu ĐGRL?")) return;
-      
       try {
-        const { phieuId, maTC } = currentEvidenceContext;
-        if (!phieuId || !maTC) {
-          alert("Lỗi: Không tìm thấy thông tin minh chứng");
-          return;
-        }
-        
-        // Call DELETE endpoint
-        const res = await fetch(`${API_BASE}/api/phieu-danh-gia/${phieuId}/evidence/${maTC}`, {
-          method: 'DELETE'
+        const fd = new FormData();
+        fd.append("mssv", mssv);
+        fd.append("maTC", maTC);
+        fd.append("note", note);
+        fd.append("file", file);
+
+        const res = await fetch(`${API_BASE}/api/tieuchi/evidence`, {
+          method: "POST",
+          body: fd
         });
-        
         if (!res.ok) {
-          const errData = await res.json().catch(() => ({}));
-          throw new Error(errData.message || `HTTP ${res.status}`);
+          let msg = `HTTP ${res.status}`;
+          try { const j = await res.json(); if (j?.error || j?.message) msg += ` - ${j.error || j.message}`; } catch {}
+          throw new Error(msg);
         }
-        
-        alert('✓ Minh chứng đã được xóa khỏi Phiếu ĐGRL');
-        document.getElementById("evidence-preview-modal")?.classList.add("hidden");
-        
-        // Refresh phiếu detail: dùng openPhieuViewModal nếu phieuId đã có trong context
-        if (phieuId && typeof window.openPhieuViewModal === 'function') {
-          window.openPhieuViewModal(phieuId, {});
+        const data = await res.json();
+
+        // Tự động đính kèm minh chứng vừa upload vào phiếu hiện tại
+        try {
+          const currentPhieuId = await ensureCurrentFormId();
+          if (currentPhieuId && data.id) {
+            const attachFd = new FormData();
+            attachFd.append('evidenceIds', JSON.stringify([data.id]));
+            await fetch(`${API_BASE}/api/phieu-danh-gia/${currentPhieuId}/criteria/${maTC}/attach`, {
+              method: 'POST',
+              headers: { 'X-User': mssv },
+              body: attachFd
+            });
+            // Cập nhật lại UI sau khi đính kèm
+            if (typeof openTrainingEvaluationLocal === 'function') {
+              openTrainingEvaluationLocal(currentPhieuId);
+            } else if (typeof openPhieuDetail === 'function') {
+              openPhieuDetail(currentPhieuId);
+            }
+          }
+        } catch (attachErr) {
+          console.error('Lỗi auto-attach:', attachErr);
         }
+
+        if (status) {
+          status.classList.remove("hidden");
+          status.classList.remove("text-red-600");
+          status.classList.add("text-green-600");
+          status.textContent = "Đã đính kèm minh chứng vào tiêu chí.";
+        }
+
+        // Đóng modal sau 1.2s
+        setTimeout(() => { modal?.classList.add("hidden"); }, 1200);
       } catch (e) {
-        alert('Lỗi xóa minh chứng: ' + (e.message || e));
+        if (status) {
+          status.classList.remove("hidden");
+          status.classList.remove("text-green-600");
+          status.classList.add("text-red-600");
+          status.textContent = `Đính kèm minh chứng thất bại: ${e?.message || e}`;
+        }
         console.error(e);
       }
     });
   }
-
-  const previewSubmitBtn = document.getElementById("preview-submit");
-  if (previewSubmitBtn) {
-    previewSubmitBtn.addEventListener("click", () => {
-      alert("Phiếu đã được gửi cho giảng viên");
-      document.getElementById("evidence-preview-modal")?.classList.add("hidden");
-      // TODO: Implement send to lecturer endpoint
-    });
-  }
-
-  // Delegate: intercept evidence download links to open preview instead
-  document.addEventListener("click", (e) => {
-    const link = e.target.closest("a[href*='/api/phieu-danh-gia/'][href*='/evidence/']");
-    if (!link) return;
-    
-    e.preventDefault();
-    
-    // Parse phieu ID and maTC from href
-    // href format: /api/phieu-danh-gia/{phieuId}/evidence/{maTC}
-    const href = link.getAttribute("href");
-    const match = href.match(/\/phieu-danh-gia\/(\d+)\/evidence\/([^/?]+)/);
-    if (!match) return;
-    
-    const [, phieuId, maTC] = match;
-    const fileName = link.textContent.replace('📥 ', '').trim() || 'Minh chứng video';
-    
-    openEvidencePreview(phieuId, maTC, fileName);
-  });
 
   // Close button for evaluation modal
   const closeEvalBtn = document.getElementById("close-eval-modal");
@@ -5532,171 +5006,8 @@ window.detachEvidence = async function(phieuId, maTC, evId) {
     closeEvalBtn.addEventListener("click", () => {
       const modal = document.getElementById("eval-modal");
       if (modal) modal.classList.add("hidden");
-      // Reset phiếu context khi đóng modal để không ảnh hưởng lần mở tiếp theo
-      window.currentPhieuId = null;
-      window.currentFormId = null;
-      window.currentPhieuItems = [];
-      window.currentPhieuStatus = null;
     });
   }
-
-  // Close phiếu list modal
-  const closePhieuListBtn = document.getElementById("close-phieu-list");
-  if (closePhieuListBtn) {
-    closePhieuListBtn.addEventListener("click", () => {
-      const modal = document.getElementById("phieu-list-modal");
-      if (modal) modal.classList.add("hidden");
-    });
-  }
-
-  // Khi đổi năm học hoặc học kì → reload danh sách phiếu + deadline
-  const namHocSel = document.getElementById("new-phieu-namhoc");
-  const hocKiSel = document.getElementById("new-phieu-hocki");
-  const reloadOnChange = async () => {
-    const namHoc = namHocSel?.value || '2025-2026';
-    const hocKi = parseInt(hocKiSel?.value || 1);
-    const mssv = getCurrentMSSV();
-    if (!mssv) return;
-
-    const container = document.getElementById('phieu-list-container');
-    if (container) container.innerHTML = '<p class="text-sm text-gray-500 text-center py-2">Đang tải...</p>';
-
-    // Cập nhật deadline
-    const deadline = await updateDeadlineUI(namHoc, hocKi);
-
-    // Fetch lại danh sách
-    try {
-      const res = await fetch(`${API_BASE}/api/phieu-danh-gia/list?search=${encodeURIComponent(mssv)}&namHoc=${encodeURIComponent(namHoc)}&hocKi=${hocKi}`);
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const phieuList = await res.json();
-
-      const hasApprovedForm = phieuList.some(p => isPhieuApproved(p.status) && p.hocKi === hocKi);
-      updateCreatePhieuButtonState(deadline, hasApprovedForm);
-
-      if (!Array.isArray(phieuList) || phieuList.length === 0) {
-        if (container) container.innerHTML = '<p class="text-sm text-gray-500 text-center py-4">Chưa có phiếu nào cho học kì này.</p>';
-      } else {
-        let html = '';
-        phieuList.forEach(phieu => {
-          const statusColor = getPhieuStatusColor(phieu.status);
-          const statusLabel = getPhieuStatusLabel(phieu.status);
-          const createdDate = new Date(phieu.createdAt).toLocaleDateString('vi-VN');
-          html += `
-            <div class="border rounded p-3 hover:bg-gray-50 cursor-pointer transition phieu-item" data-phieu-id="${phieu.id}">
-              <div class="flex items-start justify-between">
-                <div class="flex-1">
-                  <p class="font-semibold text-gray-900">Năm học ${phieu.namHoc}, Học kì ${phieu.hocKi}</p>
-                  <p class="text-sm text-gray-600">Ngày tạo: ${createdDate}</p>
-                  <p class="text-sm text-gray-600">Tổng điểm: <span class="font-semibold">${phieu.tongDiem}</span></p>
-                </div>
-                <span class="px-3 py-1 text-xs font-semibold rounded ${statusColor}">${statusLabel}</span>
-              </div>
-            </div>`;
-        });
-        if (container) {
-          container.innerHTML = html;
-          container.querySelectorAll('.phieu-item').forEach(item => {
-            item.addEventListener('click', function() {
-              const phieuId = this.getAttribute('data-phieu-id');
-              if (phieuId) openPhieuDetail(parseInt(phieuId));
-            });
-          });
-        }
-      }
-    } catch (err) {
-      if (container) container.innerHTML = `<p class="text-sm text-red-600 text-center py-4">Lỗi: ${err.message}</p>`;
-    }
-  };
-  if (namHocSel) namHocSel.addEventListener('change', reloadOnChange);
-  if (hocKiSel) hocKiSel.addEventListener('change', reloadOnChange);
-
-  // Create new phiếu
-  const btnCreatePhieu = document.getElementById("btn-create-phieu");
-  if (btnCreatePhieu) {
-    btnCreatePhieu.addEventListener("click", async () => {
-      const namhoc = document.getElementById("new-phieu-namhoc")?.value?.trim();
-      const hocki = document.getElementById("new-phieu-hocki")?.value;
-      const errorDiv = document.getElementById("create-phieu-error");
-      
-      if (!namhoc || !hocki) {
-        errorDiv.textContent = "❌ Vui lòng chọn năm học và học kì";
-        errorDiv.classList.remove("hidden");
-        return;
-      }
-
-      try {
-        const mssv = getCurrentMSSV();
-        if (!mssv) {
-          alert("Vui lòng đăng nhập.");
-          return;
-        }
-
-        // Clear error
-        errorDiv.classList.add("hidden");
-
-        // STEP 3.6: Call get-or-create endpoint with validation
-        const createRes = await fetch(`${API_BASE}/api/phieu-danh-gia/get-or-create/${encodeURIComponent(mssv)}?namHoc=${encodeURIComponent(namhoc)}&hocKi=${hocki}`);
-        
-        if (!createRes.ok) {
-          const errData = await createRes.json().catch(() => ({}));
-          console.error('[CREATE-PHIEU] Error response:', errData);
-          
-          // Handle different error types from backend
-          const reasonCode = errData.reasonCode || 'UNKNOWN';
-          let errorMessage = '❌ Lỗi: ';
-          
-          switch (reasonCode) {
-            case 'DEADLINE_EXPIRED':
-              errorMessage += `Thời hạn tạo phiếu đã qua (${errData.deadline})`;
-              break;
-            case 'APPROVED_FORM_EXISTS':
-              errorMessage += 'Phiếu đã được duyệt cho học kì này, không thể tạo mới';
-              break;
-            case 'FORM_STATUS_CONFLICT':
-              errorMessage += `Phiếu với trạng thái '${errData.currentStatus}' đã tồn tại`;
-              break;
-            default:
-              errorMessage += errData.error || `HTTP ${createRes.status}`;
-          }
-          
-          errorDiv.textContent = errorMessage;
-          errorDiv.classList.remove("hidden");
-          return;
-        }
-        
-        const newPhieu = await createRes.json();
-        console.log('[CREATE-PHIEU] Created/found phiếu:', newPhieu);
-        
-        if (newPhieu.success) {
-          const modal = document.getElementById('phieu-list-modal');
-
-          if (newPhieu.isNew) {
-            // Tạo phiếu mới → đóng modal danh sách, mở thẳng phiếu
-            if (modal) modal.classList.add('hidden');
-            await openPhieuDetail(newPhieu.phieuId);
-          } else {
-            // Phiếu đã tồn tại → thông báo xanh rồi mở phiếu
-            errorDiv.textContent = 'ℹ️ Phiếu cho học kì này đã tồn tại. Đang mở phiếu...';
-            errorDiv.style.cssText = 'background:#eff6ff;color:#1d4ed8;border:1px solid #93c5fd;padding:8px;border-radius:6px;';
-            errorDiv.classList.remove('hidden');
-            setTimeout(async () => {
-              errorDiv.classList.add('hidden');
-              errorDiv.style.cssText = '';
-              if (modal) modal.classList.add('hidden');
-              await openPhieuDetail(newPhieu.phieuId);
-            }, 1500);
-          }
-        } else {
-          throw new Error('Phản hồi không hợp lệ từ server');
-        }
-      } catch (error) {
-        console.error('[CREATE-PHIEU] Error:', error);
-        errorDiv.textContent = `❌ Lỗi: ${error.message}`;
-        errorDiv.classList.remove("hidden");
-      }
-    });
-  }
-
 
   // Default year/semester and submit handler for evaluation form
   function guessAcademicYear() {
@@ -5745,21 +5056,13 @@ window.detachEvidence = async function(phieuId, maTC, evId) {
       const tong = items.reduce((s, x) => s + (x.diem || 0), 0);
 
       try {
-        if (statusEl) { statusEl.classList.remove("hidden", "text-red-600"); statusEl.classList.add("text-gray-600"); statusEl.textContent = "Đang lưu nháp..."; }
+        if (statusEl) { statusEl.classList.remove("hidden", "text-red-600"); statusEl.classList.add("text-gray-600"); statusEl.textContent = "Đang gửi phiếu..."; }
         evalSubmitBtn.setAttribute("disabled", "true");
 
         const res = await fetch(`${API_BASE}/api/phieu-danh-gia`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ 
-            mssv: useMssv, 
-            namHoc, 
-            hocKi, 
-            tongDiem: tong, 
-            items,
-            // Gửi phieuId nếu đang sửa phiếu cụ thể (tránh tạo phiếu trùng do NamHoc format khác nhau)
-            phieuId: window.currentPhieuId || null
-          })
+          body: JSON.stringify({ mssv: useMssv, namHoc, hocKi, tongDiem: tong, items })
         });
         if (!res.ok) {
           let msg = `HTTP ${res.status}`;
@@ -5767,99 +5070,24 @@ window.detachEvidence = async function(phieuId, maTC, evId) {
           throw new Error(msg);
         }
         const data = await res.json();
-        // Cập nhật currentPhieuId với id thực từ server (quan trọng cho lần submit tiếp theo)
-        if (data?.phieuId) {
-          window.currentPhieuId = data.phieuId;
-          window.currentFormId = data.phieuId;
-        }
         if (statusEl) {
           statusEl.classList.remove("text-gray-600", "text-red-600");
           statusEl.classList.add("text-green-600");
-          statusEl.textContent = "Đã lưu bản nháp thành công. Đóng cửa sổ.";
+          statusEl.textContent = "Đã gửi phiếu đánh giá thành công.";
         }
         setTimeout(() => {
           if (statusEl) statusEl.classList.add("hidden");
           evalSubmitBtn.removeAttribute("disabled");
-          // Close modal
-          const modal = document.getElementById('eval-modal');
-          if (modal) modal.classList.add('hidden');
-          // Refresh list
-          if (typeof preloadData === 'function') preloadData();
         }, 1500);
       } catch (e) {
         console.error(e);
         if (statusEl) {
           statusEl.classList.remove("hidden", "text-gray-600");
           statusEl.classList.add("text-red-600");
-          statusEl.textContent = `Lưu nháp thất bại: ${e?.message || e}`;
+          statusEl.textContent = `Gửi phiếu đánh giá thất bại: ${e?.message || e}`;
         }
         evalSubmitBtn.removeAttribute("disabled");
       }
-    });
-  }
-
-  const evalRealSubmitBtn = document.getElementById("eval-real-submit-btn");
-  if (evalRealSubmitBtn) {
-    evalRealSubmitBtn.addEventListener("click", async () => {
-        if (!window.currentPhieuId) return;
-        if (!confirm("Sau khi nộp phiếu, bạn sẽ không thể chỉnh sửa điểm được nữa. Bạn có chắc chắn muốn nộp phiếu này?")) return;
-        
-        // 1. Lưu các thay đổi hiện tại trước
-        const evalSubmitBtn = document.getElementById("eval-submit-btn");
-        if (evalSubmitBtn) {
-            evalSubmitBtn.click(); 
-        }
-        
-        // 2. Gọi API submit
-        try {
-            evalRealSubmitBtn.disabled = true;
-            evalRealSubmitBtn.innerHTML = "Đang xử lý...";
-            const res = await fetch(`${API_BASE}/api/phieu-danh-gia/${window.currentPhieuId}/submit`, {
-                method: "POST"
-            });
-            if (!res.ok) {
-                const j = await res.json();
-                throw new Error(j?.message || j?.error || res.status);
-            }
-            alert("Gửi phiếu đánh giá thành công!");
-            document.getElementById('eval-modal').classList.add('hidden');
-            if (typeof preloadData === 'function') preloadData();
-        } catch (e) {
-            console.error(e);
-            alert("Lỗi khi nộp phiếu: " + e.message);
-        } finally {
-            evalRealSubmitBtn.disabled = false;
-            evalRealSubmitBtn.innerHTML = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" /></svg> Gửi phiếu đánh giá`;
-        }
-    });
-  }
-
-  const evalDeleteBtn = document.getElementById("eval-delete-btn");
-  if (evalDeleteBtn) {
-    evalDeleteBtn.addEventListener("click", async () => {
-        if (!window.currentPhieuId) return;
-        if (!confirm("Bạn có chắc chắn muốn xóa phiếu nháp này không? Thao tác này không thể hoàn tác.")) return;
-        
-        try {
-            evalDeleteBtn.disabled = true;
-            evalDeleteBtn.innerHTML = "Đang xóa...";
-            const res = await fetch(`${API_BASE}/api/phieu-danh-gia/${window.currentPhieuId}`, {
-                method: "DELETE"
-            });
-            if (!res.ok) {
-                const j = await res.json();
-                throw new Error(j?.message || j?.error || res.status);
-            }
-            alert("Đã xóa phiếu thành công!");
-            document.getElementById('eval-modal').classList.add('hidden');
-            if (typeof preloadData === 'function') preloadData();
-        } catch (e) {
-            console.error(e);
-            alert("Lỗi khi xóa phiếu: " + e.message);
-        } finally {
-            evalDeleteBtn.disabled = false;
-            evalDeleteBtn.innerHTML = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg> Xóa phiếu`;
-        }
     });
   }
 
@@ -6494,37 +5722,67 @@ window.detachEvidence = async function(phieuId, maTC, evId) {
     return recordedChunks.length ? new Blob(recordedChunks, { type }) : null;
   }
 
-  let mediaRecorder, recordedChunks = [], currentStream = null;
+  let mediaRecorder = null, recordedChunks = [], currentStream = null;
   let lastBlob = null;
 
 
-  // Hàm helper để tắt camera hoàn toàn
+  // Hàm helper để tắt camera hoàn toàn (hỗ trợ cả 2 hệ thống: cũ & mới)
   function stopCamera() {
-    // Tắt media recorder nếu còn ghi
-    if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+    // ✅ SUPPORT CÓ HAI HỆ THỐNG VIDEO:
+    // 1. Hệ thống cũ: mediaRecorder, currentStream, video-preview
+    // 2. Hệ thống mới (Attendance): _attendanceRecorder, _attendanceStream, video-preview-attendance
+    
+    // Tắt media recorder cũ nếu còn ghi (check !== null, not typeof)
+    if (mediaRecorder !== null && mediaRecorder && mediaRecorder.state !== 'inactive') {
       try { mediaRecorder.stop(); } catch {}
     }
     
-    // Tắt tất cả tracks từ stream
-    if (currentStream) {
+    // Tắt media recorder mới (Attendance)
+    if (window._attendanceRecorder && window._attendanceRecorder.state !== 'inactive') {
+      try { window._attendanceRecorder.stop(); } catch {}
+    }
+    
+    // Tắt stream cũ
+    if (currentStream !== null && currentStream) {
       currentStream.getTracks().forEach(track => {
         track.stop();
-        console.log('✓ Đã tắt camera track:', track.kind);
+        console.log('✓ Đã tắt camera track (cũ):', track.kind);
       });
       currentStream = null;
     }
     
-    // Tắt video preview - cần tắt playback và xóa source
-    const preview = document.getElementById("video-preview");
-    if (preview) {
-      preview.pause();  // ← Dừng playback
-      preview.srcObject = null;  // ← Xóa stream
+    // Tắt stream mới (Attendance)
+    if (window._attendanceStream) {
+      window._attendanceStream.getTracks().forEach(track => {
+        track.stop();
+        console.log('✓ Đã tắt camera track (mới):', track.kind);
+      });
+      window._attendanceStream = null;
     }
-    // Ẩn overlay nếu có
-    const cameraOverlay = document.getElementById("camera-overlay");
-    if (cameraOverlay) cameraOverlay.classList.add("opacity-0");
     
-    console.log('✓ Camera đã được tắt hoàn toàn');
+    // Tắt video preview CỦA - cần tắt playback và xóa source
+    const previewOld = document.getElementById("video-preview");
+    if (previewOld) {
+      previewOld.pause();  // ← Dừng playback
+      previewOld.srcObject = null;  // ← Xóa stream
+    }
+    
+    // Tắt video preview MỚI (Attendance)
+    const previewNew = document.getElementById("video-preview-attendance");
+    if (previewNew) {
+      previewNew.pause();
+      previewNew.srcObject = null;
+    }
+    
+    // Ẩn overlay cũ nếu có
+    const cameraOverlayOld = document.getElementById("camera-overlay");
+    if (cameraOverlayOld) cameraOverlayOld.classList.add("opacity-0");
+    
+    // Ẩn overlay mới (Attendance) nếu có
+    const cameraOverlayNew = document.getElementById("camera-overlay-attendance");
+    if (cameraOverlayNew) cameraOverlayNew.classList.add("opacity-0");
+    
+    console.log('✓ Tất cả camera streams đã được tắt hoàn toàn');
   }
 
 // Wizard điều hướng (an toàn nếu phần tử chưa tồn tại)
@@ -6535,13 +5793,13 @@ if (_chooseVideoBtn) {
     document.getElementById("step-2-video")?.classList.remove("hidden");
     // Attendance mode UI: nếu đã có maHD từ QR → ẩn input tên/mô tả và hiển thị thông tin hoạt động
     try {
-      const maHD = sessionStorage.getItem('qr_maHD') || new URLSearchParams(location.search).get('maHD');
+      const maHD = localStorage.getItem('qr_maHD') || new URLSearchParams(location.search).get('maHD');
       const nameInput = document.getElementById('activity-name');
       const descInput = document.getElementById('activity-desc');
       let infoBox = document.getElementById('attendance-activity-info');
       if (maHD) {
         // tìm tên hoạt động từ cache tải trước
-        let tenHD = sessionStorage.getItem('qr_tenHD') || '';
+        let tenHD = localStorage.getItem('qr_tenHD') || '';
         try {
           const acts = (window.dbCache && Array.isArray(window.dbCache.HoatDongTruong)) ? window.dbCache.HoatDongTruong : (JSON.parse(sessionStorage.getItem('preload')||'{}').hoatDongTruong||[]);
           const found = Array.isArray(acts) ? acts.find(a => (a.MaHD||'').toString() === maHD) : null;
@@ -6718,20 +5976,35 @@ if (_btnSend) _btnSend.addEventListener("click", async () => {
 
   // Check if in attendance mode (QR scan) first to determine activity name
   const urlParams = new URLSearchParams(window.location.search);
-  const qrMaHD = urlParams.get('maHD') || sessionStorage.getItem('qr_maHD');
+  const qrMaHD = urlParams.get('maHD') || localStorage.getItem('qr_maHD');
   
-  // Attendance mode: tên/mô tả đã loại bỏ - không cần kiểm tra
-  // Legacy mode: dùng generic "Minh chứng không đăng ký" (evidence without registration)
-  const activityName = qrMaHD ? '' : 'Minh chứng không đăng ký';
+  // Get activity name from backend for AI context mapping
+  let activityName = 'Unknown';
+  if (qrMaHD) {
+    try {
+      const actRes = await fetch(`/api/activities/${encodeURIComponent(qrMaHD)}/info`);
+      if (actRes.ok) {
+        const actData = await actRes.json();
+        activityName = actData.name || actData.tenHD || qrMaHD;
+        console.log('✅ Got activity name:', activityName);
+      } else {
+        // Fallback to maHD if API fails
+        activityName = qrMaHD;
+        console.warn('⚠️ Activity info API failed, using maHD');
+      }
+    } catch (e) {
+      console.error('❌ Error fetching activity info:', e);
+      activityName = qrMaHD;
+    }
+  } else {
+    activityName = 'Minh chứng không đăng ký';
+  }
   const activityDesc = '';
 
 
   const h =  await checkAiHealth();
 
-  if (!h || !h.ok) {
-    console.error('❌ AI health check failed:', h);
-    throw new Error("AI chưa sẵn sàng!");
-  }
+  if (!h || !h.ok) throw new Error("AI chưa sẵn sàng!");
   // UI loading
   const btnSend = document.getElementById("btn-send");
   const originalText = btnSend.textContent;
@@ -6763,110 +6036,47 @@ if (_btnSend) _btnSend.addEventListener("click", async () => {
         const raw = localStorage.getItem("loggedUserInfo");
         if (!raw) return null;
         const u = JSON.parse(raw);
-        return u?.MaCaNhan ?? u?.MSSV ?? u?.MaSV ?? u?.mssv ?? u?.studentId ?? null;
+        return u?.MaCaNhan ?? u?.mssv ?? u?.studentId ?? null;
       } catch { return null; }
     };
     const getFaceB64 = async () => {
-      // ✅ Ưu tiên lấy avatar từ database (AnhDD field trong thông tin user)
-      try {
-        const loggedUserRaw = localStorage.getItem('loggedUserInfo');
-        if (loggedUserRaw) {
-          const loggedUser = JSON.parse(loggedUserRaw);
-          // Kiểm tra các tên field có thể chứa avatar
-          const anhField = loggedUser.AnhDD || loggedUser.AnhDaiDien || loggedUser.Avatar || loggedUser.avatar || loggedUser.anhDaiDien;
-          if (anhField && typeof anhField === 'string' && anhField.length > 100) {
-            // Nếu là base64 (không có data: prefix), đó là avatar từ database
-            if (!anhField.startsWith('data:') && !anhField.startsWith('http')) {
-              console.log('[FACE-DEBUG] Tìm thấy AnhDD từ database, length=', anhField.length);
-              return anhField;
-            }
-            // Nếu có data: prefix, bỏ nó đi
-            if (anhField.startsWith('data:')) {
-              const i = anhField.indexOf(',');
-              const result = i >= 0 ? anhField.slice(i + 1) : anhField;
-              console.log('[FACE-DEBUG] AnhDD với data: prefix, length=', result.length);
-              return result;
-            }
-          }
-        }
-      } catch (e) {
-        console.warn('[FACE-DEBUG] Lỗi khi lấy AnhDD từ loggedUserInfo:', e);
+      // Check sessionStorage first (where avatar is actually stored after login)
+      let a = sessionStorage.getItem("userAvatar");
+      if (!a) {
+        // Fallback to localStorage (for persistence across sessions)
+        a = localStorage.getItem("userAvatar");
       }
-      
-      // ✅ Fallback: Lấy từ HTML avatar element
-      const img = document.getElementById("header-avatar") || document.getElementById("avatar-img") || document.getElementById("user-avatar-img");
-      console.log("[FACE-DEBUG] Tìm HTML avatar element:", !!img, img?.src?.substring(0, 80) || "no src");
-      
+      console.log("[FACE-DEBUG] Kiểm tra userAvatar:", !!a, a ? a.substring(0, 50) + "..." : "null");
+      if (a && a.startsWith("data:")) {
+        const i = a.indexOf(",");
+        console.log("[FACE-DEBUG] Tìm thấy userAvatar, length=", a.length);
+        return a.slice(i + 1); // bỏ prefix data:
+      }
+      const img = document.getElementById("avatar-img") || document.getElementById("user-avatar-img");
+      console.log("[FACE-DEBUG] Tìm HTML avatar element:", !!img, img?.src?.substring(0, 50) || "no src");
       if (img?.src) {
-        // Check if src is already a data URL
-        if (img.src.startsWith("data:")) {
-          const i = img.src.indexOf(",");
-          const result = i >= 0 ? img.src.slice(i + 1) : img.src;
-          console.log("[FACE-DEBUG] Avatar element đã là data URL, length=", result.length);
+        try {
+          const r = await fetch(img.src);
+          const b = await r.blob();
+          const fr = new FileReader();
+          const dataUrl = await new Promise(res => { fr.onload = () => res(fr.result); fr.readAsDataURL(b); });
+          const i = String(dataUrl).indexOf(",");
+          const result = i >= 0 ? String(dataUrl).slice(i + 1) : String(dataUrl);
+          console.log("[FACE-DEBUG] Chuyển đổi avatar thành base64, length=", result.length);
           return result;
-        }
-        
-        // Try to fetch avatar (with CORS handling)
-        if (img.src.startsWith("/") || img.src.startsWith(window.location.origin)) {
-          try {
-            const r = await fetch(img.src);
-            const b = await r.blob();
-            const fr = new FileReader();
-            const dataUrl = await new Promise(res => { fr.onload = () => res(fr.result); fr.readAsDataURL(b); });
-            const i = String(dataUrl).indexOf(",");
-            const result = i >= 0 ? String(dataUrl).slice(i + 1) : String(dataUrl);
-            console.log("[FACE-DEBUG] Chuyển đổi avatar từ local URL thành base64, length=", result.length);
-            return result;
-          } catch (e) {
-            console.error("[FACE-ERROR] Lỗi khi fetch/convert avatar:", e);
-          }
-        }
-        
-        // For external URLs, try direct fetch with mode cors
-        if (img.src.includes("pravatar.cc") || img.src.includes("ui-avatars.com") || img.src.includes("api.dicebear.com")) {
-          try {
-            console.warn('[FACE-DEBUG] Thử fetch external avatar (CORS):', img.src.substring(0, 60));
-            const r = await fetch(img.src, { mode: 'cors' });
-            if (!r.ok) throw new Error(`HTTP ${r.status}`);
-            const b = await r.blob();
-            const fr = new FileReader();
-            const dataUrl = await new Promise(res => { fr.onload = () => res(fr.result); fr.readAsDataURL(b); });
-            const i = String(dataUrl).indexOf(",");
-            const result = i >= 0 ? String(dataUrl).slice(i + 1) : String(dataUrl);
-            console.log("[FACE-DEBUG] Chuyển đổi external avatar thành base64, length=", result.length);
-            return result;
-          } catch (e2) {
-            console.warn('[FACE-DEBUG] Không thể fetch external avatar:', e2.message);
-          }
+        } catch (e) {
+          console.error("[FACE-ERROR] Lỗi khi fetch/convert avatar:", e);
+          return "";
         }
       }
-      
-      console.log("[FACE-DEBUG] Không tìm thấy avatar hợp lệ");
+      console.log("[FACE-DEBUG] Không tìm thấy avatar ở đâu cả, trả về chuỗi rỗng");
       return "";
     };
 
     console.log(">>> Bắt đầu chuẩn bị gửi AI");
 
-    const mssv = await getCurrentMSSV();  // ✅ FIX: getCurrentMSSV IS ASYNC - must use await!
+    const mssv = await getCurrentMSSV();
     console.log("Lấy MSSV xong:", mssv);
-    
-    // ✅ DEBUG: Kiểm tra MSSV có hợp lệ không
-    if (!mssv || typeof mssv !== 'string' || mssv.includes('Promise') || mssv.includes('object') || mssv.length === 0) {
-      console.error('❌ [MSSV-ERROR] MSSV không hợp lệ:', mssv, 'type:', typeof mssv);
-      const raw = localStorage.getItem('loggedUserInfo');
-      console.log('[MSSV-DEBUG] loggedUserInfo raw:', raw);
-      if (raw) {
-        try {
-          const info = JSON.parse(raw);
-          console.log('[MSSV-DEBUG] loggedUserInfo parsed:', info);
-          console.log('[MSSV-DEBUG] Available keys:', Object.keys(info));
-        } catch (e) {
-          console.error('[MSSV-DEBUG] Failed to parse loggedUserInfo:', e);
-        }
-      }
-      alert('❌ Lỗi: Không tìm thấy thông tin sinh viên. Vui lòng đăng nhập lại.');
-      return;
-    }
     
     const faceB64 = await getFaceB64();
     console.log("Lấy ảnh base64 xong, độ dài:", faceB64?.length);
@@ -6889,16 +6099,104 @@ if (_btnSend) _btnSend.addEventListener("click", async () => {
     if (qrMaHD) {
       // Attendance mode
       console.log('[Attendance] Detected maHD from QR:', qrMaHD);
-      // Lấy toạ độ GPS trước khi gửi (không chặn nếu fail)
+      
+      // ===== OPTION A: Bắt buộc GPS =====
+      // Lấy toạ độ GPS - REQUIRED (không chấp nhận skip)
       let lat = null, lng = null;
+      let gpsCollected = false;
+      
+      console.log('📍 Requesting GPS location (REQUIRED for Attendance)...');
+      
+      if (!navigator.geolocation) {
+        console.error('❌ Geolocation không được support trên device này');
+        alert('❌ Lỗi: Device của bạn không hỗ trợ GPS.\n\nVui lòng sử dụng điện thoại hoặc thiết bị có GPS để điểm danh.');
+        showMessage('❌ GPS không được support. Không thể tiếp tục.');
+        return;
+      }
+      
       try {
-        await new Promise((resolve, reject) => {
-          if (!navigator.geolocation) return resolve();
-          navigator.geolocation.getCurrentPosition(pos => {
-            lat = pos.coords.latitude; lng = pos.coords.longitude; resolve();
-          }, err => { console.warn('Không lấy được GPS:', err.message); resolve(); }, { enableHighAccuracy: true, timeout: 8000 });
+        gpsCollected = await new Promise((resolve) => {
+          console.log('📍 Requesting current position...');
+          const gpsTimeout = setTimeout(() => {
+            console.warn('⏱️ GPS timeout after 12 seconds');
+            resolve(false);
+          }, 12000);
+          
+          navigator.geolocation.getCurrentPosition(
+            (pos) => {
+              clearTimeout(gpsTimeout);
+              lat = pos.coords.latitude;
+              lng = pos.coords.longitude;
+              console.log('✅ GPS collected successfully:', { lat, lng, accuracy: pos.coords.accuracy });
+              resolve(true);
+            },
+            (err) => {
+              clearTimeout(gpsTimeout);
+              console.warn('⚠️ GPS Error - Code:', err.code, 'Message:', err.message);
+              const errMsg = err.code === 1 ? 'Bạn từ chối truy cập GPS. Vui lòng cho phép GPS để tiếp tục.' :
+                             err.code === 2 ? 'Vị trí không sẵn sàng trên device này.' :
+                             'Timeout lấy GPS - vui lòng thử lại.';
+              console.warn('GPS error detail:', errMsg);
+              resolve(false);
+            },
+            { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 }
+          );
         });
-      } catch(e){ console.warn('GPS error:', e); }
+      } catch(e) {
+        console.warn('❌ GPS exception:', e);
+        gpsCollected = false;
+      }
+      
+      // Check if GPS collection failed
+      if (!gpsCollected || lat === null || lng === null) {
+        console.error('❌ GPS collection failed - cannot proceed with attendance');
+        alert('❌ Không thể lấy vị trí GPS.\n\nVui lòng:\n1. Bật GPS trên điện thoại\n2. Cho phép ứng dụng truy cập GPS\n3. Thử lại');
+        showMessage('❌ GPS collection failed. Please enable GPS and try again.');
+        return;
+      }
+      
+      console.log('✅ GPS successfully collected:', { lat, lng, hasGPS: true });
+
+      // ===== Avatar Validation =====
+      console.log('📷 Validating avatar...');
+      if (!faceB64 || faceB64.trim() === '') {
+        console.error('❌ Avatar validation failed - no avatar found');
+        alert('❌ Lỗi: Ảnh đại diện không tìm thấy.\n\nVui lòng:\n1. Cập nhật ảnh đại diện trong hồ sơ cá nhân\n2. Tải lại trang (F5)\n3. Thử lại');
+        showMessage('❌ Avatar not found. Please update your profile picture and refresh the page.');
+        return;
+      }
+      
+      // Validate base64 format
+      if (!faceB64.match(/^[A-Za-z0-9+/=]+$/)) {
+        console.error('❌ Avatar validation failed - invalid base64 format');
+        alert('❌ Lỗi: Ảnh đại diện không hợp lệ (định dạng lỗi).\n\nVui lòng cập nhật ảnh đại diện và thử lại.');
+        showMessage('❌ Invalid avatar format. Please update your profile picture.');
+        return;
+      }
+      
+      // Validate base64 length (avatar should be at least 100 bytes when decoded)
+      const avatarSize = faceB64.length * 0.75; // Rough estimate of decoded size
+      if (avatarSize < 100) {
+        console.error('❌ Avatar validation failed - avatar too small:', avatarSize, 'bytes');
+        alert('❌ Ảnh đại diện quá nhỏ hoặc bị hỏng.\n\nVui lòng cập nhật ảnh đại diện và thử lại.');
+        showMessage('❌ Avatar too small or corrupted. Please update your profile picture.');
+        return;
+      }
+      
+      console.log('✅ Avatar validation passed:', { size: avatarSize, format: 'base64' });
+      const mapActivityToContext = (actName) => {
+        if (!actName) return '';
+        const lower = actName.toLowerCase();
+        // Mapping based on activity keywords
+        if (lower.includes('sân') || lower.includes('ngoài')) return 'NgoaiTroi';
+        if (lower.includes('lớp') || lower.includes('trong')) return 'TrongLop';
+        if (lower.includes('sân khấu') || lower.includes('biểu diễn') || lower.includes('stage')) return 'SanKhau';
+        if (lower.includes('giảng') || lower.includes('đường')) return 'GiangDuong';
+        // Default to the name as-is (backend will use for expected_context)
+        return actName;
+      };
+      const expectedContext = mapActivityToContext(activityName);
+      console.log('🎯 Activity context mapping:', { activityName, expectedContext });
       const fdAttend = new FormData();
       // Attendance endpoint backend expects key 'video'
       fdAttend.append('video', blob, filename);
@@ -6925,14 +6223,7 @@ if (_btnSend) _btnSend.addEventListener("click", async () => {
       // Chuẩn hoá field cho UI reuse
       result.weightedScore = result.weightedScore || result.weighted_score || 0;
       result.verdict = result.verdict || result.Verdict || 'Approved';
-
-      // ✅ Hiển thị kết quả AI TRƯỚC KHI xóa state (để wizard còn mở)
-      document.getElementById('wizard-modal')?.classList.remove('hidden');
-      document.getElementById('ai-result')?.classList.remove('hidden');
-      if (typeof displayAIResults === 'function') {
-        try { displayAIResults(result); } catch(e) { console.warn('displayAIResults error', e); }
-      }
-      try { document.getElementById('ai-result')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); } catch {}
+      // Không cần activityName/manual fields ở attendance mode
 
       // Đánh dấu hoàn tất đăng ký để ẩn QR và ngăn xác nhận nhiều lần
       try {
@@ -6946,81 +6237,88 @@ if (_btnSend) _btnSend.addEventListener("click", async () => {
             window._svRegDetail[String(qrMaHD)] = Object.assign({}, window._svRegDetail[String(qrMaHD)]||{}, { Eligible: false, Status: 'COMPLETED' });
             try { saveRegState(); } catch {}
           }
-          // Sau khi nộp minh chứng xong, bỏ ghim maHD để tránh gửi lại (KHÔNG reload page)
-          try { sessionStorage.removeItem('qr_maHD'); sessionStorage.removeItem('qr_tenHD'); const url = new URL(location.href); url.searchParams.delete('maHD'); history.replaceState({}, '', url.toString()); } catch {}
+          // Sau khi nộp minh chứng xong, bỏ ghim maHD để tránh gửi lại
+          try { localStorage.removeItem('qr_maHD'); const url = new URL(location.href); url.searchParams.delete('maHD'); history.replaceState({}, '', url.toString()); } catch {}
         }
       } catch (e) { console.warn('complete registration update failed', e); }
-
     } else {
       // Legacy extracurricular evidence analyze
   // Legacy gửi minh chứng phân tích AI: thêm X-User để liên kết đúng chủ thể
   let xUser2 = '';
   const userInfoRaw2 = localStorage.getItem('loggedUserInfo');
   try { if (userInfoRaw2){ const u2 = JSON.parse(userInfoRaw2); xUser2 = u2.MaCaNhan || u2.MSSV || u2.MaSV || u2.TenTK || ''; } } catch {}
-  const res = await fetch("/api/evidence/upload", { method: "POST", headers: xUser2? { 'X-User': xUser2 } : undefined, body: fd });
+  const res = await fetch("/api/evidence/analyze", { method: "POST", headers: xUser2? { 'X-User': xUser2 } : undefined, body: fd });
       if (!res.ok) throw new Error(`Lỗi máy chủ (${res.status}): ${await res.text()}`);
       result = await res.json();
 
+      // Sau khi AI phân tích: nếu gương mặt hợp lệ thì tự đính video vào tiêu chí ĐGRL đã chọn
+      try {
+        const sel = document.getElementById('criterion-select');
+        const maTCSelected = sel ? Number(sel.value || 0) : 0;
+        // Xác định hợp lệ theo verdict hoặc điểm khuôn mặt >= 80%
+        const verdict = (result.verdict || result.Verdict || '').toString();
+        const facePct = (() => {
+          const v = result.face_score ?? result.faceScore ?? (result.Scores?.face || result.scores?.face) ?? null;
+          const num = typeof v === 'number' ? v : (typeof v === 'string' ? parseFloat(v) : null);
+          if (num == null || !isFinite(num)) return null; return num <= 1 ? Math.round(num*100) : Math.round(num);
+        })();
+        const okFace = (verdict.toLowerCase() === 'approved') || (typeof facePct === 'number' && facePct >= 80);
+        if (maTCSelected > 0 && okFace) {
+          const attachFd = new FormData();
+          attachFd.append('mssv', mssv || '');
+          attachFd.append('maTC', String(maTCSelected));
+          attachFd.append('note', `Đính kèm tự động từ video xác minh (${facePct ?? 'n/a'}%)`);
+          attachFd.append('file', blob, filename);
+          // Đính kèm luôn kết quả AI để backend lưu vào evidence (nếu hỗ trợ)
+          try {
+            const detailsJson = JSON.stringify(result);
+            attachFd.append('detailsJson', detailsJson);
+          } catch {}
+          // Gửi một số trường tóm tắt để server dễ map
+          const toPct = (v)=>{ if(v==null) return null; const n = typeof v==='number'? v : (typeof v==='string'? parseFloat(v) : NaN); if(!isFinite(n)) return null; return n<=1? Math.round(n*100) : Math.round(n); };
+          const aiScore = toPct(result.weightedScore ?? result.weighted_score ?? result.AIWeighted ?? result.aiScore ?? result.confidenceScore);
+          const faceScore = toPct(result.face_score ?? result.faceScore ?? result.Scores?.face ?? result.scores?.face);
+          const contextScore = toPct(result.context_score ?? result.contextScore ?? result.banner_score ?? result.bannerScore ?? result.Scores?.context ?? result.scores?.context);
+          const deviceScore = toPct(result.deviceScore ?? result.device_score);
+          if (aiScore!=null) attachFd.append('AIScore', String(aiScore));
+          if (faceScore!=null) attachFd.append('FacePercent', String(faceScore));
+          if (contextScore!=null) attachFd.append('ContextPercent', String(contextScore));
+          if (deviceScore!=null) attachFd.append('DevicePercent', String(deviceScore));
+          const verdict2 = (result.verdict || result.Verdict || '').toString();
+          if (verdict2) attachFd.append('Verdict', verdict2);
+          const evId2 = result.evidenceId || result.id || result.EvidenceId; if (evId2) attachFd.append('SourceEvidenceId', String(evId2));
+          const attachRes = await fetch(`${API_BASE}/api/tieuchi/evidence`, { method: 'POST', headers: xUser2? { 'X-User': xUser2 } : undefined, body: attachFd });
+          if (!attachRes.ok) {
+            console.warn('Đính kèm minh chứng vào tiêu chí thất bại:', attachRes.status);
+          } else {
+            console.info('Đã đính kèm minh chứng vào tiêu chí', maTCSelected);
+          }
+        }
+      } catch(e){ console.warn('Auto-attach evidence error:', e); }
+    }
     if (typeof displayAIResults === "function") displayAIResults(result);
 
-    // Thông báo theo ngưỡng - SỬ DỤNG ĐIỂM KHUÔN MẶT (chỉ phân tích khuôn mặt)
-    let faceScorePct = null;
-    const scores = result.Scores || result.scores || {};
-    const details = result.Details || result.details || {};
-    
-    // Tìm face score từ Scores hoặc Details
-    const faceSyns = ['face','face_score','facematch','identity','recognition','khuôn','person'];
-    const toPct = (v) => {
-      if (v == null) return null;
-      let n = v;
-      if (typeof v === 'string') { n = parseFloat(v); if (!isFinite(n)) return null; }
-      if (typeof n !== 'number' || !isFinite(n)) return null;
-      if (n <= 1) n = n * 100;
-      n = Math.max(0, Math.min(100, Math.round(n)));
-      return n;
-    };
-    const getCaseInsensitive = (obj, key) => {
-      if (!obj) return undefined;
-      if (Object.prototype.hasOwnProperty.call(obj, key)) return obj[key];
-      const lower = key.toLowerCase();
-      for (const k of Object.keys(obj)) { if (k.toLowerCase() === lower) return obj[k]; }
-      return undefined;
-    };
-    const findFirstPct = (obj, keys) => {
-      for (const k of keys) { const v = getCaseInsensitive(obj, k); const pct = toPct(v); if (pct != null) return pct; }
-      return null;
-    };
-    
-    // Cách 1: Tìm từ Scores
-    faceScorePct = findFirstPct(scores, faceSyns);
-    if (faceScorePct == null) faceScorePct = findFirstPct(details, faceSyns);
-    
-    // Cách 2: Tìm từ top-level keys
-    if (faceScorePct == null) {
-      const topFace = result.face_score ?? result.faceScore;
-      faceScorePct = toPct(topFace);
-    }
-    
-    // Nếu vẫn không tìm thấy, dùng weighted làm fallback
-    if (faceScorePct == null) {
-      const weighted = (typeof result.weightedScore === 'number' ? result.weightedScore
-                        : typeof result.Weighted_Score === 'number' ? result.Weighted_Score
-                        : typeof result.confidenceScore === 'number' ? result.confidenceScore/100 : 0);
-      faceScorePct = Math.round(weighted * 100);
-    }
-    
-    const pct = faceScorePct;
-    
-    // ✅ CHỈ HIỂN THỊ THÔNG BÁO KHUÔN MẶT - KHÔNG KIỂM TRA VERDICT
+    // Thông báo theo ngưỡng (đặt CHUNG scope với result)
+    const weighted = (typeof result.weightedScore === 'number' ? result.weightedScore
+                      : typeof result.Weighted_Score === 'number' ? result.Weighted_Score
+                      : typeof result.confidenceScore === 'number' ? result.confidenceScore/100 : 0);
+  const pct = Math.round(weighted * 100);
+  // Hiển thị xác nhận có mã minh chứng để GV truy vết
+  const evId = result.evidenceId || result.id || result.EvidenceId;
     if (qrMaHD && result.pointsAwarded > 0) {
       alert(`Điểm rèn luyện được cộng tự động: +${result.pointsAwarded}`);
+    } else if (qrMaHD && result.verdict === 'ManualReview') {
+  alert(`Đã gửi minh chứng cho giảng viên duyệt${evId? ` (mã: ${evId})` : ''}.`);
+    } else if (qrMaHD && result.verdict === 'Rejected') {
+      alert('Minh chứng Attendance bị từ chối (GPS hoặc AI).');
     } else if (result.awardedPoints > 0) {
       alert(`AI ${pct}% → CỘNG ${result.awardedPoints} điểm rèn luyện!`);
-    } else if (pct >= 80) {
-      // Minh chứng đã được lưu vào hệ thống (không tự động đính kèm)
-      alert(`✓ AI đánh giá: ${pct}% (Khuôn mặt) - Minh chứng đã được lưu. Bạn có thể xem danh sách minh chứng đã lưu hoặc lưu vào Phiếu ĐGRL.`);
+    } else if (result.verdict === "ManualReview") {
+  alert(`AI ${pct}% → ĐÃ CHUYỂN GIẢNG VIÊN DUYỆT${evId? ` (mã: ${evId})` : ''}.`);
+    } else if (result.verdict === "Rejected") {
+      alert(`AI ${pct}% → Bị từ chối.`);
     } else {
-      alert(`AI ${pct}% (Khuôn mặt) - Cần cải thiện hoặc gửi lại minh chứng`);
+      alert(`AI ${pct}% → ${result.verdict || "Đã xử lý"}`);
     }
  // Dọn camera nếu muốn
     if (typeof stopCamera === "function") stopCamera();
@@ -7040,7 +6338,6 @@ if (_btnSend) _btnSend.addEventListener("click", async () => {
         }
       }
     } catch (e) { console.warn('[Verify] post-submit check error', e); }
-    }
   } catch (err) {
     console.error(err);
     alert("Lỗi khi gửi video: " + err.message);
@@ -7083,9 +6380,9 @@ function displayAIResults(result) {
     statusIcon.innerHTML = `<svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
     </svg>`;
-    // ✅ Nếu AI đủ điểm (face >= 80%) sẽ tự động đính kèm minh chứng
+    // Wording update: reflect that valid evidence will be sent to lecturer
     const msg = result.message || result.Verdict || result.verdict;
-    statusTitle.textContent = msg ? `${msg}` : 'Hợp lệ';
+    statusTitle.textContent = msg ? `${msg} — sẽ gửi minh chứng cho giảng viên duyệt` : 'Hợp lệ — sẽ gửi minh chứng cho giảng viên duyệt';
     statusTitle.className = "text-lg font-semibold text-green-800";
   } else {
     statusIcon.innerHTML = `<svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -7116,8 +6413,20 @@ function displayAIResults(result) {
     for (const k of keys) { const v = getCaseInsensitive(obj, k); const pct = toPct(v); if (pct != null) return pct; }
     return null;
   };
-  // Will calculate pctOverall later based on faceScorePct only
-  confidenceBar.style.width = '0%';
+  const rootPct = findFirstPct(result || {}, ['weighted_score','Weighted_Score','WeightedScore','weightedScore','overall','final','final_score','score']);
+  const confPct = toPct(result?.confidenceScore);
+  const pctOverall = rootPct != null ? rootPct : (confPct != null ? confPct : 0);
+  confidenceScore.textContent = pctOverall + '%';
+  confidenceBar.style.width = pctOverall + '%';
+  
+  // Set confidence bar color based on score
+  if (pctOverall >= 80) {
+    confidenceBar.className = "h-2 rounded-full transition-all duration-500 bg-green-500";
+  } else if (pctOverall >= 60) {
+    confidenceBar.className = "h-2 rounded-full transition-all duration-500 bg-yellow-500";
+  } else {
+    confidenceBar.className = "h-2 rounded-full transition-all duration-500 bg-red-500";
+  }
 
   // Extract category scores (face/banner/tamper) from Scores or Details with flexible naming
   const scores = result.Scores || result.scores || {};
@@ -7172,19 +6481,6 @@ function displayAIResults(result) {
     const pct = toPct(topBanner);
     if (pct != null) bannerScorePct = pct;
   }
-  
-  // 🔧 CHỈ DÙNG ĐIỂM KHUÔN MẶT LÀM ĐIỂM TỔNG HỢP (AI chỉ phân tích khuôn mặt)
-  const pctOverall = faceScorePct != null ? faceScorePct : 0;
-  confidenceScore.textContent = pctOverall + '%';
-  confidenceBar.style.width = pctOverall + '%';
-  // Set confidence bar color based on score
-  if (pctOverall >= 80) {
-    confidenceBar.className = "h-2 rounded-full transition-all duration-500 bg-green-500";
-  } else if (pctOverall >= 60) {
-    confidenceBar.className = "h-2 rounded-full transition-all duration-500 bg-yellow-500";
-  } else {
-    confidenceBar.className = "h-2 rounded-full transition-all duration-500 bg-red-500";
-  }
   // Attendance-specific device score (top-level, not in scores/details in current design)
   let deviceScoreRaw = null;
   if (result && typeof result === 'object') {
@@ -7193,10 +6489,13 @@ function displayAIResults(result) {
       deviceCatEl.classList.remove('hidden');
     }
   }
-  // ✅ PHÂN TÍCH CHỈ KHUÔN MẶT - LUÔN ẨN BANNER VÀ TAMPER
-  if (tamperCatEl) tamperCatEl.classList.add('hidden');
-  if (document.getElementById('cat-banner')) document.getElementById('cat-banner').classList.add('hidden');
-  if (deviceCatEl) deviceCatEl.classList.add('hidden');
+  // Attendance mode detection to hide tamper category completely
+  const isAttendanceMode = (result.mode === 'attendance') || (deviceScoreRaw != null && tamperScorePct == null && (result.bannerScore != null || result.banner_score != null));
+  if (isAttendanceMode && tamperCatEl) {
+    tamperCatEl.classList.add('hidden');
+  } else if (tamperCatEl) {
+    tamperCatEl.classList.remove('hidden');
+  }
 
   function renderCategory(elScore, elStatus, raw, labels) {
     if (!elScore || !elStatus) return;
@@ -7208,18 +6507,153 @@ function displayAIResults(result) {
     elStatus.className = 'text-sm font-medium ' + status.cls;
   }
   const catLabelsFace = (pct) => pct >= 60 ? { text:'Rõ', cls:'text-green-600' } : pct >= 30 ? { text:'Mờ', cls:'text-yellow-600' } : { text:'Không rõ', cls:'text-red-600' };
-  
-  // ✅ CHỈ RENDER KHUÔN MẶT - LOẠI BỎ BANNER, TAMPER, DEVICE
+  // Adapt label semantics: for context score we interpret high score as context matches expected
+  const catLabelsBanner = (pct) => {
+    // Heuristic: display different wording if we have predicted/expected context fields
+    const hasCtx = (result.predicted_context || result.expected_context || result.predictedContext || result.expectedContext);
+    if (hasCtx) {
+      if (pct >= 70) return { text:'Bối cảnh khớp', cls:'text-green-600' };
+      if (pct >= 40) return { text:'Bối cảnh chưa rõ', cls:'text-yellow-600' };
+      return { text:'Sai bối cảnh', cls:'text-red-600' };
+    }
+    return pct >= 70 ? { text:'Có banner', cls:'text-green-600' } : pct >= 30 ? { text:'Không nổi bật', cls:'text-yellow-600' } : { text:'Không thấy', cls:'text-red-600' };
+  };
+  const catLabelsTamper = (pct) => pct <= 20 ? { text:'Không cắt ghép', cls:'text-green-600' } : pct <= 50 ? { text:'Nghi vấn', cls:'text-yellow-600' } : { text:'Có thể cắt ghép', cls:'text-red-600' };
   renderCategory(faceScoreEl, faceStatusEl, faceScorePct, catLabelsFace);
+  renderCategory(bannerScoreEl, bannerStatusEl, bannerScorePct, catLabelsBanner);
+  // Hiển thị nội dung OCR đã đọc (ưu tiên recognized_texts rồi samples)
+  if (bannerRawTextEl) {
+    // Re-purpose raw text area to show context metrics (predicted vs expected + people/motion/interaction)
+    const ctxDetails = details.context || details.Context || details.banner || {};
+    const predictedCtx = result.predicted_context || result.predictedContext || ctxDetails.predicted_context;
+    const expectedCtx = result.expected_context || result.expectedContext;
+    const peopleAvg = result.people_count_avg || result.peopleCountAvg || ctxDetails.people_count_avg;
+    const motionScore = result.motion_score || result.motionScore;
+    const interactionScore = result.interaction_score || result.interactionScore;
+    const texts = ctxDetails.recognized_texts || ctxDetails.samples || [];
+    const parts = [];
+    if (predictedCtx) parts.push(`Dự đoán: ${predictedCtx}`);
+    if (expectedCtx) parts.push(`Mong đợi: ${expectedCtx}`);
+    if (typeof peopleAvg === 'number') parts.push(`Người TB: ${Math.round(peopleAvg*10)/10}`);
+    if (typeof motionScore === 'number') parts.push(`Chuyển động: ${(motionScore*100).toFixed(0)}%`);
+    if (typeof interactionScore === 'number') parts.push(`Tương tác: ${(interactionScore*100).toFixed(0)}%`);
+    if (Array.isArray(texts) && texts.length) parts.push(texts.slice(0,3).join(' • '));
+    bannerRawTextEl.textContent = parts.join(' | ');
+  }
+  if (!isAttendanceMode) {
+    renderCategory(tamperScoreEl, tamperStatusEl, tamperScorePct, catLabelsTamper);
+  } else {
+    // Attendance hides tamper; ensure placeholders cleared
+    if (tamperScoreEl) tamperScoreEl.textContent = '—';
+    if (tamperStatusEl) tamperStatusEl.textContent = 'Không áp dụng';
+  }
+  const catLabelsDevice = (pct) => pct >= 70 ? { text:'Hợp lệ', cls:'text-green-600' } : pct >= 40 ? { text:'Không rõ', cls:'text-yellow-600' } : { text:'Thiếu / sai', cls:'text-red-600' };
+  if (deviceScoreEl && deviceStatusEl) renderCategory(deviceScoreEl, deviceStatusEl, toPct(deviceScoreRaw), catLabelsDevice);
+  
+  // Display GPS distance (similar to banner-raw-text format)
+  const deviceDistanceEl = document.getElementById('device-distance');
+  if (deviceDistanceEl) {
+    const gpsDistKm = result.gps_distance_km || result.gpsDistanceKm;
+    const gpsDistM = result.gps_distance_m || result.gpsDistanceM;
+    const lat = result.lat || result.Lat;
+    const lng = result.lng || result.Lng;
+    const activityLat = result.activity_lat || result.activityLat;
+    const activityLng = result.activity_lng || result.activityLng;
+    
+    const parts = [];
+    
+    // Format distance display
+    const formatDistance = (km) => {
+      if (km < 0.1) return `${Math.round(km * 1000)}m`;
+      return `${km.toFixed(1)}km`;
+    };
+    
+    // Calculate distance if both GPS points available but gpsDistKm not provided
+    let finalDistanceKm = gpsDistKm;
+    if ((finalDistanceKm == null || finalDistanceKm === undefined) && lat && lng && activityLat && activityLng) {
+      try {
+        const latNum = parseFloat(lat);
+        const lngNum = parseFloat(lng);
+        const actLatNum = parseFloat(activityLat);
+        const actLngNum = parseFloat(activityLng);
+        
+        // Haversine formula to calculate distance
+        const R = 6371; // Earth radius in km
+        const dLat = (actLatNum - latNum) * Math.PI / 180;
+        const dLng = (actLngNum - lngNum) * Math.PI / 180;
+        const a = 
+          Math.sin(dLat/2) * Math.sin(dLat/2) +
+          Math.cos(latNum * Math.PI / 180) * Math.cos(actLatNum * Math.PI / 180) *
+          Math.sin(dLng/2) * Math.sin(dLng/2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        finalDistanceKm = R * c;
+      } catch (e) {
+        console.log('Failed to calculate distance:', e);
+      }
+    }
+    
+    if (finalDistanceKm != null && finalDistanceKm >= 0) {
+      parts.push(`Cách ${formatDistance(finalDistanceKm)} nơi diễn ra`);
+    } else if (lat && lng && activityLat && activityLng) {
+      // Show "Không có dữ liệu vị trí" only if we can't calculate distance but have GPS data
+      parts.push('Không thể tính khoảng cách');
+    } else {
+      parts.push('Không có dữ liệu vị trí');
+    }
+    
+    // Add video location if available
+    if (lat && lng) {
+      parts.push(`Video: ${parseFloat(lat).toFixed(4)}, ${parseFloat(lng).toFixed(4)}`);
+    }
+    
+    // Add activity location if available
+    if (activityLat && activityLng) {
+      parts.push(`Hoạt động: ${parseFloat(activityLat).toFixed(4)}, ${parseFloat(activityLng).toFixed(4)}`);
+    }
+    
+    // Add distance in meters for precision
+    if (finalDistanceKm != null && finalDistanceKm >= 0) {
+      const distM = finalDistanceKm * 1000;
+      parts.push(`Độ chính xác: ±${Math.round(distM)}m`);
+    }
+    
+    deviceDistanceEl.textContent = parts.join(' | ');
+  }
 
-  // Set detected activities (ẩn vì chỉ có phân tích khuôn mặt)
-  detectedSection.classList.add("hidden");
+  // Set detected activities
+  if (result.detectedActivities && result.detectedActivities.length > 0) {
+    detectedList.innerHTML = "";
+    result.detectedActivities.forEach(activity => {
+      const tag = document.createElement("span");
+      tag.className = "inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full";
+      tag.textContent = activity;
+      detectedList.appendChild(tag);
+    });
+    detectedSection.classList.remove("hidden");
+  } else {
+    detectedSection.classList.add("hidden");
+  }
 
-  // Set suggestions (ẩn vì chỉ có phân tích khuôn mặt)
-  suggestionsSection.classList.add("hidden");
+  // Set suggestions
+  if (result.suggestions && result.suggestions.length > 0) {
+    suggestionsList.innerHTML = "";
+    result.suggestions.forEach(suggestion => {
+      const li = document.createElement("li");
+      li.className = "flex items-start";
+      li.innerHTML = `<span class="text-yellow-500 mr-2">•</span><span>${suggestion}</span>`;
+      suggestionsList.appendChild(li);
+    });
+    suggestionsSection.classList.remove("hidden");
+  } else {
+    suggestionsSection.classList.add("hidden");
+  }
 
-  // Set analysis details (ẩn vì chỉ có phân tích khuôn mặt)
-  if (analysisDetails) analysisDetails.parentElement?.classList.add("hidden");
+  // Set analysis details
+  const prettyDetails = (obj) => {
+    try { return JSON.stringify(obj, null, 2); } catch { return String(obj); }
+  };
+  const detailsText = result.analysisDetails || (Object.keys(details||{}).length ? prettyDetails(details) : (result.message || ''));
+  analysisDetails.textContent = detailsText || "Không có chi tiết phân tích.";
 
   // Show the result
   aiResult.classList.remove("hidden");
@@ -7312,10 +6746,10 @@ if (_btnStart) _btnStart.addEventListener("click", () => {
 
 async function checkAiHealth() {
   try {
-    const res = await fetch('/health');
+    const res = await fetch('/debug/ai/health');
     if (!res.ok) return { ok: false };
     const body = await res.json();
-    return { ok: body?.status === 'healthy', body };
+    return { ok: !!body?.ok, body };
   } catch {
     return { ok: false };
   }
@@ -7364,178 +6798,6 @@ async function checkUserFaceData() {
   }
 }
 
-// ✅ NEW: Display AI Results for Attendance Modal (reuse logic with "-attendance" suffix)
-function displayAIResultsAttendance(result) {
-  console.log('🎬 displayAIResultsAttendance() called with result:', result);
-  
-  // Reuse helper functions from displayAIResults
-  const toPct = (v) => {
-    if (v == null) return null;
-    let n = v;
-    if (typeof v === 'string') { n = parseFloat(v); if (!isFinite(n)) return null; }
-    if (typeof n !== 'number' || !isFinite(n)) return null;
-    if (n <= 1) n = n * 100;
-    n = Math.max(0, Math.min(100, Math.round(n)));
-    return n;
-  };
-
-  // Get attendance-specific elements
-  const aiResultEl = document.getElementById("ai-result-attendance");
-  const statusIconEl = document.getElementById("ai-status-icon-attendance");
-  const statusTitleEl = document.getElementById("ai-status-title-attendance");
-  const confidenceScoreEl = document.getElementById("confidence-score-attendance");
-  const confidenceBarEl = document.getElementById("confidence-bar-attendance");
-  
-  console.log('🔍 Elements check:', {
-    aiResultEl, statusIconEl, statusTitleEl, confidenceScoreEl, confidenceBarEl
-  });
-  
-  // Face elements
-  const faceScoreEl = document.getElementById("face-score-attendance");
-  const faceStatusEl = document.getElementById("face-status-attendance");
-  
-  // Banner/Context elements
-  const bannerScoreEl = document.getElementById("banner-score-attendance");
-  const bannerStatusEl = document.getElementById("banner-status-attendance");
-  
-  // Device/GPS elements
-  const deviceScoreEl = document.getElementById("device-score-attendance");
-  const deviceStatusEl = document.getElementById("device-status-attendance");
-  
-  const suggestionsEl = document.getElementById("ai-suggestions-attendance");
-  const detailsEl = document.getElementById("ai-details-attendance");
-
-  if (!aiResultEl || !statusIconEl) return;
-
-  // Extract scores - flexible field name handling
-  const scores = result.scores || result.Scores || {};
-  let faceScorePct = toPct(result.face_score || scores.face);
-  let bannerScorePct = toPct(result.context_score || result.banner_score || scores.context || scores.banner);
-  let deviceScorePct = toPct(result.device_score || scores.device);
-  
-  // Fallback: check nested fields
-  if (faceScorePct == null && result.Scores && typeof result.Scores === 'object') {
-    for (const key in result.Scores) {
-      if (key.toLowerCase().includes('face')) {
-        faceScorePct = toPct(result.Scores[key]);
-        if (faceScorePct != null) break;
-      }
-    }
-  }
-  
-  if (bannerScorePct == null && result.Scores && typeof result.Scores === 'object') {
-    for (const key in result.Scores) {
-      if (key.toLowerCase().includes('context') || key.toLowerCase().includes('banner')) {
-        bannerScorePct = toPct(result.Scores[key]);
-        if (bannerScorePct != null) break;
-      }
-    }
-  }
-  
-  if (deviceScorePct == null && result.Scores && typeof result.Scores === 'object') {
-    for (const key in result.Scores) {
-      if (key.toLowerCase().includes('device') || key.toLowerCase().includes('gps')) {
-        deviceScorePct = toPct(result.Scores[key]);
-        if (deviceScorePct != null) break;
-      }
-    }
-  }
-
-  // Get weighted score (overall) - calculate from all scores or use provided
-  let weightedScorePct = toPct(result.weighted_score || result.weightedScore);
-  if (weightedScorePct == null) {
-    // If no weighted score, calculate average from available scores
-    const scores_array = [faceScorePct, bannerScorePct, deviceScorePct].filter(s => s != null);
-    if (scores_array.length > 0) {
-      weightedScorePct = Math.round(scores_array.reduce((a, b) => a + b, 0) / scores_array.length);
-    } else {
-      weightedScorePct = 0;
-    }
-  }
-
-  // Set verdict status - check for Approved/Rejected from verdict or weighted score
-  let verdict = result.verdict || result.Verdict || 'Pending';
-  let isApproved = result.isValid === true || verdict === 'Approved' || verdict === 'Đạt';
-  
-  // If no explicit verdict, use weighted score to infer
-  if (!isApproved && weightedScorePct != null) {
-    isApproved = weightedScorePct >= 60; // 60% threshold for approval
-  }
-
-  if (isApproved) {
-    statusIconEl.innerHTML = `<svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-    </svg>`;
-    statusTitleEl.textContent = 'Hợp lệ ✅';
-    statusTitleEl.className = "text-lg font-semibold text-green-800";
-  } else {
-    statusIconEl.innerHTML = `<svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-    </svg>`;
-    statusTitleEl.textContent = 'Không hợp lệ ❌';
-    statusTitleEl.className = "text-lg font-semibold text-red-800";
-  }
-
-  // Update overall confidence score
-  if (confidenceScoreEl && weightedScorePct != null) {
-    confidenceScoreEl.textContent = `${weightedScorePct}%`;
-  }
-  
-  // Update confidence bar with proper color and width
-  if (confidenceBarEl && weightedScorePct != null) {
-    confidenceBarEl.style.width = `${Math.min(100, weightedScorePct)}%`;
-    // Set color based on score threshold
-    if (weightedScorePct >= 80) {
-      confidenceBarEl.className = "h-2 rounded-full transition-all duration-500 bg-green-500";
-    } else if (weightedScorePct >= 60) {
-      confidenceBarEl.className = "h-2 rounded-full transition-all duration-500 bg-yellow-500";
-    } else {
-      confidenceBarEl.className = "h-2 rounded-full transition-all duration-500 bg-red-500";
-    }
-  }
-
-  // Helper to render each category (Face, Banner/Context, Device/GPS)
-  function renderCategory(elScore, elStatus, scorePct, categoryName) {
-    if (!elScore || !elStatus) return;
-    if (scorePct == null) { 
-      elScore.textContent = '—'; 
-      elStatus.textContent = 'Không có'; 
-      elStatus.className = 'text-sm font-medium text-slate-500'; 
-      return; 
-    }
-    
-    elScore.textContent = `${scorePct}%`;
-    
-    // Determine status based on score and category
-    let statusText, statusClass;
-    if (scorePct >= 80) {
-      statusText = '✅ Đạt';
-      statusClass = 'text-sm font-medium text-green-600';
-    } else if (scorePct >= 60) {
-      statusText = '⚠️ Cảnh báo';
-      statusClass = 'text-sm font-medium text-yellow-600';
-    } else {
-      statusText = '❌ Thất bại';
-      statusClass = 'text-sm font-medium text-red-600';
-    }
-    
-    elStatus.textContent = statusText;
-    elStatus.className = statusClass;
-  }
-
-  // Render all three categories
-  renderCategory(faceScoreEl, faceStatusEl, faceScorePct, 'Khuôn mặt');
-  renderCategory(bannerScoreEl, bannerStatusEl, bannerScorePct, 'Bối cảnh');
-  renderCategory(deviceScoreEl, deviceStatusEl, deviceScorePct, 'GPS');
-
-  // Hide suggestions and detailed analysis sections (not used in attendance)
-  if (suggestionsEl) suggestionsEl.classList.add('hidden');
-  if (detailsEl) detailsEl.classList.add('hidden');
-
-  // Show the result
-  aiResultEl.classList.remove("hidden");
-}
-
 // Function to show AI error
 function showAIError(message) {
   const aiResult = document.getElementById("ai-result");
@@ -7551,279 +6813,20 @@ function showAIError(message) {
   analysisDetails.textContent = message;
   
   // Hide other sections
-  document.getElementById("ai-confidence")?.classList.add("hidden");
-  document.getElementById("ai-detected-activities")?.classList.add("hidden");
-  document.getElementById("ai-suggestions")?.classList.add("hidden");
+  document.getElementById("ai-confidence").classList.add("hidden");
+  document.getElementById("ai-detected-activities").classList.add("hidden");
+  document.getElementById("ai-suggestions").classList.add("hidden");
   
-  if (aiResult) aiResult.classList.remove("hidden");
+  aiResult.classList.remove("hidden");
 }
 
-// ===== SINH VIÊN: Manual Attachment Modal Functions =====
+// ✅ Wire up attendance modal buttons (start/stop/send camera)
 
-let svAttachmentModalState = {
-  phieuId: null,
-  maTC: null,
-  criterionName: null,
-  selectedIds: []
-};
 
-/**
- * Open modal to select pending evidence for attachment (Sinh Viên)
- * @param {number} maTC - Tiêu chí code
- * @param {string} criterionName - Tiêu chí name
- */
-async function openSVAttachModal(maTC, criterionName) {
-  console.log('[OPEN-SV-ATTACH-MODAL] Called with maTC=', maTC, 'criterionName=', criterionName);
-  try {
-    // Get current MSSV
-    const raw = localStorage.getItem("loggedUserInfo");
-    if (!raw) {
-      console.error('[OPEN-SV-ATTACH-MODAL] No logged user info found');
-      alert('Lỗi: Không tìm thấy thông tin sinh viên');
-      return;
-    }
+// Call on load
+setTimeout(wireAttendanceModalButtons, 500);
 
-    let user;
-    try {
-      user = JSON.parse(raw);
-    } catch {
-      user = raw;
-    }
 
-    const mssv = user.MaCaNhan || user.MSSV || user.mssv;
-    if (!mssv) {
-      console.error('[OPEN-SV-ATTACH-MODAL] No MSSV found in user info');
-      alert('Lỗi: Không tìm thấy MSSV');
-      return;
-    }
-    console.log('[OPEN-SV-ATTACH-MODAL] MSSV found:', mssv);
-
-    // Get phiếu ID
-    const phieuId = await ensureCurrentFormId();
-    if (!phieuId) {
-      alert('Lỗi: Không thể lấy phiếu đánh giá');
-      return;
-    }
-    console.log('[OPEN-SV-ATTACH-MODAL] Got phieuId:', phieuId);
-
-    svAttachmentModalState.phieuId = phieuId;
-    svAttachmentModalState.maTC = maTC;
-    svAttachmentModalState.criterionName = criterionName;
-    svAttachmentModalState.selectedIds = [];
-
-    // Set criterion display
-    document.getElementById('sv-attach-criterion-display').textContent =
-      `[${maTC}] ${criterionName}`;
-    document.getElementById('sv-attach-ma-tc').value = maTC;
-    document.getElementById('sv-attach-criterion-name').value = criterionName;
-    console.log('[OPEN-SV-ATTACH-MODAL] About to fetch evidence list...');
-
-    // Fetch pending evidence
-    const response = await fetch(
-      `${API_BASE}/api/phieu-danh-gia/${phieuId}/criteria/${maTC}/pending-evidence`
-    );
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      console.error('[OPEN-SV-ATTACH-MODAL] Fetch failed:', errorData);
-      throw new Error(errorData.message || 'Lỗi tải danh sách minh chứng');
-    }
-
-    const data = await response.json();
-    console.log('[OPEN-SV-ATTACH-MODAL] Data received:', data);
-
-    // Calculate total count
-    const pendingCount = data.pending?.count || 0;
-    const savedCount = data.saved?.count || 0;
-    const totalCount = pendingCount + savedCount;
-    
-    document.getElementById('sv-attach-pending-count').textContent = totalCount;
-
-    // Clear list
-    const list = document.getElementById('sv-attach-evidence-list');
-    list.innerHTML = '';
-
-    if (totalCount === 0) {
-      list.innerHTML = '<p class="text-sm text-gray-500 text-center py-4">Không có minh chứng nào.<br><span class="text-xs">Hãy upload minh chứng trước, sau đó quay lại đính kèm.</span></p>';
-    } else {
-      // Helper render item
-      const renderItem = (item, bgHover, textColor) => {
-        const isEvidence = item.source === 'Evidence';
-        const scoreInfo = isEvidence && item.weightedScore
-          ? `<p class="text-xs text-blue-600">Điểm AI: ${Math.round(item.weightedScore * 100)}% — ${item.verdict || ''}</p>`
-          : '';
-        const sourceTag = isEvidence
-          ? '<span class="text-xs bg-blue-100 text-blue-700 px-1 rounded ml-1">AI</span>'
-          : '';
-        const label = document.createElement('label');
-        label.className = `flex items-center gap-2 p-2 border rounded cursor-pointer hover:${bgHover}`;
-        label.innerHTML = `
-          <input type="checkbox" class="sv-attach-evidence-checkbox w-4 h-4" data-id="${item.id}" data-status="${item.status}">
-          <div class="flex-1 text-sm">
-            <p class="font-medium text-gray-800">${item.note || 'Minh chứng'} ${sourceTag}</p>
-            <p class="text-xs text-gray-500">Ngày: ${new Date(item.createdAt).toLocaleDateString('vi-VN')}</p>
-            ${scoreInfo}
-            <p class="text-xs ${textColor} font-medium">Trạng thái: ${item.status === 'Saved' ? 'Đã phân tích' : item.status}</p>
-          </div>
-        `;
-        label.addEventListener('change', updateSVSelectedIds);
-        return label;
-      };
-
-      // 1. Show PENDING section
-      if (pendingCount > 0) {
-        const pendingHeader = document.createElement('div');
-        pendingHeader.className = 'bg-yellow-50 border-l-4 border-yellow-400 p-2 mb-2';
-        pendingHeader.innerHTML = `<p class="text-sm font-semibold text-yellow-800">Đang chờ phân tích (${pendingCount})</p>`;
-        list.appendChild(pendingHeader);
-        data.pending.items.forEach(item => list.appendChild(renderItem(item, 'bg-yellow-50', 'text-yellow-600')));
-      }
-      
-      // 2. Show SAVED section
-      if (savedCount > 0) {
-        if (pendingCount > 0) {
-          const divider = document.createElement('div');
-          divider.className = 'my-3 border-t';
-          list.appendChild(divider);
-        }
-        
-        const savedHeader = document.createElement('div');
-        savedHeader.className = 'bg-green-50 border-l-4 border-green-400 p-2 mb-2';
-        savedHeader.innerHTML = `<p class="text-sm font-semibold text-green-800">Đã phân tích / Đã lưu (${savedCount})</p>`;
-        list.appendChild(savedHeader);
-        
-        data.saved.items.forEach(item => list.appendChild(renderItem(item, 'bg-green-50', 'text-green-600')));
-      }
-    }
-
-    // Reset select all checkbox
-    document.getElementById('sv-attach-select-all').checked = false;
-
-    // Show modal
-    console.log('[OPEN-SV-ATTACH-MODAL] About to show modal, current class:', document.getElementById('sv-attach-evidence-modal').className);
-    document.getElementById('sv-attach-evidence-modal').classList.remove('hidden');
-    console.log('[OPEN-SV-ATTACH-MODAL] Modal shown, new class:', document.getElementById('sv-attach-evidence-modal').className);
-
-  } catch (error) {
-    console.error('[OPEN-SV-ATTACH-MODAL] Error:', error);
-    alert('Lỗi: ' + (error.message || 'Không thể tải minh chứng'));
-  }
-}
-
-/**
- * Update selected IDs when user checks/unchecks boxes (Sinh Viên)
- */
-function updateSVSelectedIds() {
-  const checkboxes = document.querySelectorAll('.sv-attach-evidence-checkbox:checked');
-  // Preserve IDs as strings — GUIDs must NOT be parsed as integers
-  svAttachmentModalState.selectedIds = Array.from(checkboxes).map(cb => cb.dataset.id);
-
-  // Update select-all checkbox state
-  const totalCheckboxes = document.querySelectorAll('.sv-attach-evidence-checkbox').length;
-  const checkedCheckboxes = document.querySelectorAll('.sv-attach-evidence-checkbox:checked').length;
-
-  const selectAllCheckbox = document.getElementById('sv-attach-select-all');
-  selectAllCheckbox.checked = checkedCheckboxes === totalCheckboxes && totalCheckboxes > 0;
-  selectAllCheckbox.indeterminate = checkedCheckboxes > 0 && checkedCheckboxes < totalCheckboxes;
-}
-
-/**
- * Toggle select all evidence (Sinh Viên)
- */
-function toggleSVSelectAll() {
-  const selectAllCheckbox = document.getElementById('sv-attach-select-all');
-  const allCheckboxes = document.querySelectorAll('.sv-attach-evidence-checkbox');
-
-  allCheckboxes.forEach(checkbox => {
-    checkbox.checked = selectAllCheckbox.checked;
-  });
-
-  updateSVSelectedIds();
-}
-
-/**
- * Submit attachment - send selected evidence to backend (Sinh Viên)
- */
-async function submitSVAttach() {
-  try {
-    const { phieuId, maTC, selectedIds } = svAttachmentModalState;
-
-    if (!maTC) {
-      alert('Lỗi: Không có thông tin tiêu chí');
-      return;
-    }
-
-    if (selectedIds.length === 0) {
-      alert('Vui lòng chọn ít nhất một minh chứng');
-      return;
-    }
-
-    // Show loading state
-    const submitBtn = event.target;
-    const originalText = submitBtn.textContent;
-    submitBtn.disabled = true;
-    submitBtn.textContent = 'Đang xử lý...';
-
-    const response = await fetch(
-      `${API_BASE}/api/phieu-danh-gia/${phieuId}/criteria/${maTC}/attach`,
-      {
-        method: 'POST',
-        // Backend expects multipart/form-data (HasFormContentType)
-        // Do NOT set Content-Type header — browser sets it automatically with boundary
-        body: (() => {
-          const fd = new FormData();
-          fd.append('evidenceIds', JSON.stringify(selectedIds));
-          return fd;
-        })()
-      }
-    );
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || 'Lỗi đính kèm minh chứng');
-    }
-
-    const result = await response.json();
-
-    alert(`✓ Đã đính kèm ${result.attachedCount} minh chứng`);
-
-    // Close modal
-    closeSVAttachModal();
-
-    // Reload /full và render lại phiếu (gọi openPhieuDetail sẽ lo cả fetch và render)
-    const reloadPhieuId = phieuId || window.currentPhieuId;
-    if (reloadPhieuId) {
-      if (typeof openPhieuDetail === 'function') {
-        await openPhieuDetail(reloadPhieuId);
-      }
-    }
-
-  } catch (error) {
-    console.error('Error submitting SV attachment:', error);
-    alert('Lỗi: ' + (error.message || 'Không thể đính kèm minh chứng'));
-  } finally {
-    const submitBtn = document.querySelector('#sv-attach-evidence-modal .bg-blue-600');
-    if (submitBtn) {
-      submitBtn.disabled = false;
-      submitBtn.textContent = 'Đính Kèm';
-    }
-  }
-}
-
-/**
- * Close attachment modal (Sinh Viên)
- */
-function closeSVAttachModal() {
-  document.getElementById('sv-attach-evidence-modal').classList.add('hidden');
-  svAttachmentModalState.selectedIds = [];
-}
-
-// Expose globally
-window.openSVAttachModal = openSVAttachModal;
-window.closeSVAttachModal = closeSVAttachModal;
-window.submitSVAttach = submitSVAttach;
-window.updateSVSelectedIds = updateSVSelectedIds;
-window.toggleSVSelectAll = toggleSVSelectAll;
 
   // Export UI update functions to window so attendance_wizard.js can use them
   if (typeof renderActivities === 'function') window.renderActivities = renderActivities;
@@ -7831,3 +6834,4 @@ window.toggleSVSelectAll = toggleSVSelectAll;
   if (typeof saveRegState === 'function') window.saveRegState = saveRegState;
   if (typeof loadRegState === 'function') window.loadRegState = loadRegState;
 });
+
