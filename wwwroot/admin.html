@@ -138,6 +138,16 @@
       color: white;
       font-weight: 600;
       font-size: 16px;
+      flex-shrink: 0;
+    }
+
+    .preview-avatar-img {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      object-fit: cover;
+      flex-shrink: 0;
+      border: 2px solid #e5e7eb;
     }
     
     .preview-title {
@@ -325,6 +335,19 @@
       transform: scale(1.1);
     }
   </style>
+
+  <link rel="stylesheet" href="css/mobile-fixes-optimized.css">
+
+
+  <!-- Mobile Zoom-Out CSS -->
+  <link rel="stylesheet" href="css/mobile-zoom-out.css">
+
+
+  <!-- Mobile Zoom-Out Script -->
+  <script src="js/mobile-zoom-out.js"></script>
+
+  <!-- Leaflet CSS for Map -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
 </head>
 <body class="bg-gradient-to-b from-slate-50 to-slate-100 min-h-screen">
 
@@ -338,6 +361,9 @@
       </div>
     </div>
     <nav id="nav-right" class="flex items-center space-x-4">
+      <button id="btn-run-admin-tests" class="px-3 py-2 rounded-md bg-blue-600 text-white text-sm hover:bg-blue-700">
+        Kiểm tra hệ thống
+      </button>
       <!-- Breadcrumb navigation -->
       <div class="hidden lg:flex items-center space-x-2 text-sm text-gray-500">
         <span id="current-section">Tổng quan</span>
@@ -356,7 +382,7 @@
           </svg>
           <span id="notifications-badge" class="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[10px] rounded-full hidden items-center justify-center">0</span>
         </button>
-        <div id="notifications-menu" class="hidden absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
+        <div id="notifications-menu" class="hidden absolute right-0 mt-2 w-80 max-w-[calc(100vw-1rem)] bg-white rounded-lg shadow-lg border border-gray-200 z-50">
           <div class="p-3 border-b border-gray-200">
             <p class="text-sm font-medium text-gray-900">Thông báo</p>
           </div>
@@ -533,6 +559,66 @@
       </div>
     </div>
 
+    <!-- Settings: Auto-cleanup -->
+    <div class="sidebar-item" data-section="settings">
+      <div class="flex items-center p-3 rounded-lg cursor-pointer transition-all duration-200 hover:bg-violet-50 hover:shadow-sm">
+        <div class="w-10 h-10 bg-violet-100 rounded-lg flex items-center justify-center flex-shrink-0">
+          <svg class="w-5 h-5 text-violet-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          </svg>
+        </div>
+        <div class="ml-3 sidebar-text transition-all duration-300 overflow-hidden">
+          <span class="text-sm font-medium text-gray-800">Cài đặt</span>
+          <p class="text-xs text-gray-500">Xóa tự động minh chứng</p>
+        </div>
+        <div class="ml-auto sidebar-text transition-all duration-300 overflow-hidden">
+          <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+          </svg>
+        </div>
+      </div>
+    </div>
+
+    <!-- Notifications -->
+    <div class="sidebar-item" data-section="notifications">
+      <div class="flex items-center p-3 rounded-lg cursor-pointer transition-all duration-200 hover:bg-cyan-50 hover:shadow-sm">
+        <div class="w-10 h-10 bg-cyan-100 rounded-lg flex items-center justify-center flex-shrink-0">
+          <svg class="w-5 h-5 text-cyan-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path>
+          </svg>
+        </div>
+        <div class="ml-3 sidebar-text transition-all duration-300 overflow-hidden">
+          <span class="text-sm font-medium text-gray-800">Thông báo</span>
+          <p class="text-xs text-gray-500">Quản lý & gửi thông báo</p>
+        </div>
+        <div class="ml-auto sidebar-text transition-all duration-300 overflow-hidden">
+          <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+          </svg>
+        </div>
+      </div>
+    </div>
+
+    <!-- Nhập điểm & Import -->
+    <div class="sidebar-item" data-section="grade-input">
+      <div class="flex items-center p-3 rounded-lg cursor-pointer transition-all duration-200 hover:bg-green-50 hover:shadow-sm">
+        <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center flex-shrink-0">
+          <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+          </svg>
+        </div>
+        <div class="ml-3 sidebar-text transition-all duration-300 overflow-hidden">
+          <span class="text-sm font-medium text-gray-800">Nhập điểm</span>
+          <p class="text-xs text-gray-500">Import &amp; cài đặt</p>
+        </div>
+        <div class="ml-auto sidebar-text transition-all duration-300 overflow-hidden">
+          <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+          </svg>
+        </div>
+      </div>
+    </div>
+
     <!-- Logs -->
     <div class="sidebar-item" data-section="logs">
       <div class="flex items-center p-3 rounded-lg cursor-pointer transition-all duration-200 hover:bg-slate-50 hover:shadow-sm">
@@ -549,6 +635,57 @@
           <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
           </svg>
+        </div>
+      </div>
+    </div>
+    <!-- AI Training -->
+    <div class="sidebar-item" data-section="ai-config">
+      <div class="flex items-center p-3 rounded-lg cursor-pointer transition-all duration-200 hover:bg-teal-50 hover:shadow-sm">
+        <div class="w-10 h-10 bg-teal-100 rounded-lg flex items-center justify-center flex-shrink-0">
+          <svg class="w-5 h-5 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
+          </svg>
+        </div>
+        <div class="ml-3 sidebar-text transition-all duration-300 overflow-hidden">
+          <span class="text-sm font-medium text-gray-800">Cấu hình AI</span>
+          <p class="text-xs text-gray-500">Đào tạo & thông số</p>
+        </div>
+        <div class="ml-auto sidebar-text transition-all duration-300 overflow-hidden">
+          <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+          </svg>
+        </div>
+      </div>
+    </div>
+    
+    <!-- System Tests -->
+    <div class="sidebar-item" data-section="tests">
+      <div class="flex items-center p-3 rounded-lg cursor-pointer transition-all duration-200 hover:bg-rose-50 hover:shadow-sm">
+        <div class="w-10 h-10 bg-rose-100 rounded-lg flex items-center justify-center flex-shrink-0">
+          <svg class="w-5 h-5 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6M9 8h6M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+          </svg>
+        </div>
+        <div class="ml-3 sidebar-text transition-all duration-300 overflow-hidden">
+          <span class="text-sm font-medium text-gray-800">Kiểm tra hệ thống</span>
+          <p class="text-xs text-gray-500">Chạy test theo nhóm</p>
+        </div>
+        <div class="ml-auto sidebar-text transition-all duration-300 overflow-hidden">
+          <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+          </svg>
+        </div>
+      </div>
+    </div>
+      <!-- eKYC Config -->
+    <div class="sidebar-item" data-section="ekyc">
+      <div class="flex items-center p-3 rounded-lg cursor-pointer transition-all duration-200 hover:bg-blue-50 hover:shadow-sm">
+        <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
+          <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2"></path></svg>
+        </div>
+        <div class="ml-3 sidebar-text transition-all duration-300 overflow-hidden">
+          <span class="text-sm font-medium text-gray-800">Cấu hình eKYC</span>
+          <p class="text-xs text-gray-500">Thẻ mẫu & AI</p>
         </div>
       </div>
     </div>
@@ -961,6 +1098,37 @@
         </div>
       </div>
     </div>
+
+    <!-- Modal: Thêm Lớp Mới -->
+    <div id="add-class-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50">
+      <div class="bg-white rounded-lg shadow-lg p-6 max-w-md w-full mx-4">
+        <h3 class="text-xl font-bold text-gray-800 mb-4">Thêm Lớp Mới</h3>
+        
+        <form id="add-class-form" class="space-y-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Mã Lớp</label>
+            <input type="text" id="add-class-malop" class="w-full border rounded-md px-3 py-2" placeholder="Ví dụ: KT01" required>
+          </div>
+          
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Tên Lớp</label>
+            <input type="text" id="add-class-tenlop" class="w-full border rounded-md px-3 py-2" placeholder="Ví dụ: Kế Toán 01" required>
+          </div>
+          
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Mã Khoa</label>
+            <select id="add-class-makh" class="w-full border rounded-md px-3 py-2" required>
+              <option value="">Chọn Khoa</option>
+            </select>
+          </div>
+
+          <div class="flex gap-2 pt-4">
+            <button type="submit" class="flex-1 bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700">Lưu</button>
+            <button type="button" id="add-class-cancel" class="flex-1 bg-gray-400 text-white py-2 rounded-md hover:bg-gray-500">Hủy</button>
+          </div>
+        </form>
+      </div>
+    </div>
   </section>
 
   <!-- Activities Management Section -->
@@ -1008,7 +1176,8 @@
             </div>
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-1">Năm học hiện tại</label>
-              <input type="number" id="current-year" value="2024" class="w-full border rounded-md px-3 py-2">
+              <div id="year-display" class="w-full border rounded-md px-3 py-2 bg-gray-50 text-lg font-semibold text-gray-800">2024-2025</div>
+              <input type="hidden" id="current-year" value="2024">
             </div>
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-1">Học kì hiện tại</label>
@@ -1019,9 +1188,14 @@
               </select>
             </div>
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">Ngày kết thúc học kì</label>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Ngày bắt đầu được lập phiếu đánh giá</label>
+              <input type="datetime-local" id="eval-start-date" class="w-full border rounded-md px-3 py-2">
+              <p class="text-xs text-gray-500 mt-1">Từ ngày này trở đi, học sinh được lập phiếu đánh giá rèn luyện</p>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Ngày kết thúc học kì (Hết hạn đánh giá)</label>
               <input type="datetime-local" id="semester-end-date" class="w-full border rounded-md px-3 py-2">
-              <p class="text-xs text-gray-500 mt-1">Thiết lập thời gian tự động cộng điểm rèn luyện</p>
+              <p class="text-xs text-gray-500 mt-1">Sau ngày này, học sinh chỉ có thể xem lại phiếu đã nộp hoặc sửa phiếu nếu bị từ chối/yêu cầu sửa</p>
             </div>
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-1">Trạng thái tự động cộng điểm</label>
@@ -1036,6 +1210,16 @@
                 </label>
               </div>
             </div>
+            <div>
+              <label class="flex items-center">
+                <input type="checkbox" id="use-auto-year-semester" class="w-4 h-4 text-blue-600">
+                <span class="ml-2 text-sm font-medium text-gray-700">Tự động cập nhật năm học & học kì theo ngày hiện tại</span>
+              </label>
+              <p class="text-xs text-gray-500 mt-1">
+                ✓ Bật: Hệ thống tự động tính năm học & học kì dựa trên ngày tháng (9-12 = HK1, 1-8 = HK2)<br>
+                ✗ Tắt: Dùng giá trị năm học & học kì nhập trên
+              </p>
+            </div>
             <button id="save-general-settings" class="w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
               Lưu cài đặt
             </button>
@@ -1046,32 +1230,64 @@
         <div class="bg-white p-6 rounded-lg shadow-md">
           <h3 class="text-lg font-semibold text-gray-800 mb-4">Cài đặt điểm rèn luyện</h3>
           <div class="space-y-4">
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">Điểm tối đa</label>
-              <input type="number" id="max-points" value="100" class="w-full border rounded-md px-3 py-2">
+            <p class="text-sm text-gray-600 mb-3">Cấu hình mức điểm tối thiểu cho từng xếp loại:</p>
+            
+            <div class="grid grid-cols-2 gap-3">
+              <!-- Row 1 -->
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Xuất sắc (≥)</label>
+                <input type="number" id="excellent-points" value="90" min="0" max="100" class="w-full border rounded-md px-3 py-2">
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Tốt (≥)</label>
+                <input type="number" id="good-points" value="80" min="0" max="100" class="w-full border rounded-md px-3 py-2">
+              </div>
+              
+              <!-- Row 2 -->
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Khá (≥)</label>
+                <input type="number" id="fair-points" value="70" min="0" max="100" class="w-full border rounded-md px-3 py-2">
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Trung bình (≥)</label>
+                <input type="number" id="average-points" value="60" min="0" max="100" class="w-full border rounded-md px-3 py-2">
+              </div>
+              
+              <!-- Row 3 -->
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Yếu (≥)</label>
+                <input type="number" id="weak-points" value="40" min="0" max="100" class="w-full border rounded-md px-3 py-2">
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Kém (<)</label>
+                <input type="number" id="poor-points" value="0" min="0" max="100" class="w-full border rounded-md px-3 py-2">
+              </div>
             </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">Điểm tối thiểu</label>
-              <input type="number" id="min-points" value="0" class="w-full border rounded-md px-3 py-2">
+
+            <!-- Info box -->
+            <div class="bg-blue-50 p-3 rounded-md border-l-4 border-blue-500">
+              <p class="text-xs text-blue-800">
+                <strong>Lưu ý:</strong> Cấu hình các mức điểm tối thiểu. Ví dụ:<br>
+                • Xuất sắc ≥ 90<br>
+                • Tốt ≥ 80, Tốt < 90<br>
+                • Khá ≥ 70, Khá < 80<br>
+                • Trung bình ≥ 60, Trung bình < 70<br>
+                • Yếu ≥ 40, Yếu < 60<br>
+                • Kém < 40
+              </p>
             </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">Điểm xuất sắc</label>
-              <input type="number" id="excellent-points" value="90" class="w-full border rounded-md px-3 py-2">
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">Điểm giỏi</label>
-              <input type="number" id="good-points" value="80" class="w-full border rounded-md px-3 py-2">
-            </div>
+
             <button id="save-point-settings" class="w-full px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700">
               Lưu cài đặt
             </button>
           </div>
         </div>
 
-        <!-- Evaluation Criteria (HoatDongTC) -->
+        <!-- Evaluation Criteria (NhomTieuChi/TieuChiCon) -->
         <div class="bg-white p-6 rounded-lg shadow-md lg:col-span-2">
-          <h3 class="text-lg font-semibold text-gray-800 mb-4">Tiêu chí đánh giá (Hoạt động TC)</h3>
-          <form id="criteria-form" class="grid grid-cols-1 md:grid-cols-5 gap-4 mb-4">
+          <h3 class="text-lg font-semibold text-gray-800 mb-4">Tiêu chí đánh giá</h3>
+          <!-- Add Child Criterion -->
+          <form id="criteria-form" class="grid grid-cols-1 md:grid-cols-6 gap-4 mb-4">
             <div class="md:col-span-2">
               <label class="block text-sm font-medium text-gray-700 mb-1">Tên tiêu chí</label>
               <input type="text" id="tc-ten" class="w-full border rounded-md px-3 py-2" placeholder="Tên tiêu chí" required>
@@ -1081,8 +1297,14 @@
               <input type="number" id="tc-diem" class="w-full border rounded-md px-3 py-2" min="0" required>
             </div>
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">ID Hoạt động</label>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Mã số tiêu chí</label>
               <input type="text" id="tc-idhd" class="w-full border rounded-md px-3 py-2" placeholder="Nhập mục VD: 1.1">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Nhóm</label>
+              <select id="tc-group" class="w-full border rounded-md px-3 py-2">
+                <option value="">Chọn nhóm...</option>
+              </select>
             </div>
             <div class="flex items-end gap-2">
               <label class="inline-flex items-center gap-2 text-sm text-gray-700">
@@ -1090,8 +1312,27 @@
                 Cho SV tự đánh giá (TDTT)
               </label>
             </div>
-            <div class="md:col-span-4 flex justify-end gap-2">
+            <div class="md:col-span-6 flex justify-end gap-2">
               <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">Thêm tiêu chí</button>
+            </div>
+          </form>
+
+          <!-- Add Group -->
+          <form id="group-form" class="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Mã số nhóm</label>
+              <input type="text" id="nh-maso" class="w-full border rounded-md px-3 py-2" placeholder="VD: 1">
+            </div>
+            <div class="md:col-span-2">
+              <label class="block text-sm font-medium text-gray-700 mb-1">Tên nhóm</label>
+              <input type="text" id="nh-ten" class="w-full border rounded-md px-3 py-2" placeholder="Tên nhóm" required>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Điểm tối đa</label>
+              <input type="number" id="nh-diem" class="w-full border rounded-md px-3 py-2" min="0">
+            </div>
+            <div class="flex items-end justify-end">
+              <button type="submit" class="px-4 py-2 bg-emerald-600 text-white rounded-md hover:bg-emerald-700">Thêm nhóm</button>
             </div>
           </form>
           <div class="overflow-x-auto">
@@ -1099,25 +1340,548 @@
               <thead class="bg-gray-50">
                 <tr>
                   <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Mã</th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">IDHoatDong</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Mã số</th>
                   <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tên tiêu chí</th>
                   <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Số điểm</th>
                   <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">TDTT</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"></th>
                 </tr>
               </thead>
               <tbody id="criteria-table-body" class="bg-white divide-y divide-gray-200">
                 <tr>
-                  <td colspan="5" class="px-6 py-4 text-center text-gray-500">Đang tải dữ liệu...</td>
+                  <td colspan="6" class="px-6 py-4 text-center text-gray-500">Đang tải dữ liệu...</td>
                 </tr>
               </tbody>
             </table>
+          </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Settings Section: Auto-cleanup -->
+  <section id="settings" class="section-content hidden">
+    <div class="max-w-7xl mx-auto p-6">
+      <div class="mb-8">
+        <h2 class="text-3xl font-bold text-gray-800 mb-2">Cài đặt hệ thống</h2>
+        <p class="text-gray-600">Cấu hình xóa tự động minh chứng cũ</p>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Settings Panel -->
+        <div class="lg:col-span-2 bg-white p-6 rounded-lg shadow-md">
+          <h3 class="text-lg font-semibold text-gray-800 mb-6">Cài đặt xóa tự động</h3>
+          
+          <!-- Enable/Disable Toggle -->
+          <div class="mb-6">
+            <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+              <div>
+                <label class="block text-sm font-medium text-gray-700">Bật xóa tự động</label>
+                <p class="text-xs text-gray-500 mt-1">Cho phép hệ thống tự động xóa minh chứng cũ</p>
+              </div>
+              <label class="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" id="cleanup-enabled" class="sr-only peer" checked>
+                <div class="w-11 h-6 bg-gray-300 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-violet-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-violet-600"></div>
+              </label>
+            </div>
+          </div>
+
+          <!-- Days to Keep -->
+          <div class="mb-6">
+            <label class="block text-sm font-medium text-gray-700 mb-2">Số ngày giữ minh chứng (trước khi xóa)</label>
+            <div class="flex items-center gap-4">
+              <input type="range" id="cleanup-days" class="flex-1 h-2 bg-gray-300 rounded-lg appearance-none cursor-pointer" min="1" max="365" value="5">
+              <input type="number" id="cleanup-days-input" class="w-20 border border-gray-300 rounded-md px-3 py-2 text-sm" min="1" max="365" value="5">
+              <span class="text-sm text-gray-500">ngày</span>
+            </div>
+            <p class="text-xs text-gray-500 mt-2">Minh chứng bị từ chối sẽ được xóa sau số ngày này (1-365)</p>
+          </div>
+
+          <!-- Cleanup Time -->
+          <div class="mb-6">
+            <label class="block text-sm font-medium text-gray-700 mb-2">Giờ xóa định kỳ</label>
+            <input type="time" id="cleanup-time" class="w-full border border-gray-300 rounded-md px-3 py-2" value="02:00">
+            <p class="text-xs text-gray-500 mt-2">Thời gian xóa sẽ chạy mỗi ngày (định dạng 24 giờ)</p>
+          </div>
+
+          <!-- Notification Before Delete -->
+          <div class="mb-6">
+            <div class="flex items-center p-4 bg-blue-50 rounded-lg border border-blue-200">
+              <input type="checkbox" id="cleanup-notify" class="w-4 h-4 text-blue-600 rounded" checked>
+              <label for="cleanup-notify" class="ml-3 text-sm font-medium text-gray-700">Thông báo trước khi xóa</label>
+            </div>
+            <p class="text-xs text-gray-500 mt-2">Gửi thông báo cho sinh viên trước khi xóa minh chứng của họ</p>
+          </div>
+
+          <!-- Action Buttons -->
+          <div class="flex gap-3 pt-4 border-t">
+            <button onclick="saveCleanupSettings()" class="flex items-center gap-2 px-4 py-2 bg-violet-600 text-white rounded-lg hover:bg-violet-700 transition">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+              </svg>
+              Lưu cài đặt
+            </button>
+            <button onclick="testCleanupDry()" class="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2m0 0V3a2 2 0 00-2-2h-2a2 2 0 00-2 2v2z"></path>
+              </svg>
+              Chạy test xóa
+            </button>
+            <button onclick="runCleanupNow()" class="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+              </svg>
+              Chạy xóa ngay
+            </button>
+          </div>
+
+          <!-- Status Display -->
+          <div id="cleanup-status" class="mt-6 p-4 bg-gray-50 rounded-lg hidden">
+            <div class="flex items-center gap-3">
+              <div id="cleanup-spinner" class="hidden">
+                <svg class="animate-spin h-5 w-5 text-violet-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+              </div>
+              <div id="cleanup-message" class="text-sm text-gray-700"></div>
+            </div>
+          </div>
+
+          <!-- Current Settings Display -->
+          <div class="mt-6 p-4 bg-violet-50 border border-violet-200 rounded-lg">
+            <h4 class="text-sm font-semibold text-gray-800 mb-3">Cài đặt hiện tại</h4>
+            <div class="grid grid-cols-2 gap-3 text-sm">
+              <div>
+                <span class="text-gray-600">Trạng thái:</span>
+                <span id="current-enabled" class="font-medium text-gray-900 ml-2">✅ Bật</span>
+              </div>
+              <div>
+                <span class="text-gray-600">Ngày giữ:</span>
+                <span id="current-days" class="font-medium text-gray-900 ml-2">5 ngày</span>
+              </div>
+              <div>
+                <span class="text-gray-600">Giờ xóa:</span>
+                <span id="current-time" class="font-medium text-gray-900 ml-2">02:00</span>
+              </div>
+              <div>
+                <span class="text-gray-600">Thông báo:</span>
+                <span id="current-notify" class="font-medium text-gray-900 ml-2">✅ Có</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- History Panel -->
+        <div class="bg-white p-6 rounded-lg shadow-md">
+          <h3 class="text-lg font-semibold text-gray-800 mb-4">Lịch sử xóa</h3>
+          <div id="cleanup-history" class="space-y-3 max-h-96 overflow-y-auto">
+            <div class="text-sm text-gray-500 text-center py-4">Chưa có hoạt động xóa</div>
           </div>
         </div>
       </div>
     </div>
   </section>
 
+  <!-- Notifications Management Section -->
+  <section id="notifications" class="section-content hidden">
+    <div class="max-w-7xl mx-auto p-6">
+      <div class="mb-8">
+        <h2 class="text-3xl font-bold text-gray-800 mb-2">Quản lý thông báo</h2>
+        <p class="text-gray-600">Gửi và quản lý thông báo hệ thống</p>
+      </div>
+      <div class="flex gap-4 mb-6 border-b border-gray-300">
+        <button class="px-6 py-3 border-b-2 border-transparent text-gray-500 hover:text-gray-800 font-semibold text-lg" onclick="switchNotifTab('manage')">
+          Quản lí Thông báo
+        </button>
+        <button class="px-6 py-3 border-b-2 border-cyan-600 text-cyan-600 font-semibold text-lg" onclick="switchNotifTab('test')">
+          Kiểm tra Hệ thống
+        </button>
+      </div>
+
+      <!-- Manage Notifications Tab (Wraps original content) -->
+      <div id="notif-manage-tab" class="space-y-6 hidden">
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Send Notification Panel -->
+        <div class="lg:col-span-2 bg-white p-6 rounded-lg shadow-md">
+          <h3 class="text-lg font-semibold text-gray-800 mb-6">Gửi thông báo mới</h3>
+          
+          <form id="notification-form" class="space-y-4">
+            <!-- Recipient Type -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Đối tượng nhận</label>
+              <select id="notif-recipient-type" class="w-full border border-gray-300 rounded-lg px-3 py-2">
+                <option value="ALL_STUDENT">Tất cả sinh viên</option>
+                <option value="ALL_GIANGVIEN">Tất cả giảng viên</option>
+                <option value="ALL_KHOA">Tất cả cấp khoa</option>
+                <option value="ALL_TRUONG">Tất cả cấp trường</option>
+                <option value="specific">Người dùng cụ thể</option>
+              </select>
+            </div>
+
+            <!-- Specific User (hidden by default) -->
+            <div id="specific-user-field" class="hidden">
+              <label class="block text-sm font-medium text-gray-700 mb-2">MSSV / Mã cá nhân</label>
+              <input type="text" id="notif-recipient-id" class="w-full border border-gray-300 rounded-lg px-3 py-2" placeholder="VD: SV001, GV001...">
+            </div>
+
+            <!-- Title -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Tiêu đề</label>
+              <input type="text" id="notif-title" class="w-full border border-gray-300 rounded-lg px-3 py-2" placeholder="Nhập tiêu đề thông báo" required>
+            </div>
+
+            <!-- Message -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Nội dung</label>
+              <textarea id="notif-message" class="w-full border border-gray-300 rounded-lg px-3 py-2 h-24" placeholder="Nhập nội dung thông báo" required></textarea>
+            </div>
+
+            <!-- Link (Optional) -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Liên kết (tùy chọn)</label>
+              <input type="text" id="notif-link" class="w-full border border-gray-300 rounded-lg px-3 py-2" placeholder="/path/to/page">
+            </div>
+
+            <!-- Send Button -->
+            <button type="submit" class="w-full px-4 py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 transition font-medium">
+              Gửi thông báo
+            </button>
+          </form>
+
+          <!-- Status Message -->
+          <div id="notif-status" class="mt-4 p-3 rounded-lg hidden text-sm"></div>
+        </div>
+
+        <!-- Statistics Panel -->
+        <div class="bg-white p-6 rounded-lg shadow-md">
+          <h3 class="text-lg font-semibold text-gray-800 mb-4">Thống kê</h3>
+          
+          <div class="space-y-4">
+            <div class="bg-blue-50 p-4 rounded-lg border border-blue-200">
+              <div class="text-sm text-gray-600">Sinh viên</div>
+              <div class="text-2xl font-bold text-blue-600" id="stat-students">0</div>
+            </div>
+            
+            <div class="bg-green-50 p-4 rounded-lg border border-green-200">
+              <div class="text-sm text-gray-600">Giảng viên</div>
+              <div class="text-2xl font-bold text-green-600" id="stat-lecturers">0</div>
+            </div>
+            
+            <div class="bg-purple-50 p-4 rounded-lg border border-purple-200">
+              <div class="text-sm text-gray-600">Thông báo đã gửi</div>
+              <div class="text-2xl font-bold text-purple-600" id="stat-sent">0</div>
+            </div>
+
+            <div class="bg-amber-50 p-4 rounded-lg border border-amber-200">
+              <div class="text-sm text-gray-600">Đang chờ</div>
+              <div class="text-2xl font-bold text-amber-600" id="stat-pending">0</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Notification History -->
+      <div class="mt-6 bg-white p-6 rounded-lg shadow-md">
+        <h3 class="text-lg font-semibold text-gray-800 mb-4">Lịch sử thông báo</h3>
+        
+        <div class="mb-4 flex items-center gap-3">
+          <input type="text" id="notif-search" class="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm" placeholder="Tìm kiếm theo tiêu đề...">
+          <button onclick="loadNotificationHistory()" class="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 text-sm">
+            Tải lại
+          </button>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead class="bg-gray-50 border-b">
+              <tr>
+                <th class="px-4 py-3 text-left font-medium text-gray-700">Tiêu đề</th>
+                <th class="px-4 py-3 text-left font-medium text-gray-700">Đối tượng</th>
+                <th class="px-4 py-3 text-left font-medium text-gray-700">Thời gian</th>
+                <th class="px-4 py-3 text-left font-medium text-gray-700">Trạng thái</th>
+              </tr>
+            </thead>
+            <tbody id="notif-history-table" class="divide-y divide-gray-200">
+              <tr>
+                <td colspan="4" class="px-4 py-4 text-center text-gray-500">Đang tải...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Filter Section -->
+      <div class="mt-8 bg-white p-6 rounded-lg shadow-md">
+        <h3 class="text-lg font-semibold text-gray-800 mb-4">Lọc và Sắp xếp</h3>
+          
+          <div class="mb-6">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Lọc theo loại</label>
+                <select id="notif-filter-type" class="w-full border border-gray-300 rounded-lg px-3 py-2">
+                  <option value="">Tất cả</option>
+                  <option value="ALL_STUDENT">Sinh viên</option>
+                  <option value="ALL_GIANGVIEN">Giảng viên</option>
+                  <option value="ALL_KHOA">Cấp khoa</option>
+                  <option value="ALL_TRUONG">Cấp trường</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Sắp xếp</label>
+                <select id="notif-sort-by" class="w-full border border-gray-300 rounded-lg px-3 py-2">
+                  <option value="newest">Mới nhất</option>
+                  <option value="oldest">Cũ nhất</option>
+                  <option value="title">Tiêu đề (A-Z)</option>
+                </select>
+              </div>
+              <div class="flex items-end">
+                <button onclick="applyNotifFilters()" class="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                  Áp dụng
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+              <thead class="bg-gray-50 border-b">
+                <tr>
+                  <th class="px-4 py-3 text-left font-medium text-gray-700">
+                    <input type="checkbox" id="select-all-notif" onclick="toggleSelectAll(this)">
+                  </th>
+                  <th class="px-4 py-3 text-left font-medium text-gray-700">Tiêu đề</th>
+                  <th class="px-4 py-3 text-left font-medium text-gray-700">Nội dung</th>
+                  <th class="px-4 py-3 text-left font-medium text-gray-700">Đối tượng</th>
+                  <th class="px-4 py-3 text-left font-medium text-gray-700">Thời gian</th>
+                  <th class="px-4 py-3 text-center font-medium text-gray-700">Hành động</th>
+                </tr>
+              </thead>
+              <tbody id="notif-manage-table" class="divide-y divide-gray-200">
+                <tr>
+                  <td colspan="6" class="px-4 py-4 text-center text-gray-500">Đang tải...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Bulk Actions -->
+          <div id="notif-bulk-actions" class="mt-4 p-4 bg-gray-50 rounded-lg hidden">
+            <div class="flex items-center justify-between">
+              <span class="text-sm text-gray-700" id="notif-selected-count">0 thông báo được chọn</span>
+              <div class="flex gap-2">
+                <button onclick="deleteSelectedNotif()" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm">
+                  Xóa
+                </button>
+                <button onclick="cancelNotifSelection()" class="px-4 py-2 bg-gray-400 text-white rounded-lg hover:bg-gray-500 text-sm">
+                  Hủy
+                </button>
+              </div>
+            </div>
+          </div>
+          </div>
+        </div>
+      </div>
+      <!-- End of Manage Notifications Tab -->
+
+      <!-- New Admin System Testing Dashboard -->
+      <div id="notif-test-tab" class="block space-y-6">
+          <div class="bg-gradient-to-r from-gray-900 to-gray-800 p-6 rounded-xl shadow-lg text-white">
+            <h3 class="text-2xl font-bold mb-2 flex items-center gap-2">
+              <svg class="w-6 h-6 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg>
+              Admin System Testing Dashboard
+            </h3>
+            <p class="text-gray-300 text-sm">Công cụ kiểm thử chuyên sâu API Thông báo & Khiếu nại. Quan sát trực tiếp dữ liệu mạng (Network) ở Terminal bên dưới.</p>
+          </div>
+
+          <!-- Main Split Layout -->
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            
+            <!-- Left: Notification Testing -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+              <div class="bg-indigo-50 px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+                <h4 class="font-semibold text-indigo-900 flex items-center gap-2">
+                  <svg class="w-5 h-5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
+                  Test Thông báo (Push Notification)
+                </h4>
+              </div>
+              <div class="p-6 space-y-4">
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-1">Đối tượng nhận thử nghiệm</label>
+                  <select id="sys-test-notif-to" class="w-full border border-gray-300 px-3 py-2 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                    <option value="ALL_STUDENT">Tất cả Sinh viên (ALL_STUDENT)</option>
+                    <option value="ALL_GIANGVIEN">Tất cả Giảng viên (ALL_GIANGVIEN)</option>
+                    <option value="test-user">Người dùng cụ thể...</option>
+                  </select>
+                </div>
+                <div id="sys-test-notif-id-wrapper" class="hidden">
+                  <input type="text" id="sys-test-notif-id" class="w-full border border-gray-300 px-3 py-2 rounded-lg shadow-sm sm:text-sm" placeholder="Nhập mã cá nhân/MSSV...">
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-1">Tiêu đề (Title)</label>
+                  <div class="flex gap-2">
+                    <input type="text" id="sys-test-notif-title" class="flex-1 border border-gray-300 px-3 py-2 rounded-lg shadow-sm sm:text-sm" placeholder="Tiêu đề test...">
+                    <button onclick="fillTestNotifTemplate()" class="px-3 py-2 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 text-xs font-medium border border-gray-300" title="Điền dữ liệu mẫu">Mẫu</button>
+                  </div>
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-1">Nội dung (Message)</label>
+                  <textarea id="sys-test-notif-msg" rows="3" class="w-full border border-gray-300 px-3 py-2 rounded-lg shadow-sm sm:text-sm" placeholder="Nội dung test..."></textarea>
+                </div>
+                <div class="pt-2">
+                  <button onclick="execTestNotification()" class="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition shadow-sm font-medium">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>
+                    Phát sóng API (Broadcast)
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Right: Complaint Testing -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+              <div class="bg-rose-50 px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+                <h4 class="font-semibold text-rose-900 flex items-center gap-2">
+                  <svg class="w-5 h-5 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                  Test Khiếu nại (Complaints)
+                </h4>
+              </div>
+              <div class="p-6 space-y-4">
+                
+                <div class="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-2">
+                  <p class="text-xs text-gray-500 mb-3">Quy trình: 1. Tìm minh chứng ngẫu nhiên -> 2. Tạo khiếu nại ảo -> 3. Kiểm thử API Duyệt/Từ chối.</p>
+                  <button onclick="execTestCreateMockComplaint()" class="w-full flex items-center justify-center gap-2 px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition shadow-sm text-sm font-medium">
+                    <svg class="w-4 h-4 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                    Tạo khiếu nại ảo ngẫu nhiên (Mock)
+                  </button>
+                </div>
+
+                <div class="border-t border-gray-200 pt-4">
+                  <button onclick="execTestFetchComplaints()" class="w-full flex items-center justify-center gap-2 px-4 py-2 bg-slate-800 text-white rounded-lg hover:bg-slate-700 transition shadow-sm text-sm font-medium mb-3">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                    GET /api/complaints
+                  </button>
+                  
+                  <div class="flex gap-2">
+                    <input type="text" id="sys-test-complaint-id" class="flex-1 border border-gray-300 px-3 py-2 rounded-lg shadow-sm sm:text-sm" placeholder="Nhập ID Khiếu nại cần test...">
+                  </div>
+                  
+                  <div class="flex gap-3 mt-3">
+                    <button onclick="execTestApproveComplaint()" class="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition shadow-sm text-sm font-medium">
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                      Duyệt
+                    </button>
+                    <button onclick="execTestRejectComplaint()" class="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition shadow-sm text-sm font-medium">
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                      Từ chối
+                    </button>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+          </div>
+
+          <!-- Bottom: Terminal Window -->
+          <div class="bg-gray-900 rounded-xl shadow-lg overflow-hidden border border-gray-700">
+            <div class="bg-gray-800 px-4 py-2 border-b border-gray-700 flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <div class="w-3 h-3 rounded-full bg-red-500"></div>
+                <div class="w-3 h-3 rounded-full bg-yellow-500"></div>
+                <div class="w-3 h-3 rounded-full bg-green-500"></div>
+                <span class="ml-2 text-xs font-mono text-gray-400">Live API Terminal</span>
+              </div>
+              <button onclick="clearSysTerminal()" class="text-xs text-gray-400 hover:text-white transition">Clear</button>
+            </div>
+            <div id="sys-test-terminal" class="p-4 font-mono text-xs overflow-y-auto" style="height: 300px; scroll-behavior: smooth;">
+              <div class="text-gray-500">[System] Environment Ready. Waiting for commands...</div>
+            </div>
+          </div>
+        </div>
+      </div>
+  </section>
+
   <!-- System Logs Section -->
+  <!-- Grade Input + Import Section (Admin) -->
+  <section id="grade-input" class="section-content hidden">
+    <div id="admin-diem-container"></div>
+
+    <!-- Admin Advanced Import Settings -->
+    <div class="max-w-5xl mx-auto px-6 pb-8">
+      <div class="bg-white rounded-xl shadow-md p-6 mt-2 border-t-4 border-orange-400">
+        <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+          <svg class="w-5 h-5 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+          </svg>
+          ⚙️ Cài đặt Import nâng cao (Admin only)
+        </h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div class="space-y-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Chế độ xung đột mặc định</label>
+              <select id="imp-setting-mode" class="w-full border rounded-lg px-3 py-2 text-sm">
+                <option value="overwrite">Ghi đè (cập nhật bản ghi cũ)</option>
+                <option value="skip">Bỏ qua (giữ nguyên bản cũ)</option>
+                <option value="merge">Cộng dồn TongDRL</option>
+              </select>
+              <p class="text-xs text-gray-500 mt-1">Áp dụng khi không có mode trong JSON body</p>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Giới hạn batch size (bản ghi/lần)</label>
+              <input id="imp-setting-batchsize" type="number" min="1" max="10000" value="1000"
+                class="w-full border rounded-lg px-3 py-2 text-sm">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Giới hạn năm học được import</label>
+              <input id="imp-setting-years" type="text" placeholder="VD: 2024,2025,2026 (để trống = không giới hạn)"
+                class="w-full border rounded-lg px-3 py-2 text-sm">
+              <p class="text-xs text-gray-500 mt-1">Phân cách bằng dấu phẩy. Để trống để cho phép tất cả</p>
+            </div>
+          </div>
+          <div class="space-y-4">
+            <div class="space-y-3">
+              <p class="text-sm font-medium text-gray-700">Validate & Tự động tính</p>
+              <label class="flex items-center gap-3">
+                <input id="imp-setting-reqmssv" type="checkbox" class="h-4 w-4" checked>
+                <div>
+                  <span class="text-sm text-gray-700 font-medium">Bắt buộc MSSV phải tồn tại trong DB</span>
+                  <p class="text-xs text-gray-500">Nếu tắt: bỏ qua kiểm tra MSSV (nhập nhanh)</p>
+                </div>
+              </label>
+              <label class="flex items-center gap-3">
+                <input id="imp-setting-range" type="checkbox" class="h-4 w-4" checked>
+                <div>
+                  <span class="text-sm text-gray-700 font-medium">Validate TongDRL phải 0–100</span>
+                  <p class="text-xs text-gray-500">Bản ghi có TongDRL ngoài phạm vi sẽ bị báo lỗi</p>
+                </div>
+              </label>
+              <label class="flex items-center gap-3">
+                <input id="imp-setting-autocalckhoas" type="checkbox" class="h-4 w-4" checked>
+                <div>
+                  <span class="text-sm text-gray-700 font-medium">Tự động tính Khoas từ DiemTBM_10</span>
+                  <p class="text-xs text-gray-500">Xuất sắc ≥9, Giỏi ≥8, Khá ≥7, TB ≥5</p>
+                </div>
+              </label>
+              <label class="flex items-center gap-3">
+                <input id="imp-setting-autocalcdtb4" type="checkbox" class="h-4 w-4" checked>
+                <div>
+                  <span class="text-sm text-gray-700 font-medium">Tự động tính DiemTBM_4 = DTB10 / 2.5</span>
+                  <p class="text-xs text-gray-500">Chỉ tính khi chưa có DiemTBM_4</p>
+                </div>
+              </label>
+            </div>
+          </div>
+        </div>
+        <div class="mt-6 flex gap-3 items-center">
+          <button id="imp-settings-save" onclick="saveImportSettings()"
+            class="px-6 py-2 bg-orange-500 text-white rounded-lg text-sm font-medium hover:bg-orange-600 transition">💾 Lưu cài đặt</button>
+          <button onclick="loadImportSettings()"
+            class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm hover:bg-gray-200 transition">🔄 Tải lại</button>
+          <span id="imp-settings-msg" class="text-sm font-medium"></span>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <section id="logs" class="section-content hidden">
     <div class="max-w-7xl mx-auto p-6">
       <div class="mb-8">
@@ -1184,6 +1948,591 @@
 
 </main>
 
+  <!-- System Tests Section -->
+  <!-- AI Config Section -->
+  <section id="ai-config" class="section-content hidden">
+    <div class="max-w-7xl mx-auto p-6">
+      <div class="mb-8">
+        <h2 class="text-3xl font-bold text-gray-800 mb-2">Đào tạo & Cấu hình AI</h2>
+        <p class="text-gray-600">Huấn luyện bối cảnh và điều chỉnh trọng số chấm điểm AI</p>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Training Video Upload -->
+        <div class="bg-white p-6 rounded-lg shadow-md border border-gray-200">
+          <h3 class="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+            <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+            </svg>
+            Đào tạo Bối cảnh (Video)
+          </h3>
+          <p class="text-sm text-gray-600 mb-6">Tải lên video mẫu để hệ thống trích xuất đặc trưng và học bối cảnh.</p>
+          
+          <form id="ai-train-form" class="space-y-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Loại bối cảnh</label>
+              <select id="train-context-type" name="context_type" class="w-full border border-gray-300 rounded-md p-2 focus:ring-blue-500 focus:border-blue-500">
+                <option value="TrongLop">Trong lớp học</option>
+                <option value="SanKhau">Sân khấu / Văn nghệ</option>
+                <option value="GiangDuong">Giảng đường / Hội trường</option>
+                <option value="NgoaiTroi">Ngoài trời / Sân vận động</option>
+              </select>
+            </div>
+            
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Video mẫu (MP4, AVI)</label>
+              <div class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md hover:bg-gray-50 transition-colors" id="ai-drop-zone">
+                <div class="space-y-1 text-center">
+                  <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                    <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                  </svg>
+                  <div class="flex text-sm text-gray-600 justify-center">
+                    <label for="ai-train-file" class="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none">
+                      <span>Tải file lên</span>
+                      <input id="ai-train-file" name="file" type="file" class="sr-only" accept="video/*">
+                    </label>
+                    <p class="pl-1">hoặc kéo thả vào đây</p>
+                  </div>
+                  <p class="text-xs text-gray-500">Tối đa 50MB</p>
+                  <p id="ai-file-name" class="text-sm font-medium text-blue-600 mt-2 hidden"></p>
+                </div>
+              </div>
+            </div>
+            
+            <div id="ai-train-status" class="hidden p-3 rounded-md text-sm font-medium"></div>
+            
+            <button type="submit" id="btn-train-ai" class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50">
+              Bắt đầu Huấn luyện
+            </button>
+          </form>
+
+          <div class="mt-6 border-t border-gray-200 pt-4">
+            <h4 class="text-sm font-semibold text-gray-700 mb-3 flex justify-between items-center">
+              Video đã huấn luyện
+              <button type="button" onclick="loadTrainedContexts()" class="text-blue-600 hover:text-blue-800 text-xs flex items-center gap-1">
+                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                Tải lại
+              </button>
+            </h4>
+            <ul id="ai-trained-list" class="space-y-2 text-sm text-gray-600 max-h-48 overflow-y-auto pr-2">
+               <li class="text-center italic py-2 text-gray-400">Đang tải...</li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- AI Configuration Parameters -->
+        <div class="bg-white p-6 rounded-lg shadow-md border border-gray-200">
+          <h3 class="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+            <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path>
+            </svg>
+            Tham số Chấm điểm
+          </h3>
+          <p class="text-sm text-gray-600 mb-6">Điều chỉnh trọng số cho các mô hình phân tích minh chứng.</p>
+          
+          <form id="ai-config-form" class="space-y-5">
+            <div>
+              <div class="flex justify-between">
+                <label class="block text-sm font-medium text-gray-700">Trọng số Khuôn mặt</label>
+                <span id="val-face-weight" class="text-sm font-bold text-blue-600">0.50</span>
+              </div>
+              <input type="range" id="face_weight" name="face_weight" min="0" max="1" step="0.05" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer mt-2">
+            </div>
+            
+            <div>
+              <div class="flex justify-between">
+                <label class="block text-sm font-medium text-gray-700">Trọng số Bối cảnh</label>
+                <span id="val-context-weight" class="text-sm font-bold text-blue-600">0.30</span>
+              </div>
+              <input type="range" id="context_weight" name="context_weight" min="0" max="1" step="0.05" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer mt-2">
+            </div>
+            
+            <div>
+              <div class="flex justify-between">
+                <label class="block text-sm font-medium text-gray-700">Trọng số Thiết bị (GPS)</label>
+                <span id="val-device-weight" class="text-sm font-bold text-blue-600">0.10</span>
+              </div>
+              <input type="range" id="device_weight" name="device_weight" min="0" max="1" step="0.05" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer mt-2">
+            </div>
+            
+            <div>
+              <div class="flex justify-between">
+                <label class="block text-sm font-medium text-gray-700">Ngưỡng Duyệt Tự Động (Tổng điểm)</label>
+                <span id="val-approval-threshold" class="text-sm font-bold text-green-600">0.70</span>
+              </div>
+              <input type="range" id="approval_threshold" name="approval_threshold" min="0" max="1" step="0.05" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer mt-2">
+            </div>
+            
+            <div id="ai-config-status" class="hidden p-3 rounded-md text-sm font-medium"></div>
+            
+            <div class="flex gap-3 pt-2">
+              <button type="button" id="btn-load-config" class="flex-1 py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none">
+                Tải lại
+              </button>
+              <button type="submit" id="btn-save-config" class="flex-1 py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
+                Lưu Cấu Hình
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <!-- AI Testing Tool -->
+        <div class="bg-white p-6 rounded-lg shadow-md border border-gray-200 lg:col-span-2">
+          <h3 class="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+            <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path>
+            </svg>
+            Kiểm tra chấm điểm AI
+          </h3>
+          <p class="text-sm text-gray-600 mb-6">Tải lên một video hoặc ảnh minh chứng để thử nghiệm thuật toán nhận diện.</p>
+          <form id="ai-test-form" class="grid grid-cols-1 md:grid-cols-2 gap-4 bg-gray-50 p-4 rounded border">
+            <div class="md:col-span-2 text-xs text-gray-500 font-semibold uppercase tracking-wider mb-[-10px]">Tệp tin</div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Video minh chứng (*)</label>
+              <input type="file" id="ai-test-file" name="file" class="w-full border border-gray-300 rounded-md p-2 bg-white text-sm" accept="video/*" required>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Ảnh khuôn mặt (Tùy chọn)</label>
+              <input type="file" id="ai-test-face-file" class="w-full border border-gray-300 rounded-md p-2 bg-white text-sm" accept="image/*">
+              <input type="hidden" id="ai-test-face-b64" name="student_face_image_b64">
+            </div>
+
+            <div class="md:col-span-2 text-xs text-gray-500 font-semibold uppercase tracking-wider mb-[-10px] mt-2 flex justify-between items-center">
+              <span>Bối cảnh & Vị trí</span>
+              <button type="button" id="btn-ai-test-gps" class="text-xs bg-indigo-100 text-indigo-700 px-2 py-1 rounded hover:bg-indigo-200 transition-colors flex items-center gap-1">
+                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                Lấy GPS hiện tại
+              </button>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Bối cảnh mong muốn</label>
+              <select id="ai-test-context" name="expected_context" class="w-full border border-gray-300 rounded-md p-2 text-sm bg-white">
+                <option value="TrongLop">Trong lớp học</option>
+                <option value="SanKhau">Sân khấu / Văn nghệ</option>
+                <option value="GiangDuong">Giảng đường / Hội trường</option>
+                <option value="NgoaiTroi">Ngoài trời / Sân vận động</option>
+              </select>
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Tọa độ Video (Lat, Lng)</label>
+                <div class="flex gap-1">
+                  <input type="text" id="ai-test-lat" name="lat" placeholder="Lat" class="w-1/2 border border-gray-300 rounded-md p-2 text-sm bg-white">
+                  <input type="text" id="ai-test-lng" name="lng" placeholder="Lng" class="w-1/2 border border-gray-300 rounded-md p-2 text-sm bg-white">
+                </div>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Tọa độ Hoạt động (Lat, Lng)</label>
+                <div class="flex gap-1">
+                  <input type="text" id="ai-test-act-lat" name="activity_lat" placeholder="Lat" class="w-1/2 border border-gray-300 rounded-md p-2 text-sm bg-white">
+                  <input type="text" id="ai-test-act-lng" name="activity_lng" placeholder="Lng" class="w-1/2 border border-gray-300 rounded-md p-2 text-sm bg-white">
+                </div>
+              </div>
+            </div>
+
+            <div class="md:col-span-2 flex justify-end mt-2">
+              <button type="submit" id="btn-test-ai" class="py-2 px-6 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500">
+                Chấm điểm thử nghiệm
+              </button>
+            </div>
+          </form>
+          <div id="ai-test-result" class="mt-4 hidden p-4 bg-white border border-gray-200 shadow-inner rounded-lg text-sm">
+             <!-- Output results -->
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <section id="tests" class="section-content hidden">
+    <div class="max-w-7xl mx-auto p-6 space-y-6">
+      <div class="flex items-center justify-between">
+        <div>
+          <h2 class="text-3xl font-bold text-gray-800 mb-1">Kiểm tra hệ thống</h2>
+          <p class="text-gray-600">Chạy test theo nhóm hoặc từng mục nhỏ</p>
+        </div>
+        <div class="flex items-center gap-2">
+          <input id="tests-gv-id" type="text" placeholder="GV ID (tùy chọn)" class="border rounded-md px-3 py-2 text-sm" />
+          <button id="btn-tests-run-all" class="px-4 py-2 bg-emerald-600 text-white rounded-md hover:bg-emerald-700 text-sm">Chạy tất cả</button>
+          <button id="btn-tests-clear" class="px-4 py-2 border rounded-md hover:bg-gray-100 text-sm">Xóa kết quả</button>
+        </div>
+      </div>
+
+      <!-- Summary / Progress -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="bg-white rounded-lg shadow p-4 flex items-center gap-3">
+          <div class="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center">
+            <svg class="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+          </div>
+          <div>
+            <div class="text-sm text-gray-500">Thành công</div>
+            <div id="tests-pass-count" class="text-xl font-semibold">0</div>
+          </div>
+        </div>
+        <div class="bg-white rounded-lg shadow p-4 flex items-center gap-3">
+          <div class="w-10 h-10 rounded-full bg-rose-100 flex items-center justify-center">
+            <svg class="w-5 h-5 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+          </div>
+          <div>
+            <div class="text-sm text-gray-500">Thất bại</div>
+            <div id="tests-fail-count" class="text-xl font-semibold">0</div>
+          </div>
+        </div>
+        <div class="bg-white rounded-lg shadow p-4">
+          <div class="flex items-center justify-between mb-2">
+            <div class="text-sm text-gray-500">Tiến độ</div>
+            <div id="tests-progress-label" class="text-sm font-medium text-gray-700">0%</div>
+          </div>
+          <div class="w-full h-3 rounded-full bg-gray-100 overflow-hidden">
+            <div id="tests-progress-bar" class="h-3 bg-gradient-to-r from-emerald-500 to-blue-500 w-0"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Category cards -->
+      <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+        <!-- AI Health -->
+        <div class="bg-white rounded-lg shadow p-5">
+          <div class="flex items-center justify-between">
+            <h3 class="font-semibold text-gray-800">AI Service</h3>
+            <span class="text-xs px-2 py-0.5 rounded-full bg-blue-50 text-blue-700">Sức khỏe</span>
+          </div>
+          <p class="text-sm text-gray-500 mt-2">Kiểm tra dịch vụ AI</p>
+          <div class="mt-3 flex gap-2">
+            <button data-test-key="ai.health" class="px-3 py-1.5 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700">Chạy</button>
+          </div>
+        </div>
+
+        <!-- Notifications -->
+        <div class="bg-white rounded-lg shadow p-5">
+          <div class="flex items-center justify-between">
+            <h3 class="font-semibold text-gray-800">Thông báo</h3>
+            <span class="text-xs px-2 py-0.5 rounded-full bg-violet-50 text-violet-700">API</span>
+          </div>
+          <p class="text-sm text-gray-500 mt-2">Nạp danh sách và tóm tắt</p>
+          <div class="mt-3 flex gap-2 flex-wrap">
+            <button data-test-key="notifications.all" class="px-3 py-1.5 bg-violet-600 text-white rounded-md text-sm hover:bg-violet-700">Tất cả</button>
+            <button data-test-key="notifications.byUser" class="px-3 py-1.5 bg-violet-600 text-white rounded-md text-sm hover:bg-violet-700">Theo GV</button>
+            <button data-test-key="notifications.summary" class="px-3 py-1.5 bg-violet-600 text-white rounded-md text-sm hover:bg-violet-700">Tóm tắt</button>
+          </div>
+        </div>
+
+        <!-- Phiếu ĐGRL -->
+        <div class="bg-white rounded-lg shadow p-5">
+          <div class="flex items-center justify-between">
+            <h3 class="font-semibold text-gray-800">Phiếu ĐGRL</h3>
+            <span class="text-xs px-2 py-0.5 rounded-full bg-amber-50 text-amber-700">Biểu mẫu</span>
+          </div>
+          <p class="text-sm text-gray-500 mt-2">Danh sách phiếu</p>
+          <div class="mt-3 flex gap-2">
+            <button data-test-key="phieu.list" class="px-3 py-1.5 bg-amber-600 text-white rounded-md text-sm hover:bg-amber-700">Chạy</button>
+          </div>
+        </div>
+
+        <!-- Minh chứng -->
+        <div class="bg-white rounded-lg shadow p-5">
+          <div class="flex items-center justify-between">
+            <h3 class="font-semibold text-gray-800">Minh chứng</h3>
+            <span class="text-xs px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700">Luồng duyệt</span>
+          </div>
+          <p class="text-sm text-gray-500 mt-2">Kiểm tra danh sách, theo người dùng, chuyển tiếp cho GV và trạng thái nhận</p>
+          <div class="mt-3 flex gap-2 flex-wrap">
+            <button data-test-key="evidence.list" class="px-3 py-1.5 bg-emerald-600 text-white rounded-md text-sm hover:bg-emerald-700">Danh sách</button>
+            <button data-test-key="evidence.byUser" class="px-3 py-1.5 bg-emerald-600 text-white rounded-md text-sm hover:bg-emerald-700">Theo người dùng</button>
+            <button data-test-key="evidence.forwarded" class="px-3 py-1.5 bg-emerald-600 text-white rounded-md text-sm hover:bg-emerald-700">Chuyển cho GV</button>
+            <button data-test-key="evidence.receiveStatus" class="px-3 py-1.5 bg-emerald-600 text-white rounded-md text-sm hover:bg-emerald-700">Trạng thái nhận</button>
+          </div>
+        </div>
+
+        <!-- Giảng viên -->
+        <div class="bg-white rounded-lg shadow p-5">
+          <div class="flex items-center justify-between">
+            <h3 class="font-semibold text-gray-800">Giảng viên</h3>
+            <span class="text-xs px-2 py-0.5 rounded-full bg-sky-50 text-sky-700">Hồ sơ</span>
+          </div>
+          <p class="text-sm text-gray-500 mt-2">Thông tin và cập nhật no-op</p>
+          <div class="mt-3 flex gap-2">
+            <button data-test-key="gv.info" class="px-3 py-1.5 bg-sky-600 text-white rounded-md text-sm hover:bg-sky-700">Thông tin</button>
+            <button data-test-key="gv.update" class="px-3 py-1.5 bg-sky-600 text-white rounded-md text-sm hover:bg-sky-700">Cập nhật</button>
+          </div>
+        </div>
+
+        <!-- Cấu hình -->
+        <div class="bg-white rounded-lg shadow p-5">
+          <div class="flex items-center justify-between">
+            <h3 class="font-semibold text-gray-800">Cấu hình</h3>
+            <span class="text-xs px-2 py-0.5 rounded-full bg-gray-50 text-gray-700">System</span>
+          </div>
+          <p class="text-sm text-gray-500 mt-2">Cài đặt hệ thống</p>
+          <div class="mt-3 flex gap-2">
+            <button data-test-key="settings.system" class="px-3 py-1.5 bg-gray-700 text-white rounded-md text-sm hover:bg-black">Chạy</button>
+          </div>
+        </div>
+
+        <!-- Dữ liệu -->
+        <div class="bg-white rounded-lg shadow p-5">
+          <div class="flex items-center justify-between">
+            <h3 class="font-semibold text-gray-800">Dữ liệu</h3>
+            <span class="text-xs px-2 py-0.5 rounded-full bg-fuchsia-50 text-fuchsia-700">Danh mục</span>
+          </div>
+          <p class="text-sm text-gray-500 mt-2">Lớp và Sinh viên</p>
+          <div class="mt-3 flex gap-2">
+            <button data-test-key="data.classes" class="px-3 py-1.5 bg-fuchsia-600 text-white rounded-md text-sm hover:bg-fuchsia-700">Lớp</button>
+            <button data-test-key="data.students" class="px-3 py-1.5 bg-fuchsia-600 text-white rounded-md text-sm hover:bg-fuchsia-700">Sinh viên</button>
+          </div>
+        </div>
+
+        <!-- 1. Kiểm tra đăng nhập/xác thực -->
+        <div class="bg-white rounded-lg shadow p-5">
+          <div class="flex items-center justify-between">
+            <h3 class="font-semibold text-gray-800">Đăng nhập & Xác thực</h3>
+            <span class="text-xs px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700">Auth</span>
+          </div>
+          <p class="text-sm text-gray-500 mt-2">Kiểm tra phiên, quyền truy cập, CSRF</p>
+          <div class="mt-3 flex gap-2 flex-wrap">
+            <button data-test-key="auth.session" class="px-3 py-1.5 bg-indigo-600 text-white rounded-md text-sm hover:bg-indigo-700">Phiên hiện tại</button>
+            <button data-test-key="auth.permissions" class="px-3 py-1.5 bg-indigo-600 text-white rounded-md text-sm hover:bg-indigo-700">Quyền truy cập</button>
+            <button data-test-key="auth.csrf" class="px-3 py-1.5 bg-indigo-600 text-white rounded-md text-sm hover:bg-indigo-700">CSRF Token</button>
+          </div>
+        </div>
+
+        <!-- 2. Performance Test -->
+        <div class="bg-white rounded-lg shadow p-5">
+          <div class="flex items-center justify-between">
+            <h3 class="font-semibold text-gray-800">Performance Test</h3>
+            <span class="text-xs px-2 py-0.5 rounded-full bg-cyan-50 text-cyan-700">Tốc độ</span>
+          </div>
+          <p class="text-sm text-gray-500 mt-2">Tải trang, API response, render time</p>
+          <div class="mt-3 flex gap-2 flex-wrap">
+            <button data-test-key="perf.pageLoad" class="px-3 py-1.5 bg-cyan-600 text-white rounded-md text-sm hover:bg-cyan-700">Tải trang</button>
+            <button data-test-key="perf.apiResponse" class="px-3 py-1.5 bg-cyan-600 text-white rounded-md text-sm hover:bg-cyan-700">API Response</button>
+            <button data-test-key="perf.renderTime" class="px-3 py-1.5 bg-cyan-600 text-white rounded-md text-sm hover:bg-cyan-700">Render Time</button>
+          </div>
+        </div>
+
+        <!-- 3. Security Test -->
+        <div class="bg-white rounded-lg shadow p-5">
+          <div class="flex items-center justify-between">
+            <h3 class="font-semibold text-gray-800">Security Test</h3>
+            <span class="text-xs px-2 py-0.5 rounded-full bg-red-50 text-red-700">Bảo mật</span>
+          </div>
+          <p class="text-sm text-gray-500 mt-2">XSS, SQL injection, CORS</p>
+          <div class="mt-3 flex gap-2 flex-wrap">
+            <button data-test-key="security.xss" class="px-3 py-1.5 bg-red-600 text-white rounded-md text-sm hover:bg-red-700">XSS Test</button>
+            <button data-test-key="security.sqlInjection" class="px-3 py-1.5 bg-red-600 text-white rounded-md text-sm hover:bg-red-700">SQL Injection</button>
+            <button data-test-key="security.cors" class="px-3 py-1.5 bg-red-600 text-white rounded-md text-sm hover:bg-red-700">CORS Check</button>
+          </div>
+        </div>
+
+        <!-- 4. API Endpoints Test -->
+        <div class="bg-white rounded-lg shadow p-5">
+          <div class="flex items-center justify-between">
+            <h3 class="font-semibold text-gray-800">API Endpoints</h3>
+            <span class="text-xs px-2 py-0.5 rounded-full bg-orange-50 text-orange-700">REST</span>
+          </div>
+          <p class="text-sm text-gray-500 mt-2">GET, POST, DELETE endpoints</p>
+          <div class="mt-3 flex gap-2 flex-wrap">
+            <button data-test-key="api.get" class="px-3 py-1.5 bg-orange-600 text-white rounded-md text-sm hover:bg-orange-700">GET Requests</button>
+            <button data-test-key="api.post" class="px-3 py-1.5 bg-orange-600 text-white rounded-md text-sm hover:bg-orange-700">POST Requests</button>
+            <button data-test-key="api.delete" class="px-3 py-1.5 bg-orange-600 text-white rounded-md text-sm hover:bg-orange-700">DELETE Requests</button>
+          </div>
+        </div>
+
+        <!-- 5. Database Connection -->
+        <div class="bg-white rounded-lg shadow p-5">
+          <div class="flex items-center justify-between">
+            <h3 class="font-semibold text-gray-800">Database Connection</h3>
+            <span class="text-xs px-2 py-0.5 rounded-full bg-teal-50 text-teal-700">DB</span>
+          </div>
+          <p class="text-sm text-gray-500 mt-2">Kết nối, query, performance</p>
+          <div class="mt-3 flex gap-2 flex-wrap">
+            <button data-test-key="db.connection" class="px-3 py-1.5 bg-teal-600 text-white rounded-md text-sm hover:bg-teal-700">Kết nối</button>
+            <button data-test-key="db.query" class="px-3 py-1.5 bg-teal-600 text-white rounded-md text-sm hover:bg-teal-700">Query</button>
+            <button data-test-key="db.performance" class="px-3 py-1.5 bg-teal-600 text-white rounded-md text-sm hover:bg-teal-700">Performance</button>
+          </div>
+        </div>
+
+        <!-- 6. Offline/Online Status -->
+        <div class="bg-white rounded-lg shadow p-5">
+          <div class="flex items-center justify-between">
+            <h3 class="font-semibold text-gray-800">Offline/Online Status</h3>
+            <span class="text-xs px-2 py-0.5 rounded-full bg-purple-50 text-purple-700">Network</span>
+          </div>
+          <p class="text-sm text-gray-500 mt-2">Kết nối mạng, cache, sync</p>
+          <div class="mt-3 flex gap-2 flex-wrap">
+            <button data-test-key="network.status" class="px-3 py-1.5 bg-purple-600 text-white rounded-md text-sm hover:bg-purple-700">Trạng thái</button>
+            <button data-test-key="network.cache" class="px-3 py-1.5 bg-purple-600 text-white rounded-md text-sm hover:bg-purple-700">Cache</button>
+            <button data-test-key="network.sync" class="px-3 py-1.5 bg-purple-600 text-white rounded-md text-sm hover:bg-purple-700">Sync</button>
+          </div>
+        </div>
+
+        <!-- 7. Mobile/Responsive Test -->
+        <div class="bg-white rounded-lg shadow p-5">
+          <div class="flex items-center justify-between">
+            <h3 class="font-semibold text-gray-800">Mobile/Responsive</h3>
+            <span class="text-xs px-2 py-0.5 rounded-full bg-lime-50 text-lime-700">Mobile</span>
+          </div>
+          <p class="text-sm text-gray-500 mt-2">Viewport, touch events, layout</p>
+          <div class="mt-3 flex gap-2 flex-wrap">
+            <button data-test-key="mobile.viewport" class="px-3 py-1.5 bg-lime-600 text-white rounded-md text-sm hover:bg-lime-700">Viewport</button>
+            <button data-test-key="mobile.touch" class="px-3 py-1.5 bg-lime-600 text-white rounded-md text-sm hover:bg-lime-700">Touch Events</button>
+            <button data-test-key="mobile.layout" class="px-3 py-1.5 bg-lime-600 text-white rounded-md text-sm hover:bg-lime-700">Layout</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Output -->
+      <div class="bg-white rounded-lg shadow p-4">
+        <h4 class="font-semibold text-gray-800 mb-3">Kết quả</h4>
+        <div id="admin-tests-output-section" class="text-sm bg-gray-50 border rounded p-3 max-h-[60vh] overflow-auto space-y-1"></div>
+      </div>
+    </div>
+  </section>
+
+          <!-- Admin registrations panel -->
+          <section class="max-w-7xl mx-auto p-6">
+            <div class="bg-white p-4 rounded shadow-sm border">
+              <div id="admin-registrations-root"></div>
+            </div>
+          </section>
+
+  <!-- System Tests Section -->
+  <section id="tests" class="section-content hidden">
+    <div class="max-w-7xl mx-auto p-6">
+      <div class="mb-8">
+        <h2 class="text-3xl font-bold text-gray-800 mb-2">Kiểm tra hệ thống</h2>
+        <p class="text-gray-600">Chạy kiểm tra theo nhóm và từng tính năng riêng lẻ</p>
+      </div>
+
+      <!-- Toolbar -->
+      <div class="flex items-center gap-2 mb-4">
+        <button id="btn-tests-run-all" class="px-3 py-2 bg-emerald-600 text-white rounded-md hover:bg-emerald-700 text-sm">Chạy tất cả</button>
+        <button id="btn-tests-clear" class="px-3 py-2 border rounded-md hover:bg-gray-100 text-sm">Xóa kết quả</button>
+      </div>
+
+      <!-- Categories -->
+      <div id="tests-categories" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
+        <!-- AI Service -->
+        <div class="bg-white p-4 rounded-lg shadow-md">
+          <h3 class="text-lg font-semibold text-gray-800 mb-3">AI Service</h3>
+          <div class="space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="text-sm">AI Health</span>
+              <button class="px-2 py-1 text-xs bg-blue-600 text-white rounded" data-test-key="ai.health">Run</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Notifications -->
+        <div class="bg-white p-4 rounded-lg shadow-md">
+          <h3 class="text-lg font-semibold text-gray-800 mb-3">Thông báo</h3>
+          <div class="space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="text-sm">Tổng quát</span>
+              <button class="px-2 py-1 text-xs bg-blue-600 text-white rounded" data-test-key="notifications.all">Run</button>
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="text-sm">Theo người dùng hiện tại</span>
+              <button class="px-2 py-1 text-xs bg-blue-600 text-white rounded" data-test-key="notifications.byUser">Run</button>
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="text-sm">Tóm tắt (Trường)</span>
+              <button class="px-2 py-1 text-xs bg-blue-600 text-white rounded" data-test-key="notifications.summary">Run</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Phiếu ĐGRL -->
+        <div class="bg-white p-4 rounded-lg shadow-md">
+          <h3 class="text-lg font-semibold text-gray-800 mb-3">Phiếu ĐGRL</h3>
+          <div class="space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="text-sm">Danh sách phiếu</span>
+              <button class="px-2 py-1 text-xs bg-blue-600 text-white rounded" data-test-key="phieu.list">Run</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Minh chứng -->
+        <div class="bg-white p-4 rounded-lg shadow-md">
+          <h3 class="text-lg font-semibold text-gray-800 mb-3">Minh chứng</h3>
+          <div class="space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="text-sm">Danh sách minh chứng</span>
+              <button class="px-2 py-1 text-xs bg-blue-600 text-white rounded" data-test-key="evidence.list">Run</button>
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="text-sm">Theo người dùng hiện tại</span>
+              <button class="px-2 py-1 text-xs bg-blue-600 text-white rounded" data-test-key="evidence.byUser">Run</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Giảng viên -->
+        <div class="bg-white p-4 rounded-lg shadow-md">
+          <h3 class="text-lg font-semibold text-gray-800 mb-3">Giảng viên</h3>
+          <div class="space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="text-sm">Thông tin giảng viên</span>
+              <button class="px-2 py-1 text-xs bg-blue-600 text-white rounded" data-test-key="gv.info">Run</button>
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="text-sm">Cập nhật thông tin (no-op)</span>
+              <button class="px-2 py-1 text-xs bg-blue-600 text-white rounded" data-test-key="gv.update">Run</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Cấu hình hệ thống -->
+        <div class="bg-white p-4 rounded-lg shadow-md">
+          <h3 class="text-lg font-semibold text-gray-800 mb-3">Cấu hình hệ thống</h3>
+          <div class="space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="text-sm">Lấy cài đặt hệ thống</span>
+              <button class="px-2 py-1 text-xs bg-blue-600 text-white rounded" data-test-key="settings.system">Run</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Dữ liệu chung -->
+        <div class="bg-white p-4 rounded-lg shadow-md">
+          <h3 class="text-lg font-semibold text-gray-800 mb-3">Dữ liệu chung</h3>
+          <div class="space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="text-sm">Danh sách lớp</span>
+              <button class="px-2 py-1 text-xs bg-blue-600 text-white rounded" data-test-key="data.classes">Run</button>
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="text-sm">Danh sách sinh viên</span>
+              <button class="px-2 py-1 text-xs bg-blue-600 text-white rounded" data-test-key="data.students">Run</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Output -->
+      <div id="admin-tests-output-section" class="text-sm bg-gray-50 border rounded p-3 max-h-[50vh] overflow-auto"></div>
+    </div>
+  </section>
+
+<!-- Modal: Admin Test Runner -->
+<div id="admin-tests-modal" class="modal hidden">
+  <div class="modal-content max-w-4xl">
+    <div class="p-4 border-b flex justify-between items-center">
+      <h3 class="text-lg font-semibold">Kiểm tra hệ thống (Admin)</h3>
+      <button id="admin-tests-close" class="text-gray-600 px-2 py-1 rounded hover:bg-gray-100">Đóng</button>
+    </div>
+    <div class="p-4">
+      <div class="flex items-center gap-2 mb-4">
+        <button id="admin-tests-run-all" class="px-3 py-2 bg-emerald-600 text-white rounded-md hover:bg-emerald-700 text-sm">Chạy tất cả</button>
+        <button id="admin-tests-clear" class="px-3 py-2 border rounded-md hover:bg-gray-100 text-sm">Xóa kết quả</button>
+      </div>
+      <div id="admin-tests-output" class="text-sm bg-gray-50 border rounded p-3 max-h-[60vh] overflow-auto"></div>
+    </div>
+  </div>
+</div>
+
 <!-- Modal chi tiết -->
 <div id="modal" class="modal hidden">
   <div class="modal-content">
@@ -1232,17 +2581,11 @@
           
           <div class="grid grid-cols-2 gap-4">
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">Mật khẩu</label>
-              <div class="relative">
-                <input id="u-matkhau" type="password" class="w-full border rounded-md px-3 py-2 pr-10 text-sm" placeholder="******" required>
-                <button type="button" id="toggle-password" class="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700">
-                  <svg id="eye-open" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
-                  </svg>
-                  <svg id="eye-closed" class="w-4 h-4 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21"></path>
-                  </svg>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Mật khẩu <span class="text-xs text-gray-500">(mặc định: 123456)</span></label>
+              <div class="flex gap-2">
+                <input id="u-matkhau" type="password" class="flex-1 border rounded-md px-3 py-2 text-sm" placeholder="Để trống = 123456">
+                <button type="button" id="btn-reset-password" class="px-3 py-2 text-sm bg-orange-600 text-white rounded-md hover:bg-orange-700" title="Đặt lại mật khẩu người dùng">
+                  🔑 Reset
                 </button>
               </div>
             </div>
@@ -1391,6 +2734,235 @@
 <!-- Modal đổi mật khẩu đã loại bỏ; chỉnh sửa tích hợp trong modal người dùng -->
 
 
+    <!-- eKYC Section -->
+  <section id="ekyc" class="section-content hidden">
+    <div class="max-w-7xl mx-auto p-6">
+      <div class="mb-8">
+        <h2 class="text-3xl font-bold text-gray-800 mb-2">Quản lý eKYC Chuyên sâu</h2>
+        <p class="text-gray-600">Cấu hình tham số AI nhận diện khuôn mặt và quản lý thẻ sinh viên mẫu.</p>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- AI Settings & Upload -->
+        <div class="bg-white p-6 rounded-lg shadow-md border border-gray-200">
+          <h3 class="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+            <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2"></path></svg>
+            Tải Thẻ Mẫu & Tham số AI
+          </h3>
+          
+          <form id="admin-ekyc-form" class="space-y-6">
+            <!-- Drag and drop area -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Thẻ sinh viên mẫu (Mặt trước)</label>
+              <div id="ekyc-drop-zone" class="border-2 border-dashed border-gray-300 rounded-lg p-6 flex flex-col items-center justify-center text-center hover:bg-gray-50 transition-colors cursor-pointer relative min-h-[200px]">
+                <input type="file" id="ekyc-template-file" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" accept="image/*">
+                <svg class="w-10 h-10 text-gray-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
+                <p class="text-sm text-gray-600 font-medium">Kéo thả ảnh hoặc click để tải lên</p>
+                <p class="text-xs text-gray-500 mt-1">Hỗ trợ JPG, PNG (Tối đa 5MB)</p>
+                <img id="ekyc-preview-img" src="" class="absolute inset-0 w-full h-full object-contain bg-white rounded-lg hidden p-2 z-10 pointer-events-none">
+              </div>
+            </div>
+
+            <!-- AI Sliders -->
+            <div class="space-y-4 border-t border-gray-100 pt-4">
+              <h4 class="font-medium text-gray-700">Cấu hình thuật toán AI chung</h4>
+              <div>
+                <div class="flex justify-between">
+                  <label class="text-sm text-gray-600">Độ tương đồng khuôn mặt (Face Match Threshold)</label>
+                  <span id="ekyc-threshold-val" class="text-sm font-bold text-blue-600">80%</span>
+                </div>
+                <input type="range" id="ekyc-threshold" min="50" max="99" value="80" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer mt-2">
+              </div>
+              <div>
+                <div class="flex justify-between">
+                  <label class="text-sm text-gray-600">Độ tin cậy đọc chữ (OCR Confidence)</label>
+                  <span id="ekyc-ocr-val" class="text-sm font-bold text-blue-600">85%</span>
+                </div>
+                <input type="range" id="ekyc-ocr" min="50" max="99" value="85" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer mt-2">
+              </div>
+              <div class="flex items-center">
+                <input id="ekyc-anti-glare" type="checkbox" checked class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500">
+                <label for="ekyc-anti-glare" class="ml-2 text-sm font-medium text-gray-700">Bật chống lóa (Blur/Glare Detection)</label>
+              </div>
+            </div>
+
+            <!-- Active Liveness Configs -->
+            <div class="space-y-4 border-t border-gray-100 pt-4">
+              <h4 class="font-medium text-gray-700">Cấu hình Liveness (Nhận diện chống giả mạo)</h4>
+              <div>
+                <div class="flex justify-between">
+                  <label class="text-sm text-gray-600" title="Điểm chớp mắt càng cao thì yêu cầu nhắm mắt càng chặt">Độ nhạy chớp mắt (Blink Threshold)</label>
+                  <span id="ekyc-blink-val" class="text-sm font-bold text-blue-600">0.20</span>
+                </div>
+                <input type="range" id="ekyc-blink" min="5" max="100" value="20" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer mt-2">
+              </div>
+              <div>
+                <div class="flex justify-between">
+                  <label class="text-sm text-gray-600" title="Tỷ lệ lệch mũi khi quay mặt sang trái. Số càng NHỎ thì yêu cầu quay càng SÂU">Góc lệch mũi Quay Trái (Nose Ratio Left)</label>
+                  <span id="ekyc-turn-left-val" class="text-sm font-bold text-blue-600">0.40</span>
+                </div>
+                <input type="range" id="ekyc-turn-left" min="20" max="45" value="40" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer mt-2">
+              </div>
+              <div>
+                <div class="flex justify-between">
+                  <label class="text-sm text-gray-600" title="Tỷ lệ lệch mũi khi quay mặt sang phải. Số càng LỚN thì yêu cầu quay càng SÂU">Góc lệch mũi Quay Phải (Nose Ratio Right)</label>
+                  <span id="ekyc-turn-right-val" class="text-sm font-bold text-blue-600">0.60</span>
+                </div>
+                <input type="range" id="ekyc-turn-right" min="55" max="80" value="60" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer mt-2">
+              </div>
+            </div>
+
+            <button type="submit" id="btn-save-ekyc" class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700">
+              Lưu Cấu hình & Thẻ Mẫu
+            </button>
+          </form>
+        </div>
+
+        <!-- Statistics & Guide -->
+        <div class="space-y-6">
+          <div class="bg-white p-6 rounded-lg shadow-md border border-gray-200">
+            <h3 class="text-lg font-bold text-gray-800 mb-4">Thống kê Xét duyệt eKYC</h3>
+            <div class="grid grid-cols-2 gap-4">
+              <div class="bg-blue-50 p-4 rounded-lg text-center border border-blue-100">
+                <p class="text-xs text-blue-500 font-semibold uppercase tracking-wide">Tự động duyệt (AI)</p>
+                <p class="text-3xl font-bold text-blue-700 mt-1">84%</p>
+              </div>
+              <div class="bg-green-50 p-4 rounded-lg text-center border border-green-100">
+                <p class="text-xs text-green-500 font-semibold uppercase tracking-wide">Xác thực thành công</p>
+                <p class="text-3xl font-bold text-green-700 mt-1">1,245</p>
+              </div>
+            </div>
+            <div class="mt-4">
+              <h4 class="text-sm font-medium text-gray-700 mb-2">Các lỗi từ chối phổ biến</h4>
+              <ul class="space-y-2 text-sm text-gray-600">
+                <li class="flex justify-between items-center"><span class="flex items-center"><span class="w-2 h-2 rounded-full bg-red-400 mr-2"></span>Ảnh quá mờ</span><span class="font-medium">42%</span></li>
+                <li class="flex justify-between items-center"><span class="flex items-center"><span class="w-2 h-2 rounded-full bg-orange-400 mr-2"></span>Khuôn mặt bị che</span><span class="font-medium">28%</span></li>
+                <li class="flex justify-between items-center"><span class="flex items-center"><span class="w-2 h-2 rounded-full bg-yellow-400 mr-2"></span>Sai mẫu thẻ trường</span><span class="font-medium">15%</span></li>
+              </ul>
+            </div>
+          </div>
+          
+          <!-- Hướng dẫn cấu hình -->
+          <div class="bg-blue-50 p-6 rounded-lg shadow-md border border-blue-100 mt-6">
+            <h3 class="text-lg font-bold text-blue-800 mb-3 flex items-center gap-2">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+              Hướng dẫn thiết lập AI
+            </h3>
+            <ul class="space-y-3 text-sm text-blue-700">
+              <li class="flex items-start">
+                <span class="mr-2 font-bold">&bull;</span>
+                <span><strong>Ảnh thẻ mẫu:</strong> Yêu cầu tải lên mặt trước thẻ sinh viên chuẩn, rõ nét, không bị cong vênh hay lóa sáng.</span>
+              </li>
+              <li class="flex items-start">
+                <span class="mr-2 font-bold">&bull;</span>
+                <span><strong>Độ nhạy chớp mắt:</strong> Nên đặt ở 0.20 - 0.25 để nhận diện tốt với các sinh viên mắt nhỏ hoặc đeo kính.</span>
+              </li>
+              <li class="flex items-start">
+                <span class="mr-2 font-bold">&bull;</span>
+                <span><strong>Góc lệch mũi:</strong> Nhìn thẳng là ~0.50. Chỉnh góc Quay Trái (nên ở mức 0.35 - 0.40) và Quay Phải (nên ở mức 0.60 - 0.65).</span>
+              </li>
+            </ul>
+          </div>
+          
+          <!-- Công cụ kiểm thử AI -->
+          <div class="bg-white p-6 rounded-lg shadow-md border border-gray-200 mt-6">
+            <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+              <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+              Công cụ Kiểm thử AI (Testing Toolkit)
+            </h3>
+            <p class="text-sm text-gray-600 mb-4">Mở luồng camera để kiểm tra trực tiếp các thông số bạn vừa thiết lập ở trên.</p>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <button id="btn-test-liveness" class="flex flex-col items-center justify-center p-4 bg-purple-50 hover:bg-purple-100 border border-purple-200 rounded-lg transition-colors cursor-pointer text-purple-700 font-medium w-full">
+                    <svg class="w-8 h-8 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    Test Nhận diện Liveness
+                </button>
+                <button id="btn-show-test-card" class="flex flex-col items-center justify-center p-4 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded-lg transition-colors cursor-pointer text-indigo-700 font-medium w-full">
+                    <svg class="w-8 h-8 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path></svg>
+                    Test Quét Thẻ Sinh Viên
+                </button>
+            </div>
+            
+            <!-- Khối test thẻ sinh viên -->
+            <div id="test-card-container" class="mt-4 hidden p-4 bg-indigo-50 rounded-lg border border-indigo-100">
+                <h4 class="font-bold text-indigo-800 mb-2">Kiểm tra Thẻ Sinh viên (OCR & Face Match)</h4>
+                <p class="text-sm text-indigo-600 mb-3">Tải lên một thẻ sinh viên (mặt trước) để AI so khớp với thẻ mẫu và đọc chữ OCR.</p>
+                <div class="flex items-center gap-4">
+                    <input type="file" id="test-card-upload" accept="image/*" class="text-sm text-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-white file:text-indigo-700 hover:file:bg-indigo-100">
+                    <button id="btn-exec-test-card" class="bg-indigo-600 text-white px-4 py-2 rounded-md shadow hover:bg-indigo-700 text-sm font-medium transition-colors whitespace-nowrap">
+                        Bắt đầu Quét
+                    </button>
+                </div>
+                
+                <div id="test-card-result" class="mt-4 hidden p-4 bg-white rounded border border-gray-200 shadow-sm">
+                    <div class="flex justify-between items-center mb-3">
+                        <span class="font-bold text-gray-700">Kết quả AI:</span>
+                        <span id="test-card-status" class="px-2 py-1 rounded text-xs font-bold bg-green-100 text-green-800">THÀNH CÔNG</span>
+                    </div>
+                    <ul class="text-sm space-y-2 text-gray-600">
+                        <li class="flex items-center justify-between">
+                            <span>Điểm Khớp Thẻ (Card Match):</span>
+                            <span id="test-card-score" class="font-bold text-blue-600 text-base">0%</span>
+                        </li>
+                        <li>
+                            <span class="block mb-1 font-bold">Thông tin trích xuất:</span>
+                            <div id="test-card-ocr-parsed" class="bg-gray-50 p-3 border rounded text-sm text-gray-800 space-y-2">
+                                <div class="text-gray-500 italic">Đang chờ quét...</div>
+                            </div>
+                            <div class="mt-2 text-xs text-gray-500 cursor-pointer hover:text-blue-500 font-medium" onclick="document.getElementById('test-card-ocr-raw').classList.toggle('hidden')">
+                                🔍 Xem toàn bộ văn bản OCR gốc
+                            </div>
+                            <div id="test-card-ocr-raw" class="hidden mt-1 font-mono bg-gray-100 p-2 border border-gray-300 rounded text-xs text-gray-700 whitespace-pre-wrap"></div>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+<!-- Modal Liveness Test (Admin) -->
+<div id="liveness-test-modal" class="fixed inset-0 bg-gray-900 bg-opacity-75 z-[60] hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col relative">
+        <button id="btn-close-test-liveness" class="absolute top-4 right-4 text-gray-500 hover:text-red-500 z-10 p-2">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+        </button>
+        
+        <div class="p-4 border-b border-gray-200">
+            <h3 class="text-xl font-bold text-gray-800">Test Thông số Liveness</h3>
+            <p class="text-sm text-gray-500">Mô phỏng 100% logic thuật toán eKYC của sinh viên với thông số vừa cài đặt.</p>
+        </div>
+
+        <div class="p-6 bg-gray-50 flex-grow flex flex-col relative overflow-y-auto">
+            <div id="test-progress" class="mb-4 text-center hidden">
+                <h4 id="test-instruction" class="text-lg font-bold text-blue-600 mb-2">Đang tải mô hình AI...</h4>
+            </div>
+
+            <!-- Video/Canvas Container -->
+            <div class="relative w-full max-w-[480px] mx-auto aspect-[3/4] bg-black rounded-lg overflow-hidden shadow-lg border border-gray-300">
+                <video id="test-video" autoplay playsinline class="absolute inset-0 w-full h-full object-cover transform scale-x-[-1]"></video>
+                <canvas id="test-canvas" class="absolute inset-0 w-full h-full object-cover transform scale-x-[-1] z-10 pointer-events-none"></canvas>
+                
+                <!-- Overlay Stats -->
+                <div class="absolute bottom-0 left-0 right-0 bg-black bg-opacity-60 text-white p-3 text-xs font-mono grid grid-cols-2 gap-2 backdrop-blur-sm z-20">
+                    <div>Blink Score: <span id="stat-blink" class="font-bold text-yellow-300">0.00</span></div>
+                    <div>Nose Ratio: <span id="stat-ratio" class="font-bold text-yellow-300">0.50</span></div>
+                    <div>Frames Held: <span id="stat-frames" class="font-bold text-blue-300">0</span></div>
+                    <div>Current State: <span id="stat-state" class="font-bold text-green-300">0</span></div>
+                </div>
+            </div>
+
+            <div class="mt-6 flex justify-center">
+                <button id="btn-start-test-camera" class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg shadow transition-colors">
+                    <svg class="w-5 h-5 inline-block mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                    Bật Camera
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Modal thêm hoạt động (Admin) -->
 <div id="activity-modal-admin" class="modal hidden">
   <div class="modal-content max-w-2xl">
@@ -1438,7 +3010,14 @@
           </div>
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Từ khóa</label>
-            <input type="text" id="act-key" class="w-full border rounded-md px-3 py-2" placeholder="VD: tình nguyện, hội thảo">
+            <select id="act-key" class="w-full border rounded-md px-3 py-2">
+              <option value="">-- Chọn bối cảnh hoạt động --</option>
+              <option value="SanKhau">Sân khấu / Trình diễn</option>
+              <option value="GiangDuong">Giảng đường / Hội trường</option>
+              <option value="NgoaiTroi">Ngoài trời</option>
+              <option value="TrongLop">Trong lớp học</option>
+            </select>
+            <p class="text-xs text-gray-500 mt-1">Chọn đúng bối cảnh chính để AI đánh giá.</p>
           </div>
         </div>
 
@@ -1458,7 +3037,329 @@
 </div>
 
 <!-- Custom JS -->
-<script src="js/admin.js"></script>
+<script src="js/diem_import.js?v=1"></script>
+<!-- Leaflet JS for Map -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script src="js/admin.js?v=20260517002"></script>
+<script src="js/admin_ai.js"></script>
+<script src="js/admin_tests.js?v=5"></script>
+<script src="js/admin_tests.js?v=5"></script>
+<script src="js/admin_registrations.js?v=5"></script>
 
+
+  
+    <script src="js/notification-widget.js"></script>
+  <!-- Script inject for System Testing Dashboard -->
+  <script>
+    // Logic for Admin System Testing Dashboard
+    const sysTerm = document.getElementById('sys-test-terminal');
+    
+    function logSys(msg, type='info', json=null) {
+        if (!sysTerm) return;
+        const div = document.createElement('div');
+        div.className = 'mb-2 pb-2 border-b border-gray-800';
+        
+        let colorClass = 'text-gray-300';
+        if (type === 'error') colorClass = 'text-red-400';
+        if (type === 'success') colorClass = 'text-green-400';
+        if (type === 'warning') colorClass = 'text-yellow-400';
+        if (type === 'req') colorClass = 'text-cyan-400 font-bold';
+
+        const time = new Date().toLocaleTimeString();
+        let html = `<span class="text-gray-500">[${time}]</span> <span class="${colorClass}">${msg}</span>`;
+        
+        if (json) {
+            html += `<pre class="mt-1 p-2 bg-black rounded text-gray-400 overflow-x-auto">${JSON.stringify(json, null, 2)}</pre>`;
+        }
+        
+        div.innerHTML = html;
+        sysTerm.appendChild(div);
+        sysTerm.scrollTop = sysTerm.scrollHeight;
+    }
+
+    function clearSysTerminal() {
+        if (sysTerm) sysTerm.innerHTML = '<div class="text-gray-500">[System] Terminal cleared.</div>';
+    }
+
+    // Toggle custom user field for notifications
+    document.getElementById('sys-test-notif-to')?.addEventListener('change', (e) => {
+        const wrapper = document.getElementById('sys-test-notif-id-wrapper');
+        if (e.target.value === 'test-user') wrapper.classList.remove('hidden');
+        else wrapper.classList.add('hidden');
+    });
+
+    function fillTestNotifTemplate() {
+        document.getElementById('sys-test-notif-title').value = "🔥 [TEST] Thông báo Hệ thống Mới";
+        document.getElementById('sys-test-notif-msg').value = "Đây là thông báo thử nghiệm từ Admin Dashboard. Nếu bạn nhận được thông báo này, hệ thống Push Notification đang hoạt động ổn định.";
+    }
+
+    async function execTestNotification() {
+        const type = document.getElementById('sys-test-notif-to').value;
+        const id = document.getElementById('sys-test-notif-id').value;
+        const title = document.getElementById('sys-test-notif-title').value;
+        const msg = document.getElementById('sys-test-notif-msg').value;
+
+        let to = type;
+        if (type === 'test-user') {
+            if (!id) return logSys('Vui lòng nhập mã cá nhân/MSSV!', 'error');
+            to = id;
+        }
+
+        if (!title || !msg) return logSys('Vui lòng nhập đủ Tiêu đề và Nội dung!', 'error');
+
+        const payload = { to: to, title: title, message: msg };
+        logSys(`POST /api/notifications/send`, 'req', payload);
+        
+        try {
+            const uid = getCurrentUserId() || 'ADMIN';
+            const res = await fetch(`${API_BASE}/api/notifications/send`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-User': uid },
+                body: JSON.stringify(payload)
+            });
+            const data = await res.json();
+            if (res.ok && data.ok) {
+                logSys(`[${res.status}] Broadcast Success`, 'success', data);
+            } else {
+                logSys(`[${res.status}] Broadcast Failed`, 'error', data);
+            }
+        } catch (e) {
+            logSys(`Network Error: ${e.message}`, 'error');
+        }
+    }
+
+    // --- Complaints Logic ---
+    async function execTestFetchComplaints() {
+        logSys(`GET /api/complaints`, 'req');
+        try {
+            const res = await fetch(`${API_BASE}/api/complaints`, {
+                headers: { 'X-User': getCurrentUserId() || 'ADMIN' }
+            });
+            
+            const data = await res.json();
+            if (res.ok) {
+                logSys(`[${res.status}] Fetched ${data.length || 0} complaints`, 'success', data.slice(0, 5)); // show max 5 in terminal
+                if (data.length > 0) {
+                    const firstId = data[0].ComplaintId || data[0].id || data[0].Id;
+                    if (firstId) {
+                        document.getElementById('sys-test-complaint-id').value = firstId;
+                        logSys(`Đã tự động điền ID khiếu nại đầu tiên: ${firstId}`, 'info');
+                    }
+                }
+            } else {
+                logSys(`[${res.status}] Fetch failed`, 'error', data);
+            }
+        } catch (e) {
+            logSys(`Network Error: ${e.message}`, 'error');
+        }
+    }
+
+    async function execTestCreateMockComplaint() {
+        logSys(`Bắt đầu quy trình tạo khiếu nại ảo...`, 'info');
+        try {
+            // 1. Tìm minh chứng ngẫu nhiên
+            logSys(`GET /api/evidence (Tìm minh chứng)`, 'req');
+            const resEv = await fetch(`${API_BASE}/api/evidence`, { headers: { 'X-User': getCurrentUserId() || 'ADMIN' } });
+            
+            if (!resEv.ok) throw new Error("Không thể tải danh sách minh chứng");
+            const evData = await resEv.json();
+            
+            if (!evData || evData.length === 0) {
+                return logSys(`Không tìm thấy minh chứng nào trong DB để tạo khiếu nại. Vui lòng tạo minh chứng trước!`, 'warning');
+            }
+            
+            const randomEv = evData[Math.floor(Math.random() * evData.length)];
+            const evId = randomEv.EvidenceId || randomEv.id || randomEv.Id;
+            logSys(`Đã chọn ngẫu nhiên Evidence ID: ${evId}`, 'info');
+
+            // 2. Tạo khiếu nại ảo
+            const payload = { reason: "MOCK_TEST: Điểm chưa được cộng đúng quy định." };
+            logSys(`POST /api/evidence/${evId}/complaint`, 'req', payload);
+            
+            const resComp = await fetch(`${API_BASE}/api/evidence/${evId}/complaint`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-User': getCurrentUserId() || 'ADMIN' },
+                body: JSON.stringify(payload)
+            });
+            
+            const dataComp = await resComp.json();
+            if (resComp.ok) {
+                logSys(`[${resComp.status}] Tạo Mock Complaint thành công!`, 'success', dataComp);
+                // Auto fetch complaints to show the new one
+                setTimeout(execTestFetchComplaints, 1000);
+            } else {
+                logSys(`[${resComp.status}] Tạo Mock Complaint thất bại`, 'error', dataComp);
+            }
+        } catch (e) {
+            logSys(`Lỗi quy trình Mock Complaint: ${e.message}`, 'error');
+        }
+    }
+
+    async function processComplaint(action) {
+        const id = document.getElementById('sys-test-complaint-id').value.trim();
+        if (!id) return logSys(`Vui lòng nhập hoặc chọn ID Khiếu nại!`, 'error');
+        
+        const payload = { reply: `[TEST] Admin đã ${action === 'approve' ? 'Duyệt' : 'Từ chối'} khiếu nại này.` };
+        logSys(`POST /api/complaints/${id}/${action}`, 'req', payload);
+        
+        try {
+            const res = await fetch(`${API_BASE}/api/complaints/${id}/${action}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-User': getCurrentUserId() || 'ADMIN' },
+                body: JSON.stringify(payload)
+            });
+            const data = await res.json();
+            
+            if (res.ok) {
+                logSys(`[${res.status}] ${action.toUpperCase()} Success`, 'success', data);
+            } else {
+                logSys(`[${res.status}] ${action.toUpperCase()} Failed`, 'error', data);
+            }
+        } catch (e) {
+            logSys(`Network Error: ${e.message}`, 'error');
+        }
+    }
+
+    window.execTestApproveComplaint = () => processComplaint('approve');
+    window.window.execTestRejectComplaint = () => processComplaint('reject');
+
+  </script>
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const ekycForm = document.getElementById('admin-ekyc-form');
+    if (!ekycForm) return;
+
+    const fileInput = document.getElementById('ekyc-template-file');
+    const dropZone = document.getElementById('ekyc-drop-zone');
+    const previewImg = document.getElementById('ekyc-preview-img');
+    const thresholdInput = document.getElementById('ekyc-threshold');
+    const thresholdVal = document.getElementById('ekyc-threshold-val');
+    const ocrInput = document.getElementById('ekyc-ocr');
+    const ocrVal = document.getElementById('ekyc-ocr-val');
+    const blinkInput = document.getElementById('ekyc-blink');
+    const blinkVal = document.getElementById('ekyc-blink-val');
+    const turnLeftInput = document.getElementById('ekyc-turn-left');
+    const turnLeftVal = document.getElementById('ekyc-turn-left-val');
+    const turnRightInput = document.getElementById('ekyc-turn-right');
+    const turnRightVal = document.getElementById('ekyc-turn-right-val');
+
+    if(thresholdInput) thresholdInput.addEventListener('input', (e) => thresholdVal.textContent = e.target.value + '%');
+    if(ocrInput) ocrInput.addEventListener('input', (e) => ocrVal.textContent = e.target.value + '%');
+    if(blinkInput) blinkInput.addEventListener('input', (e) => blinkVal.textContent = (e.target.value / 100).toFixed(2));
+    if(turnLeftInput) turnLeftInput.addEventListener('input', (e) => turnLeftVal.textContent = (e.target.value / 100).toFixed(2));
+    if(turnRightInput) turnRightInput.addEventListener('input', (e) => turnRightVal.textContent = (e.target.value / 100).toFixed(2));
+
+    if(dropZone) {
+      ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+        dropZone.addEventListener(eventName, e => { e.preventDefault(); e.stopPropagation(); }, false);
+      });
+
+      ['dragenter', 'dragover'].forEach(eventName => {
+        dropZone.addEventListener(eventName, () => dropZone.classList.add('bg-blue-50', 'border-blue-400'), false);
+      });
+
+      ['dragleave', 'drop'].forEach(eventName => {
+        dropZone.addEventListener(eventName, () => dropZone.classList.remove('bg-blue-50', 'border-blue-400'), false);
+      });
+
+      dropZone.addEventListener('drop', e => {
+        const files = e.dataTransfer.files;
+        if (files.length) { fileInput.files = files; handleFiles(files[0]); }
+      }, false);
+    }
+
+    if(fileInput) {
+      fileInput.addEventListener('change', function() {
+        if (this.files.length) handleFiles(this.files[0]);
+      });
+    }
+
+    function handleFiles(file) {
+      if (!file.type.startsWith('image/')) return;
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        previewImg.src = e.target.result;
+        previewImg.classList.remove('hidden');
+      };
+      reader.readAsDataURL(file);
+    }
+
+    if(ekycForm) {
+      ekycForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const btn = document.getElementById('btn-save-ekyc');
+        const originalText = btn.innerText;
+        btn.innerText = 'Đang lưu...';
+        btn.disabled = true;
+
+        const file = fileInput.files[0];
+        const fd = new FormData();
+        if (file) {
+          fd.append('image', file);
+        }
+        if (thresholdInput) fd.append('threshold', thresholdInput.value);
+        if (ocrInput) fd.append('ocr', ocrInput.value);
+        const antiGlareCheck = document.getElementById('ekyc-anti-glare');
+        if (antiGlareCheck) fd.append('antiglare', antiGlareCheck.checked ? '1' : '0');
+        if (blinkInput) fd.append('blink', (blinkInput.value / 100).toFixed(2));
+        if (turnLeftInput) fd.append('turnLeft', (turnLeftInput.value / 100).toFixed(2));
+        if (turnRightInput) fd.append('turnRight', (turnRightInput.value / 100).toFixed(2));
+
+        const user = localStorage.getItem('loggedUserInfo') ? JSON.parse(localStorage.getItem('loggedUserInfo')).TenTK : 'admin';
+        try {
+          const res = await fetch('/api/ekyc/template', { method: 'POST', headers: { 'X-User': user }, body: fd });
+          if (res.ok) {
+            alert(file ? 'Lưu cấu hình và ảnh thẻ thành công!' : 'Cập nhật tham số AI thành công!');
+          } else {
+            alert('Lỗi từ máy chủ: ' + await res.text());
+          }
+        } catch (err) {
+          alert('Lỗi kết nối: ' + err.message);
+        }
+        btn.innerText = originalText;
+        btn.disabled = false;
+      });
+      
+      // Auto load existing template and settings on page load
+      fetch('/api/ekyc/template').then(async res => {
+        if (res.ok) {
+          const data = await res.json();
+          if (data.status === 'success') {
+            if (data.id) {
+              previewImg.src = '/api/ekyc/template/image?t=' + new Date().getTime();
+              previewImg.classList.remove('hidden');
+            }
+            if (data.threshold && thresholdInput) {
+              thresholdInput.value = data.threshold;
+              thresholdVal.textContent = data.threshold + '%';
+            }
+            if (data.ocr && ocrInput) {
+              ocrInput.value = data.ocr;
+              ocrVal.textContent = data.ocr + '%';
+            }
+            const antiGlareCheck = document.getElementById('ekyc-anti-glare');
+            if (data.antiglare && antiGlareCheck) {
+              antiGlareCheck.checked = (data.antiglare === "1");
+            }
+            if (data.blink && blinkInput) {
+              blinkInput.value = Math.round(parseFloat(data.blink) * 100);
+              blinkVal.textContent = parseFloat(data.blink).toFixed(2);
+            }
+            if (data.turnLeft && turnLeftInput) {
+              turnLeftInput.value = Math.round(parseFloat(data.turnLeft) * 100);
+              turnLeftVal.textContent = parseFloat(data.turnLeft).toFixed(2);
+            }
+            if (data.turnRight && turnRightInput) {
+              turnRightInput.value = Math.round(parseFloat(data.turnRight) * 100);
+              turnRightVal.textContent = parseFloat(data.turnRight).toFixed(2);
+            }
+          }
+        }
+      }).catch(e => console.log('No existing template', e));
+    }
+  });
+  </script>
+  
+  <!-- Thêm script test eKYC -->
+  <script type="module" src="js/admin_ekyc_test.js?v=12"></script>
 </body>
-</html>

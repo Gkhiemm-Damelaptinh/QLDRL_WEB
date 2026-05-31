@@ -1,996 +1,1160 @@
 body {
-    font-family: 'Inter', sans-serif;
-  }
-  
-  /* QR Scanner Styles */
-  #qr-video {
-    background: #000;
-    border-radius: 0.5rem;
-    width: 100% !important;
-    height: 256px !important;
-    object-fit: cover !important;
-    display: block !important;
-    visibility: visible !important;
-  }
-  
-  #qr-video:not(.hidden) {
-    display: block !important;
-    visibility: visible !important;
-  }
-  
-  .qr-scanner-container {
-    background: #000;
-    border-radius: 0.5rem;
-    overflow: hidden;
-    position: relative;
-    width: 100%;
-    height: 256px;
-  }
-  
-  #qr-overlay {
-    border-color: #3b82f6;
-    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
-    z-index: 10;
-    border-style: solid;
-    border-width: 3px;
-    animation: qr-scan-pulse 2s ease-in-out infinite;
-  }
-  
-  @keyframes qr-scan-pulse {
-    0%, 100% {
-      box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
-    }
-    50% {
-      box-shadow: 0 0 0 8px rgba(59, 130, 246, 0.2);
-    }
-  }
-  
-  /* Corner indicators for QR scan area */
-  #qr-overlay::before,
-  #qr-overlay::after {
-    content: '';
-    position: absolute;
-    width: 20px;
-    height: 20px;
-    border: 3px solid #3b82f6;
-  }
-  
-  #qr-overlay::before {
-    top: -3px;
-    left: -3px;
-    border-right: none;
-    border-bottom: none;
-  }
-  
-  #qr-overlay::after {
-    bottom: -3px;
-    right: -3px;
-    border-left: none;
-    border-top: none;
-  }
-  
-  /* Ensure video fills container */
-  .qr-scanner-container video {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-  }
-  
-  /* Hiệu ứng hover link */
-  .hover-link {
-    transition: color 0.3s ease;
-  }
-  .hover-link:hover {
-    color: #1d4ed8;
-  }
-  
-  /* Button bảng xếp hạng */
-  #btn-ranking {
-    background: transparent;
-    border: none;
-    cursor: pointer;
-    font-size: 0.875rem;
-    color: #6b7280;
-    padding: 0.25rem 0.75rem;
-    border-radius: 0.375rem;
-    transition: all 0.3s ease;
-  }
-  
-  #btn-ranking:hover {
-    color: #1d4ed8;
-    background-color: rgba(37, 99, 235, 0.1);
-  }
-  
-  /* Nút viền xanh */
-  .btn-outline {
-    border: 1px solid #2563eb;
-    color: #2563eb;
-    padding: 0.25rem 0.75rem;
-    border-radius: 0.375rem;
-    transition: all 0.3s ease;
-  }
-  .btn-outline:hover {
-    background-color: #2563eb;
-    color: white;
-  }
-  
-  /* Animation xuất hiện */
-  .fade-up {
-    animation: fadeUp 0.6s ease forwards;
-  }
-  .fade-down {
-    animation: fadeDown 0.6s ease forwards;
-  }
-  
-  @keyframes fadeUp {
-    0% { opacity: 0; transform: translateY(15px); }
-    100% { opacity: 1; transform: translateY(0); }
-  }
-  @keyframes fadeDown {
-    0% { opacity: 0; transform: translateY(-15px); }
-    100% { opacity: 1; transform: translateY(0); }
-  }
+  font-family: 'Inter', sans-serif;
+}
 
-  .activity-title {
-    flex: 1;
-    min-width: 0;
-    word-break: break-word;
-  }
-  
-  .activity-status {
-    white-space: nowrap;
-    padding: 2px 8px;
-    border-radius: 4px;
-    font-size: 0.75rem;
-    color: white;
-    flex-shrink: 0;
-  }
-  
-  /* Avatar */
-.user-avatar {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-  }
-  .user-avatar img {
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    object-fit: cover;
-    border: 2px solid #2563eb;
-  }
-  
-  /* Modal */
-  .modal {
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.4);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 1rem;
-    z-index: 50;
-    animation: fadeIn 0.3s ease;
-  }
+/* QR Scanner Styles */
+#qr-video {
+  background: #000;
+  border-radius: 0.5rem;
+  width: 100% !important;
+  height: 256px !important;
+  object-fit: cover !important;
 
-  /* Mobile modal adjustments */
-  @media (max-width: 768px) {
-    .modal {
-      padding: 0.5rem;
-      align-items: flex-start;
-      padding-top: 2rem;
-    }
-    
-    .modal-content {
-      width: 100%;
-      max-width: none;
-      margin: 0;
-      max-height: calc(100vh - 4rem);
-      border-radius: 0.5rem;
-    }
-  }
-
-  /* Bảng xếp hạng */
-  .ranking-table {
-    width: 100%;
-    border-collapse: collapse;
-    background: white;
-    border-radius: 8px;
-    overflow: hidden;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-  }
-
-  /* Mobile table wrapper */
-  .table-wrapper {
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-  }
-
-  @media (max-width: 768px) {
-    .ranking-table {
-      min-width: 600px;
-    }
-    
-    .ranking-table th,
-    .ranking-table td {
-      padding: 0.5rem;
-      font-size: 0.75rem;
-    }
-    
-    .ranking-table th:first-child,
-    .ranking-table td:first-child {
-      position: sticky;
-      left: 0;
-      background: white;
-      z-index: 10;
-    }
-  }
-
-  .ranking-table th {
-    background: #f8fafc;
-    padding: 12px;
-    text-align: left;
-    font-weight: 600;
-    color: #374151;
-    border-bottom: 1px solid #e5e7eb;
-    font-size: 0.875rem;
-  }
-
-  .ranking-table td {
-    padding: 12px;
-    border-bottom: 1px solid #f3f4f6;
-    vertical-align: middle;
-  }
-
-  .ranking-table tr:hover {
-    background: #f9fafb;
-  }
-
-  /* Badge xếp hạng */
-  .rank-badge {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    font-weight: bold;
-    font-size: 0.875rem;
-  }
-
-  .rank-gold {
-    background: linear-gradient(135deg, #fbbf24, #f59e0b);
-    color: white;
-    box-shadow: 0 2px 4px rgba(251, 191, 36, 0.3);
-  }
-
-  .rank-silver {
-    background: linear-gradient(135deg, #9ca3af, #6b7280);
-    color: white;
-    box-shadow: 0 2px 4px rgba(156, 163, 175, 0.3);
-  }
-
-  .rank-bronze {
-    background: linear-gradient(135deg, #d97706, #b45309);
-    color: white;
-    box-shadow: 0 2px 4px rgba(217, 119, 6, 0.3);
-  }
-
-  .rank-top10 {
-    background: linear-gradient(135deg, #8b5cf6, #7c3aed);
-    color: white;
-    box-shadow: 0 2px 4px rgba(139, 92, 246, 0.3);
-  }
-
-  .rank-normal {
-    background: #e5e7eb;
-    color: #374151;
-  }
-
-  /* Badge xếp loại */
-  .grade-badge {
-    padding: 4px 8px;
-    border-radius: 12px;
-    font-size: 0.75rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-  }
-
-  .grade-excellent {
-    background: #dcfce7;
-    color: #166534;
-  }
-
-  .grade-good {
-    background: #dbeafe;
-    color: #1e40af;
-  }
-
-  .grade-fair {
-    background: #fef3c7;
-    color: #92400e;
-  }
-
-  .grade-average {
-    background: #fef2f2;
-    color: #991b1b;
-  }
-
-  .grade-poor {
-    background: #f3e8ff;
-    color: #581c87;
-  }
-
-  /* Hiển thị điểm */
-  .points-display {
-    font-weight: 600;
-    color: #059669;
-    background: #ecfdf5;
-    padding: 4px 8px;
-    border-radius: 6px;
-    border: 1px solid #d1fae5;
-  }
-
-  /* Phân trang */
-  .page-btn {
-    transition: all 0.2s ease;
-  }
-
-  .page-btn:hover {
-    background: #f3f4f6;
-  }
-
-  .page-btn[data-page="${currentPage}"] {
-    background: #2563eb;
-    color: white;
-    border-color: #2563eb;
-  }
-  
-  /* Modal đăng nhập - hiển thị trên cùng */
-  #login-modal {
-    z-index: 100;
-  }
   .modal-content {
-    background: white;
+    background: #fff;
+    width: 100%;
     border-radius: 0.75rem;
-    box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-    max-width: 768px;
-    width: 100%;
-    overflow: auto;
-    animation: scaleIn 0.3s ease;
-  }
-  
-  @keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
-  }
-  
-  @keyframes scaleIn {
-    from { transform: scale(0.9); opacity: 0; }
-    to { transform: scale(1); opacity: 1; }
-  }
-  
-  /* Enhanced Sidebar styles */
-  /* Mobile Sidebar styles */
-  .mobile-sidebar-item {
-    cursor: pointer;
-    transition: all 0.3s ease;
-    border-radius: 0.5rem;
-    margin-bottom: 0.25rem;
-  }
-  
-  .mobile-sidebar-item:hover .flex {
-    transform: translateX(2px);
-  }
-  
-  .mobile-sidebar-item.active .flex {
-    background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
-    border-left: 4px solid #2563eb;
-    box-shadow: 0 2px 4px rgba(37, 99, 235, 0.1);
-  }
-  
-  .mobile-sidebar-item.active .w-10 {
-    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
-  }
-  
-  .mobile-sidebar-item.active svg {
-    color: white;
-  }
-  
-  .mobile-sidebar-item.active span {
-    color: #1e40af;
-    font-weight: 600;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
   }
 
-  /* Collapsible sidebar text behavior */
-  #sidebar { width: 4rem; }
-  #sidebar.expanded { width: 18rem; }
-  #sidebar .sidebar-text { max-width: 0; opacity: 0; }
-  #sidebar.expanded .sidebar-text { max-width: 14rem; opacity: 1; }
-  #sidebar .sidebar-text > * { white-space: nowrap; }
-
-  /* Pin icon rotation when expanded */
-  #sidebar.expanded #sidebar-pin-icon { transform: rotate(45deg); transition: transform .2s ease; }
-
-  /* Icon-only collapsed state: center icons perfectly */
-  #sidebar:not(.expanded) .sidebar-item > .flex {
-    justify-content: center;
-    padding-left: 0.5rem;
-    padding-right: 0.5rem;
-    background: transparent !important;
-    box-shadow: none !important;
-  }
-  #sidebar:not(.expanded) .sidebar-text { display: none !important; }
-  #sidebar .sidebar-item .w-10 {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background-clip: padding-box; /* prevent background bleed under ring */
-    position: relative;
-    z-index: 0;
-  }
-  #sidebar:not(.expanded) .sidebar-item .w-10 {
-    width: 2.5rem; /* 40px */
-    height: 2.5rem; /* 40px */
-    margin: 0;
-  }
-  .sidebar-item svg { display: block; }
-
-  /* Active state adjustments when collapsed: no left bar or pill */
-  #sidebar:not(.expanded) .sidebar-item.active .flex {
-    border-left: none;
-    background: transparent;
-    box-shadow: none;
-  }
-  #sidebar:not(.expanded) .sidebar-item.active .w-10 {
-    /* highlight ring for active in collapsed */
-    box-shadow: 0 0 0 6px rgba(59, 130, 246, 0.20), 0 6px 10px rgba(0,0,0,0.06);
+  /* Optional polish: backdrop blur for a premium feel */
+  .modal {
+    backdrop-filter: saturate(110%) blur(2px);
   }
 
-  /* Hide pin button when collapsed to avoid misaligned arrow */
-  #sidebar:not(.expanded) #sidebar-pin { opacity: 0; pointer-events: none; }
-  #sidebar.expanded #sidebar-pin { opacity: 1; }
-
-  /* Smooth ring animation for icons */
-  #sidebar .sidebar-item .w-10 {
-    border-radius: 0.75rem;
-    transition: box-shadow .2s ease, transform .2s ease, background-color .2s ease;
-  }
-  /* Hover highlight ring - collapsed */
-  #sidebar:not(.expanded) .sidebar-item:hover .w-10 {
-    box-shadow: 0 0 0 6px rgba(59, 130, 246, 0.15), 0 6px 10px rgba(0,0,0,0.05);
-    transform: translateY(-1px);
-  }
-  /* Hover/active highlight ring - expanded (subtle) */
-  #sidebar.expanded .sidebar-item:hover .w-10 {
-    box-shadow: 0 0 0 6px rgba(59, 130, 246, 0.12);
-  }
-  #sidebar.expanded .sidebar-item.active .w-10 {
-    box-shadow: 0 0 0 6px rgba(59, 130, 246, 0.20);
-  }
-  
-  /* User dropdown */
-  .user-avatar-dropdown:hover .user-dropdown-menu {
-    display: block;
-  }
-  
-  .user-dropdown-menu {
-    animation: fadeIn 0.2s ease;
+  /* Helper: zebra table rows */
+  .ranking-table tbody tr:nth-child(odd) {
+    background-color: #fafafa;
   }
 
-  /* Hover-to-open notifications */
-  .notifications-container:hover #notifications-menu {
-    display: block;
-  }
-  
-  /* Tab styles */
-  .tab-btn {
-    background: none;
-    border: none;
-    cursor: pointer;
-    padding: 0;
-  }
-  
-  .tab-btn span {
-    transition: all 0.3s ease;
-  }
-  
-  .tab-btn:hover span {
-    color: #374151;
-  }
-  
-  .tab-content {
-    display: none;
-  }
-  
-  .tab-content.active {
-    display: block;
-  }
-  
-  /* Section content */
-  .section-content {
-    display: none;
-  }
-  
-  .section-content.active {
-    display: block;
-  }
-  
-  /* Slide in animation */
-  .slide-in-right {
-    animation: slideInRight 0.5s ease forwards;
-  }
-  
-  @keyframes slideInRight {
-    from { opacity: 0; transform: translateX(20px); }
-    to { opacity: 1; transform: translateX(0); }
-  }
-  
-  /* Responsive sidebar */
-  @media (min-width: 1024px) {
-    #sidebar {
-      transform: translateX(0) !important;
-    }
-    
-    main {
-      margin-left: 4rem; /* 64px for collapsed sidebar */
-    }
-    
-    #sidebar:hover + * main,
-    #sidebar.expanded + * main {
-      margin-left: 18rem; /* 288px for expanded sidebar */
-    }
-  }
-  
-  /* Mobile sidebar */
-  @media (max-width: 1023px) {
-    #sidebar {
-      transform: translateX(-100%);
-      width: 280px !important;
-      z-index: 40;
-      overflow-y: auto;
-    }
-    
-    #sidebar.mobile-open {
-      transform: translateX(0);
-    }
-    
-    #sidebar .group-hover\:opacity-100 {
-      opacity: 1 !important;
-      transform: translateX(0) !important;
-    }
-    
-    main {
-      margin-left: 0;
-    }
-    
-    /* Mobile header adjustments */
-    header {
-      padding-left: 4rem; /* Space for mobile menu button */
-    }
-
-    /* Show full labels when mobile menu is open */
-    #sidebar.mobile-open .sidebar-text {
-      display: block !important;
-      max-width: 220px !important;
-      opacity: 1 !important;
-    }
-
-    /* Use left-aligned layout when menu is open on mobile */
-    #sidebar.mobile-open .sidebar-item > .flex {
-      justify-content: flex-start !important;
-      padding-left: 0.75rem !important;
-      padding-right: 0.75rem !important;
-    }
-    #sidebar.mobile-open .sidebar-item .w-10 {
-      margin-right: 0.75rem;
-      width: 2.5rem;
-      height: 2.5rem;
-    }
-  }
-  
-  /* Form styles */
-  .form-group {
-    margin-bottom: 1rem;
-  }
-  
-  .form-label {
-    display: block;
-    font-size: 0.875rem;
-    font-weight: 500;
-    color: #374151;
-    margin-bottom: 0.25rem;
-  }
-  
-  .form-input {
-    width: 100%;
-    padding: 0.5rem 0.75rem;
-    border: 1px solid #d1d5db;
-    border-radius: 0.375rem;
-    font-size: 0.875rem;
-    transition: border-color 0.3s ease;
-  }
-  
-  .form-input:focus {
-    outline: none;
-    border-color: #2563eb;
-    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
-  }
-  
-  .form-textarea {
-    resize: vertical;
-    min-height: 100px;
-  }
-  
-  /* Button styles */
-  .btn-primary {
-    background-color: #2563eb;
-    color: white;
-    padding: 0.5rem 1rem;
-    border: none;
-    border-radius: 0.375rem;
-    font-size: 0.875rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: background-color 0.3s ease;
-  }
-  
-  .btn-primary:hover {
-    background-color: #1d4ed8;
-  }
-  
-  .btn-secondary {
-    background-color: #6b7280;
-    color: white;
-    padding: 0.5rem 1rem;
-    border: none;
-    border-radius: 0.375rem;
-    font-size: 0.875rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: background-color 0.3s ease;
-  }
-  
-  .btn-secondary:hover {
-    background-color: #4b5563;
-  }
-  
-  .btn-success {
-    background-color: #059669;
-    color: white;
-    padding: 0.5rem 1rem;
-    border: none;
-    border-radius: 0.375rem;
-    font-size: 0.875rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: background-color 0.3s ease;
-  }
-  
-  .btn-success:hover {
-    background-color: #047857;
-  }
-  
-  .btn-danger {
-    background-color: #dc2626;
-    color: white;
-    padding: 0.5rem 1rem;
-    border: none;
-    border-radius: 0.375rem;
-    font-size: 0.875rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: background-color 0.3s ease;
-  }
-  
-  .btn-danger:hover {
-    background-color: #b91c1c;
-  }
-  
-  /* Card styles */
-  .card {
-    background: white;
-    border-radius: 0.5rem;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-    overflow: hidden;
-  }
-  
-  .card-header {
-    padding: 1rem 1.5rem;
-    border-bottom: 1px solid #e5e7eb;
-    background-color: #f9fafb;
-  }
-  
-  .card-body {
-    padding: 1.5rem;
-  }
-  
-  /* Table styles */
-  .table {
-    width: 100%;
-    border-collapse: collapse;
-  }
-  
-  .table th {
-    background-color: #f9fafb;
-    padding: 0.75rem 1rem;
-    text-align: left;
-    font-size: 0.75rem;
-    font-weight: 600;
-    color: #6b7280;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-  }
-  
-  .table td {
-    padding: 0.75rem 1rem;
-    border-bottom: 1px solid #e5e7eb;
-  }
-  
-  .table tbody tr:hover {
-    background-color: #f9fafb;
-  }
-  
-  /* Bảng xếp hạng styles */
-  .ranking-table {
-    width: 100%;
-    border-collapse: collapse;
-    background: white;
-    border-radius: 0.5rem;
-    overflow: hidden;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-  }
-  
-  .ranking-table th {
-    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
-    padding: 1rem;
-    text-align: left;
-    font-size: 0.75rem;
-    font-weight: 700;
-    color: #475569;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    border-bottom: 2px solid #e2e8f0;
-  }
-  
-  .ranking-table td {
-    padding: 1rem;
-    border-bottom: 1px solid #f1f5f9;
-    vertical-align: middle;
-  }
-  
-  .ranking-table tbody tr {
-    transition: all 0.2s ease;
-  }
-  
   .ranking-table tbody tr:hover {
-    background-color: #f8fafc;
-    transform: translateY(-1px);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    background-color: #f1f5f9;
   }
-  
-  /* Rank badges */
-  .rank-badge {
+
+  /* Helper: nicer chips/buttons */
+  .chip {
     display: inline-flex;
     align-items: center;
-    justify-content: center;
-    width: 2rem;
-    height: 2rem;
-    border-radius: 50%;
-    font-size: 0.875rem;
-    font-weight: 700;
-    text-align: center;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 12px;
   }
-  
-  .rank-gold {
-    background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
-    color: white;
-    box-shadow: 0 2px 4px rgba(251, 191, 36, 0.3);
+
+  .chip-blue {
+    background: #eff6ff;
+    color: #1e3a8a;
   }
-  
-  .rank-silver {
-    background: linear-gradient(135deg, #9ca3af 0%, #6b7280 100%);
-    color: white;
-    box-shadow: 0 2px 4px rgba(156, 163, 175, 0.3);
-  }
-  
-  .rank-bronze {
-    background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
-    color: white;
-    box-shadow: 0 2px 4px rgba(217, 119, 6, 0.3);
-  }
-  
-  .rank-top10 {
-    background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
-    color: white;
-    box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
-  }
-  
-  .rank-normal {
-    background: #e5e7eb;
-    color: #374151;
-  }
-  
-  /* Grade level badges */
-  .grade-badge {
-    display: inline-flex;
-    align-items: center;
-    padding: 0.25rem 0.75rem;
-    border-radius: 9999px;
-    font-size: 0.75rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    border: 1px solid;
-  }
-  
-  .grade-excellent {
-    background-color: #f3e8ff;
-    color: #7c3aed;
-    border-color: #c4b5fd;
-  }
-  
-  .grade-good {
-    background-color: #dcfce7;
-    color: #16a34a;
-    border-color: #86efac;
-  }
-  
-  .grade-fair {
-    background-color: #dbeafe;
-    color: #2563eb;
-    border-color: #93c5fd;
-  }
-  
-  .grade-average {
-    background-color: #fef3c7;
-    color: #d97706;
-    border-color: #fcd34d;
-  }
-  
-  .grade-poor {
-    background-color: #fee2e2;
-    color: #dc2626;
-    border-color: #fca5a5;
-  }
-  
-  /* Points display */
-  .points-display {
-    display: inline-flex;
-    align-items: center;
-    padding: 0.25rem 0.75rem;
-    background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
-    color: #1e40af;
-    border-radius: 9999px;
-    font-size: 0.75rem;
-    font-weight: 700;
-    border: 1px solid #93c5fd;
-  }
-  
-  /* Statistics cards */
-  .stats-card {
-    background: white;
-    border-radius: 0.5rem;
-    padding: 1.5rem;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-    border: 1px solid #e5e7eb;
-    transition: all 0.3s ease;
-  }
-  
-  .stats-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  }
-  
-  .stats-icon {
-    width: 3rem;
-    height: 3rem;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-bottom: 1rem;
-  }
-  
-  .stats-number {
-    font-size: 2rem;
-    font-weight: 700;
-    margin-bottom: 0.5rem;
-  }
-  
-  .stats-label {
-    font-size: 0.875rem;
-    color: #6b7280;
-    font-weight: 500;
-  }
-  
-  /* Status badges */
-  .status-badge {
-    display: inline-block;
-    padding: 0.25rem 0.5rem;
-    border-radius: 0.25rem;
-    font-size: 0.75rem;
-    font-weight: 500;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-  }
-  
-  .status-active {
-    background-color: #dcfce7;
-    color: #166534;
-  }
-  
-  .status-inactive {
-    background-color: #fef2f2;
-    color: #991b1b;
-  }
-  
-  .status-pending {
-    background-color: #fef3c7;
-    color: #92400e;
-  }
-  
-  /* Loading spinner */
-  .loading-spinner {
-    display: inline-block;
-    width: 1rem;
-    height: 1rem;
-    border: 2px solid #e5e7eb;
-    border-radius: 50%;
-    border-top-color: #2563eb;
-    animation: spin 1s ease-in-out infinite;
-  }
-  
-  @keyframes spin {
-    to { transform: rotate(360deg); }
-  }
-  
-  /* Tooltip */
-  .tooltip {
-    position: relative;
-    display: inline-block;
-  }
-  
-  .tooltip .tooltiptext {
-    visibility: hidden;
-    width: 200px;
-    background-color: #374151;
-    color: white;
-    text-align: center;
+
+  .btn-outline {
+    border: 1px solid #cbd5e1;
+    padding: 4px 8px;
     border-radius: 6px;
-    padding: 8px;
-    position: absolute;
-    z-index: 1;
-    bottom: 125%;
-    left: 50%;
-    margin-left: -100px;
+  }
+
+  .btn-outline:hover {
+    background: #f8fafc;
+  }
+
+  visibility: visible !important;
+}
+
+#qr-video:not(.hidden) {
+  display: block !important;
+  visibility: visible !important;
+}
+
+.qr-scanner-container {
+  background: #000;
+  border-radius: 0.5rem;
+  overflow: hidden;
+  position: relative;
+  width: 100%;
+  height: 256px;
+}
+
+#qr-overlay {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+  z-index: 10;
+  border-style: solid;
+  border-width: 3px;
+  animation: qr-scan-pulse 2s ease-in-out infinite;
+}
+
+@keyframes qr-scan-pulse {
+
+  0%,
+  100% {
+    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+  }
+
+  50% {
+    box-shadow: 0 0 0 8px rgba(59, 130, 246, 0.2);
+  }
+}
+
+/* Corner indicators for QR scan area */
+#qr-overlay::before,
+#qr-overlay::after {
+  content: '';
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  border: 3px solid #3b82f6;
+}
+
+#qr-overlay::before {
+  top: -3px;
+  left: -3px;
+  border-right: none;
+  border-bottom: none;
+}
+
+#qr-overlay::after {
+  bottom: -3px;
+  right: -3px;
+  border-left: none;
+  border-top: none;
+}
+
+/* Ensure video fills container */
+.qr-scanner-container video {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Hiệu ứng hover link */
+.hover-link {
+  transition: color 0.3s ease;
+}
+
+.hover-link:hover {
+  color: #1d4ed8;
+}
+
+/* Button bảng xếp hạng */
+#btn-ranking {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 0.875rem;
+  color: #6b7280;
+  padding: 0.25rem 0.75rem;
+  border-radius: 0.375rem;
+  transition: all 0.3s ease;
+}
+
+#btn-ranking:hover {
+  color: #1d4ed8;
+  background-color: rgba(37, 99, 235, 0.1);
+}
+
+/* Nút viền xanh */
+.btn-outline {
+  border: 1px solid #2563eb;
+  color: #2563eb;
+  padding: 0.25rem 0.75rem;
+  border-radius: 0.375rem;
+  transition: all 0.3s ease;
+}
+
+.btn-outline:hover {
+  background-color: #2563eb;
+  color: white;
+}
+
+/* Animation xuất hiện */
+.fade-up {
+  animation: fadeUp 0.6s ease forwards;
+}
+
+.fade-down {
+  animation: fadeDown 0.6s ease forwards;
+}
+
+@keyframes fadeUp {
+  0% {
     opacity: 0;
-    transition: opacity 0.3s;
+    transform: translateY(15px);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeDown {
+  0% {
+    opacity: 0;
+    transform: translateY(-15px);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.activity-title {
+  flex: 1;
+  min-width: 0;
+  word-break: break-word;
+}
+
+.activity-status {
+  white-space: nowrap;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  color: white;
+  flex-shrink: 0;
+}
+
+/* Avatar */
+.user-avatar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.user-avatar img {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #2563eb;
+}
+
+/* Modal */
+.modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  z-index: 50;
+  animation: fadeIn 0.3s ease;
+  overflow: hidden;
+}
+
+.modal-content {
+  background: #fff;
+  width: 100%;
+  max-width: 90vw;
+  border-radius: 0.75rem;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+  display: flex;
+  flex-direction: column;
+  max-height: 90vh;
+  overflow: hidden;
+}
+
+/* Mobile modal adjustments */
+@media (max-width: 768px) {
+  .modal {
+    padding: 0.5rem;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .modal-content {
+    width: 100%;
+    max-width: none;
+    max-height: 90vh;
+    max-height: 90dvh;
+    border-radius: 0.5rem;
+  }
+}
+
+/* Bảng xếp hạng */
+.ranking-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* Mobile table wrapper */
+.table-wrapper {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+@media (max-width: 768px) {
+  .ranking-table {
+    min-width: 600px;
+  }
+
+  .ranking-table th,
+  .ranking-table td {
+    padding: 0.5rem;
     font-size: 0.75rem;
   }
-  
-  .tooltip:hover .tooltiptext {
-    visibility: visible;
+
+  .ranking-table th:first-child,
+  .ranking-table td:first-child {
+    position: sticky;
+    left: 0;
+    background: white;
+    z-index: 10;
+  }
+}
+
+.ranking-table th {
+  background: #f8fafc;
+  padding: 12px;
+  text-align: left;
+  font-weight: 600;
+  color: #374151;
+  border-bottom: 1px solid #e5e7eb;
+  font-size: 0.875rem;
+}
+
+.ranking-table td {
+  padding: 12px;
+  border-bottom: 1px solid #f3f4f6;
+  vertical-align: middle;
+}
+
+.ranking-table tr:hover {
+  background: #f9fafb;
+}
+
+/* Badge xếp hạng */
+.rank-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  font-weight: bold;
+  font-size: 0.875rem;
+}
+
+.rank-gold {
+  background: linear-gradient(135deg, #fbbf24, #f59e0b);
+  color: white;
+  box-shadow: 0 2px 4px rgba(251, 191, 36, 0.3);
+}
+
+.rank-silver {
+  background: linear-gradient(135deg, #9ca3af, #6b7280);
+  color: white;
+  box-shadow: 0 2px 4px rgba(156, 163, 175, 0.3);
+}
+
+.rank-bronze {
+  background: linear-gradient(135deg, #d97706, #b45309);
+  color: white;
+  box-shadow: 0 2px 4px rgba(217, 119, 6, 0.3);
+}
+
+.rank-top10 {
+  background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+  color: white;
+  box-shadow: 0 2px 4px rgba(139, 92, 246, 0.3);
+}
+
+.rank-normal {
+  background: #e5e7eb;
+  color: #374151;
+}
+
+/* Badge xếp loại */
+.grade-badge {
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.grade-excellent {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.grade-good {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.grade-fair {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.grade-average {
+  background: #fef2f2;
+  color: #991b1b;
+}
+
+.grade-poor {
+  background: #f3e8ff;
+  color: #581c87;
+}
+
+/* Hiển thị điểm */
+.points-display {
+  font-weight: 600;
+  color: #059669;
+  background: #ecfdf5;
+  padding: 4px 8px;
+  border-radius: 6px;
+  border: 1px solid #d1fae5;
+}
+
+/* Phân trang */
+.page-btn {
+  transition: all 0.2s ease;
+}
+
+.page-btn:hover {
+  background: #f3f4f6;
+}
+
+.page-btn[data-page="${currentPage}"] {
+  background: #2563eb;
+  color: white;
+  border-color: #2563eb;
+}
+
+/* Modal đăng nhập - hiển thị trên cùng */
+#login-modal {
+  z-index: 100;
+}
+
+.modal-content {
+  background: white;
+  border-radius: 0.75rem;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  max-width: 768px;
+  width: 100%;
+  /* Ensure large content does not overflow screen */
+  max-height: calc(100vh - 4rem);
+  overflow: auto;
+  animation: scaleIn 0.3s ease;
+}
+
+/* Make the top bar inside modal always visible (where the Close button is) */
+.modal-content>.p-4.border-b {
+  position: sticky;
+  top: 0;
+  background: #fff;
+  z-index: 10;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
     opacity: 1;
   }
-  /* Nút header chung */
+}
+
+@keyframes scaleIn {
+  from {
+    transform: scale(0.9);
+    opacity: 0;
+  }
+
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* Enhanced Sidebar styles */
+/* Mobile Sidebar styles */
+.mobile-sidebar-item {
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border-radius: 0.5rem;
+  margin-bottom: 0.25rem;
+}
+
+.mobile-sidebar-item:hover .flex {
+  transform: translateX(2px);
+}
+
+.mobile-sidebar-item.active .flex {
+  background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+  border-left: 4px solid #2563eb;
+  box-shadow: 0 2px 4px rgba(37, 99, 235, 0.1);
+}
+
+.mobile-sidebar-item.active .w-10 {
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+}
+
+.mobile-sidebar-item.active svg {
+  color: white;
+}
+
+.mobile-sidebar-item.active span {
+  color: #1e40af;
+  font-weight: 600;
+}
+
+/* Collapsible sidebar text behavior */
+#sidebar {
+  width: 4rem;
+}
+
+#sidebar.expanded {
+  width: 18rem;
+}
+
+#sidebar .sidebar-text {
+  max-width: 0;
+  opacity: 0;
+}
+
+#sidebar.expanded .sidebar-text {
+  max-width: 14rem;
+  opacity: 1;
+}
+
+#sidebar .sidebar-text>* {
+  white-space: nowrap;
+}
+
+/* Pin icon rotation when expanded */
+#sidebar.expanded #sidebar-pin-icon {
+  transform: rotate(45deg);
+  transition: transform .2s ease;
+}
+
+/* Icon-only collapsed state: center icons perfectly */
+#sidebar:not(.expanded) .sidebar-item>.flex {
+  justify-content: center;
+  padding-left: 0.5rem;
+  padding-right: 0.5rem;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+#sidebar:not(.expanded) .sidebar-text {
+  display: none !important;
+}
+
+#sidebar .sidebar-item .w-10 {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-clip: padding-box;
+  /* prevent background bleed under ring */
+  position: relative;
+  z-index: 0;
+}
+
+#sidebar:not(.expanded) .sidebar-item .w-10 {
+  width: 2.5rem;
+  /* 40px */
+  height: 2.5rem;
+  /* 40px */
+  margin: 0;
+}
+
+.sidebar-item svg {
+  display: block;
+}
+
+/* Active state adjustments when collapsed: no left bar or pill */
+#sidebar:not(.expanded) .sidebar-item.active .flex {
+  border-left: none;
+  background: transparent;
+  box-shadow: none;
+}
+
+#sidebar:not(.expanded) .sidebar-item.active .w-10 {
+  /* highlight ring for active in collapsed */
+  box-shadow: 0 0 0 6px rgba(59, 130, 246, 0.20), 0 6px 10px rgba(0, 0, 0, 0.06);
+}
+
+/* Hide pin button when collapsed to avoid misaligned arrow */
+#sidebar:not(.expanded) #sidebar-pin {
+  opacity: 0;
+  pointer-events: none;
+}
+
+#sidebar.expanded #sidebar-pin {
+  opacity: 1;
+}
+
+/* Smooth ring animation for icons */
+#sidebar .sidebar-item .w-10 {
+  border-radius: 0.75rem;
+  transition: box-shadow .2s ease, transform .2s ease, background-color .2s ease;
+}
+
+/* Hover highlight ring - collapsed */
+#sidebar:not(.expanded) .sidebar-item:hover .w-10 {
+  box-shadow: 0 0 0 6px rgba(59, 130, 246, 0.15), 0 6px 10px rgba(0, 0, 0, 0.05);
+  transform: translateY(-1px);
+}
+
+/* Camera preview helpers */
+video.mirrored {
+  transform: scaleX(-1);
+}
+
+/* Hover/active highlight ring - expanded (subtle) */
+#sidebar.expanded .sidebar-item:hover .w-10 {
+  box-shadow: 0 0 0 6px rgba(59, 130, 246, 0.12);
+}
+
+#sidebar.expanded .sidebar-item.active .w-10 {
+  box-shadow: 0 0 0 6px rgba(59, 130, 246, 0.20);
+}
+
+/* User dropdown */
+.user-avatar-dropdown:hover .user-dropdown-menu {
+  display: block;
+}
+
+.user-dropdown-menu {
+  animation: fadeIn 0.2s ease;
+}
+
+/* Hover-to-open notifications */
+.notifications-container:hover #notifications-menu {
+  display: block;
+}
+
+/* Tab styles */
+.tab-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+}
+
+.tab-btn span {
+  transition: all 0.3s ease;
+}
+
+.tab-btn:hover span {
+  color: #374151;
+}
+
+.tab-content {
+  display: none;
+}
+
+.tab-content.active {
+  display: block;
+}
+
+/* Section content */
+.section-content {
+  display: none;
+}
+
+.section-content.active {
+  display: block;
+}
+
+/* Slide in animation */
+.slide-in-right {
+  animation: slideInRight 0.5s ease forwards;
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Responsive sidebar */
+@media (min-width: 1024px) {
+  #sidebar {
+    transform: translateX(0) !important;
+  }
+
+  main {
+    margin-left: 4rem;
+    /* 64px for collapsed sidebar */
+  }
+
+  #sidebar:hover+* main,
+  #sidebar.expanded+* main {
+    margin-left: 18rem;
+    /* 288px for expanded sidebar */
+  }
+}
+
+/* Mobile sidebar */
+@media (max-width: 1023px) {
+  #sidebar {
+    transform: translateX(-100%);
+    width: 280px !important;
+    z-index: 40;
+    overflow-y: auto;
+  }
+
+  #sidebar.mobile-open {
+    transform: translateX(0);
+  }
+
+  #sidebar .group-hover\:opacity-100 {
+    opacity: 1 !important;
+    transform: translateX(0) !important;
+  }
+
+  main {
+    margin-left: 0;
+  }
+
+  /* Mobile header adjustments */
+  header {
+    padding-left: 4rem;
+    /* Space for mobile menu button */
+  }
+
+  /* Show full labels when mobile menu is open */
+  #sidebar.mobile-open .sidebar-text {
+    display: block !important;
+    max-width: 220px !important;
+    opacity: 1 !important;
+  }
+
+  /* Use left-aligned layout when menu is open on mobile */
+  #sidebar.mobile-open .sidebar-item>.flex {
+    justify-content: flex-start !important;
+    padding-left: 0.75rem !important;
+    padding-right: 0.75rem !important;
+  }
+
+  #sidebar.mobile-open .sidebar-item .w-10 {
+    margin-right: 0.75rem;
+    width: 2.5rem;
+    height: 2.5rem;
+  }
+}
+
+/* Form styles */
+.form-group {
+  margin-bottom: 1rem;
+}
+
+.form-label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #374151;
+  margin-bottom: 0.25rem;
+}
+
+.form-input {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  transition: border-color 0.3s ease;
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.form-textarea {
+  resize: vertical;
+  min-height: 100px;
+}
+
+/* Button styles */
+.btn-primary {
+  background-color: #2563eb;
+  color: white;
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.btn-primary:hover {
+  background-color: #1d4ed8;
+}
+
+.btn-secondary {
+  background-color: #6b7280;
+  color: white;
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.btn-secondary:hover {
+  background-color: #4b5563;
+}
+
+.btn-success {
+  background-color: #059669;
+  color: white;
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.btn-success:hover {
+  background-color: #047857;
+}
+
+.btn-danger {
+  background-color: #dc2626;
+  color: white;
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.btn-danger:hover {
+  background-color: #b91c1c;
+}
+
+/* Card styles */
+.card {
+  background: white;
+  border-radius: 0.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+.card-header {
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid #e5e7eb;
+  background-color: #f9fafb;
+}
+
+.card-body {
+  padding: 1.5rem;
+}
+
+/* Table styles */
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.table th {
+  background-color: #f9fafb;
+  padding: 0.75rem 1rem;
+  text-align: left;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.table td {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.table tbody tr:hover {
+  background-color: #f9fafb;
+}
+
+/* Bảng xếp hạng styles */
+.ranking-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+  border-radius: 0.5rem;
+  overflow: hidden;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.ranking-table th {
+  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+  padding: 1rem;
+  text-align: left;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #475569;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+.ranking-table td {
+  padding: 1rem;
+  border-bottom: 1px solid #f1f5f9;
+  vertical-align: middle;
+}
+
+.ranking-table tbody tr {
+  transition: all 0.2s ease;
+}
+
+.ranking-table tbody tr:hover {
+  background-color: #f8fafc;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+/* Rank badges */
+.rank-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  font-size: 0.875rem;
+  font-weight: 700;
+  text-align: center;
+}
+
+.rank-gold {
+  background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+  color: white;
+  box-shadow: 0 2px 4px rgba(251, 191, 36, 0.3);
+}
+
+.rank-silver {
+  background: linear-gradient(135deg, #9ca3af 0%, #6b7280 100%);
+  color: white;
+  box-shadow: 0 2px 4px rgba(156, 163, 175, 0.3);
+}
+
+.rank-bronze {
+  background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
+  color: white;
+  box-shadow: 0 2px 4px rgba(217, 119, 6, 0.3);
+}
+
+.rank-top10 {
+  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+  color: white;
+  box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
+}
+
+.rank-normal {
+  background: #e5e7eb;
+  color: #374151;
+}
+
+/* Grade level badges */
+.grade-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border: 1px solid;
+}
+
+.grade-excellent {
+  background-color: #f3e8ff;
+  color: #7c3aed;
+  border-color: #c4b5fd;
+}
+
+.grade-good {
+  background-color: #dcfce7;
+  color: #16a34a;
+  border-color: #86efac;
+}
+
+.grade-fair {
+  background-color: #dbeafe;
+  color: #2563eb;
+  border-color: #93c5fd;
+}
+
+.grade-average {
+  background-color: #fef3c7;
+  color: #d97706;
+  border-color: #fcd34d;
+}
+
+.grade-poor {
+  background-color: #fee2e2;
+  color: #dc2626;
+  border-color: #fca5a5;
+}
+
+/* Points display */
+.points-display {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.75rem;
+  background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+  color: #1e40af;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  border: 1px solid #93c5fd;
+}
+
+/* Statistics cards */
+.stats-card {
+  background: white;
+  border-radius: 0.5rem;
+  padding: 1.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e5e7eb;
+  transition: all 0.3s ease;
+}
+
+.stats-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.stats-icon {
+  width: 3rem;
+  height: 3rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1rem;
+}
+
+.stats-number {
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+
+.stats-label {
+  font-size: 0.875rem;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+/* Status badges */
+.status-badge {
+  display: inline-block;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.25rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.status-active {
+  background-color: #dcfce7;
+  color: #166534;
+}
+
+.status-inactive {
+  background-color: #fef2f2;
+  color: #991b1b;
+}
+
+.status-pending {
+  background-color: #fef3c7;
+  color: #92400e;
+}
+
+/* Loading spinner */
+.loading-spinner {
+  display: inline-block;
+  width: 1rem;
+  height: 1rem;
+  border: 2px solid #e5e7eb;
+  border-radius: 50%;
+  border-top-color: #2563eb;
+  animation: spin 1s ease-in-out infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Tooltip */
+.tooltip {
+  position: relative;
+  display: inline-block;
+}
+
+.tooltip .tooltiptext {
+  visibility: hidden;
+  width: 200px;
+  background-color: #374151;
+  color: white;
+  text-align: center;
+  border-radius: 6px;
+  padding: 8px;
+  position: absolute;
+  z-index: 1;
+  bottom: 125%;
+  left: 50%;
+  margin-left: -100px;
+  opacity: 0;
+  transition: opacity 0.3s;
+  font-size: 0.75rem;
+}
+
+.tooltip:hover .tooltiptext {
+  visibility: visible;
+  opacity: 1;
+}
+
+/* Nút header chung */
 .nav-btn {
   background: transparent;
   border: none;
   cursor: pointer;
   font-size: 0.875rem;
-  color: #6b7280; /* text-gray-500 */
+  color: #6b7280;
+  /* text-gray-500 */
   padding: 0.25rem 0.75rem;
   border-radius: 0.375rem;
   transition: all 0.3s ease;
 }
 
 .nav-btn:hover {
-  color: #1d4ed8; /* text-blue-700 */
+  color: #1d4ed8;
+  /* text-blue-700 */
   background-color: rgba(37, 99, 235, 0.1);
 }
 
@@ -1004,19 +1168,19 @@ body {
     border-radius: 0.5rem;
     margin-bottom: 0.25rem;
   }
-  
+
   .user-avatar {
     flex-direction: column;
     align-items: flex-start;
     gap: 0.25rem;
     padding: 0.75rem 1rem;
   }
-  
+
   .user-avatar img {
     width: 32px;
     height: 32px;
   }
-  
+
   .user-avatar-mobile {
     display: flex;
     align-items: center;
@@ -1027,11 +1191,11 @@ body {
     cursor: pointer;
     transition: background-color 0.3s ease;
   }
-  
+
   .user-avatar-mobile:hover {
     background-color: #f3f4f6;
   }
-  
+
   .user-avatar-mobile img {
     width: 32px;
     height: 32px;
@@ -1044,16 +1208,18 @@ body {
 /* Mobile form improvements */
 @media (max-width: 768px) {
   .form-input {
-    font-size: 16px; /* Prevents zoom on iOS */
+    font-size: 16px;
+    /* Prevents zoom on iOS */
   }
-  
+
   .btn-primary,
   .btn-secondary,
   .btn-success,
   .btn-danger {
     padding: 0.75rem 1rem;
     font-size: 1rem;
-    min-height: 44px; /* iOS touch target */
+    min-height: 44px;
+    /* iOS touch target */
   }
 }
 
@@ -1062,12 +1228,12 @@ body {
   .activity-card {
     margin-bottom: 1rem;
   }
-  
+
   .activity-title {
     font-size: 1rem;
     line-height: 1.4;
   }
-  
+
   .activity-status {
     font-size: 0.7rem;
     padding: 2px 6px;
@@ -1081,7 +1247,7 @@ body {
     min-width: 40px;
     font-size: 0.875rem;
   }
-  
+
   .pagination-info {
     font-size: 0.75rem;
   }
@@ -1214,7 +1380,7 @@ body {
   .action-buttons {
     @apply flex-wrap gap-1;
   }
-  
+
   .action-btn {
     @apply flex-1 justify-center px-2 py-1.5;
     @apply min-w-[70px];
@@ -1256,13 +1422,452 @@ body {
 
 /* Special animation for button press */
 @keyframes buttonPress {
-  0% { transform: scale(1); }
-  50% { transform: scale(0.95); }
-  100% { transform: scale(1); }
+  0% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(0.95);
+  }
+
+  100% {
+    transform: scale(1);
+  }
 }
 
 .action-btn:active {
   animation: buttonPress 0.1s ease-out;
 }
 
-  
+/* ===== ATTENDANCE WIZARD MODAL MOBILE OPTIMIZATION ===== */
+/* Tối ưu hóa modal "Nộp minh chứng hoạt động" cho điện thoại */
+
+#attendance-wizard-modal .modal-content {
+  max-height: calc(100vh - 2rem) !important;
+  overflow-y: auto !important;
+}
+
+/* Tối ưu hóa video player cho mobile */
+@media (max-width: 768px) {
+  #camera-wrapper-attendance {
+    aspect-ratio: 16 / 9;
+    /* Giảm chiều cao video từ h-60 (240px) xuống phù hợp với mobile */
+  }
+
+  #video-preview-attendance,
+  #video-result-attendance {
+    width: 100%;
+    height: auto;
+    max-height: 50vh;
+    object-fit: cover;
+  }
+
+  /* Tối ưu hóa phần thông tin hoạt động */
+  #attendance-activity-info-wrap,
+  #gps-status-indicator {
+    font-size: 0.75rem;
+    padding: 0.625rem;
+    margin-bottom: 0.75rem;
+  }
+
+  /* Tối ưu hóa camera hints */
+  #camera-hints-attendance {
+    font-size: 0.7rem;
+    line-height: 1.3;
+    margin: 0.75rem 0;
+  }
+
+  #camera-hints-attendance p {
+    margin: 0.25rem 0;
+  }
+
+  /* Tối ưu hóa nút bấm */
+  .flex.flex-col.sm\\:flex-row.gap-2>button {
+    padding: 0.5rem 0.75rem !important;
+    font-size: 0.8rem !important;
+    min-height: 40px;
+  }
+
+  /* Giảm padding/margin trong modal */
+  #attendance-wizard-modal .p-4 {
+    padding: 1rem;
+  }
+
+  /* Tối ưu hóa analysis cards - hiển thị theo hàng ngang thay vì 3 cột */
+  #ai-categories-attendance {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Giảm padding trong analysis cards */
+  #ai-categories-attendance>div {
+    padding: 0.75rem !important;
+  }
+
+  /* Giảm font size trong analysis cards */
+  #ai-categories-attendance .text-sm {
+    font-size: 0.7rem;
+  }
+
+  #ai-categories-attendance .text-lg {
+    font-size: 0.9rem;
+  }
+
+  /* Tối ưu hóa khoảng cách */
+  #step-2-attendance-video .space-y-3>* {
+    margin-bottom: 0.75rem;
+  }
+
+  /* Tối ưu hóa modal header */
+  #attendance-wizard-modal .border-b {
+    padding-bottom: 0.5rem;
+    margin-bottom: 0.75rem;
+  }
+
+  #attendance-wizard-modal h2 {
+    font-size: 1rem;
+  }
+
+  /* Tối ưu hóa face upload section */
+  #face-upload-section-attendance {
+    margin-top: 0.75rem !important;
+  }
+
+  #face-upload-section-attendance .p-4 {
+    padding: 0.75rem !important;
+  }
+
+  /* Tối ưu hóa input file và button */
+  #face-image-input-attendance {
+    font-size: 0.75rem !important;
+    padding: 0.4rem !important;
+  }
+
+  #upload-face-btn-attendance {
+    padding: 0.4rem 0.75rem !important;
+    font-size: 0.75rem !important;
+    white-space: nowrap;
+    min-height: 36px;
+  }
+
+  /* Tối ưu hóa AI result section */
+  #ai-result-attendance {
+    margin-top: 0.75rem !important;
+  }
+
+  #ai-result-attendance .p-4 {
+    padding: 0.75rem !important;
+  }
+
+  #ai-result-attendance .space-y-4>* {
+    margin-bottom: 0.5rem !important;
+  }
+
+  /* Tối ưu hóa chi tiết phân tích */
+  #ai-result-attendance .p-3 {
+    padding: 0.5rem !important;
+  }
+
+  #ai-result-attendance .text-xs {
+    font-size: 0.65rem;
+  }
+
+  /* Tối ưu hóa progress bar */
+  #ai-confidence-attendance .h-2 {
+    height: 6px !important;
+  }
+
+  /* Tối ưu hóa suggestions */
+  #ai-suggestions-attendance {
+    margin-top: 0.5rem;
+  }
+
+  #suggestions-list-attendance {
+    font-size: 0.65rem;
+  }
+}
+
+/* Extra small devices (dưới 480px) */
+@media (max-width: 480px) {
+
+  #video-preview-attendance,
+  #video-result-attendance {
+    max-height: calc(50vw * 9 / 16);
+    min-height: 150px;
+  }
+
+  .flex.flex-col.sm\\:flex-row.gap-2 {
+    gap: 0.5rem !important;
+  }
+
+  .flex.flex-col.sm\\:flex-row.gap-2>button {
+    padding: 0.4rem 0.5rem !important;
+    font-size: 0.7rem !important;
+  }
+
+  #ai-categories-attendance {
+    gap: 0.5rem !important;
+  }
+}
+
+/* ===== ATTACHMENT MODAL STYLES ===== */
+
+#attach-evidence-modal {
+  animation: fadeIn 0.2s ease-out;
+}
+
+#attach-evidence-list {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(148, 163, 184, 0.5) rgba(226, 232, 240, 0.5);
+}
+
+#attach-evidence-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+#attach-evidence-list::-webkit-scrollbar-track {
+  background: rgba(226, 232, 240, 0.5);
+  border-radius: 3px;
+}
+
+#attach-evidence-list::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.5);
+  border-radius: 3px;
+}
+
+#attach-evidence-list::-webkit-scrollbar-thumb:hover {
+  background: rgba(100, 116, 139, 0.7);
+}
+
+/* Status badge styling */
+.attachment-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.attachment-status-badge.attached {
+  background-color: #dcfce7;
+  color: #166534;
+}
+
+.attachment-status-badge.pending {
+  background-color: #fef3c7;
+  color: #78350f;
+}
+
+.attachment-status-badge.attaching {
+  background-color: #e0e7ff;
+  color: #3730a3;
+}
+
+/* Button styling for attachment actions */
+.btn-attach {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+}
+
+.btn-attach-submit {
+  background-color: #16a34a;
+  color: white;
+}
+
+.btn-attach-submit:hover {
+  background-color: #15803d;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(22, 163, 74, 0.3);
+}
+
+.btn-attach-detach {
+  background-color: #fee2e2;
+  color: #b91c1c;
+}
+
+.btn-attach-detach:hover {
+  background-color: #fecaca;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(185, 28, 28, 0.2);
+}
+
+.btn-attach-detach:disabled,
+.btn-attach-submit:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Fade in animation */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* ===================================================
+   Phiếu ĐGRL Modal – Table Row Styles
+   =================================================== */
+
+/* Group header rows (bg-slate-50 injected by JS) */
+#eval-table-body tr.eval-group-row {
+  background: linear-gradient(90deg, #eef2ff 0%, #f1f5f9 100%);
+  border-left: 3px solid #4f46e5;
+}
+
+#eval-table-body tr.eval-group-row td {
+  padding: 0.55rem 0.75rem;
+  font-weight: 600;
+  color: #3730a3;
+  font-size: 0.8rem;
+}
+
+/* Child criterion rows */
+#eval-table-body tr.eval-item-row {
+  transition: background-color 0.12s;
+}
+
+#eval-table-body tr.eval-item-row:hover {
+  background-color: #f0f9ff;
+}
+
+#eval-table-body tr.eval-item-row td {
+  padding: 0.5rem 0.75rem;
+  font-size: 0.82rem;
+  color: #374151;
+  vertical-align: middle;
+}
+
+/* Number input in eval table */
+#eval-table-body input.eval-input[type="number"] {
+  width: 72px;
+  border: 1.5px solid #d1d5db;
+  border-radius: 0.5rem;
+  padding: 0.3rem 0.5rem;
+  text-align: center;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #1d4ed8;
+  background: #eff6ff;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  /* Remove spinners */
+  -moz-appearance: textfield;
+}
+
+#eval-table-body input.eval-input[type="number"]::-webkit-inner-spin-button,
+#eval-table-body input.eval-input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+}
+
+#eval-table-body input.eval-input[type="number"]:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37,99,235,0.15);
+  background: #dbeafe;
+}
+
+/* Auto-score chip text */
+[data-auto-holder] {
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.15rem 0.5rem;
+  border-radius: 9999px;
+  white-space: nowrap;
+}
+
+/* Green chip for positive auto score */
+[data-auto-holder]:not(:empty) {
+  background: #dcfce7;
+  color: #15803d;
+  border: 1px solid #bbf7d0;
+  display: inline-block;
+}
+
+/* Red chip for deductions */
+[data-auto-holder][data-deduct]:not(:empty) {
+  background: #fee2e2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+}
+
+/* Group total badge */
+[id^="group-total-"] {
+  font-weight: 700;
+  color: #4f46e5;
+}
+
+/* Proof upload button */
+#eval-table-body .btn-upload-proof {
+  font-size: 0.72rem;
+  padding: 0.2rem 0.6rem;
+  border-radius: 0.4rem;
+  border: 1px solid #bfdbfe;
+  background: #eff6ff;
+  color: #1d4ed8;
+  cursor: pointer;
+  transition: background 0.12s;
+  white-space: nowrap;
+}
+
+#eval-table-body .btn-upload-proof:hover {
+  background: #dbeafe;
+  border-color: #93c5fd;
+}
+
+/* Max score badge in table */
+#eval-table-body .eval-max-badge {
+  display: inline-block;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #7c3aed;
+  background: #f5f3ff;
+  border: 1px solid #ddd6fe;
+  border-radius: 0.375rem;
+  padding: 0.1rem 0.4rem;
+  min-width: 2rem;
+  text-align: center;
+}
+
+/* Eval modal backdrop */
+#eval-modal.modal {
+  padding: 0.5rem;
+}
+
+/* Gradient header for eval modal */
+.eval-modal-header {
+  background: linear-gradient(135deg, #1e40af 0%, #2563eb 60%, #3b82f6 100%);
+  border-radius: 0.75rem 0.75rem 0 0;
+}
+
+/* Smooth score number transitions */
+#eval-total {
+  transition: color 0.25s;
+}
+
+@media (max-width: 640px) {
+  #eval-table-body input.eval-input[type="number"] {
+    width: 56px;
+    font-size: 0.8rem;
+  }
+
+  #eval-table-body tr.eval-item-row td,
+  #eval-table-body tr.eval-group-row td {
+    padding: 0.4rem 0.5rem;
+    font-size: 0.78rem;
+  }
+}

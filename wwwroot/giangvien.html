@@ -8,6 +8,9 @@
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
 
+  <!-- Network guard: rate-limit & 429 backoff for fetch -->
+  <script src="js/net_guard.js"></script>
+
   <!-- ExcelJS Library -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
 
@@ -15,9 +18,16 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
-  <link href="icon" href="icon/teacher.ico">
+  <!-- Favicon -->
+  <link rel="icon" href="icon/teach.ico">
   <!-- Custom CSS -->
   <link rel="stylesheet" href="css/style.css">
+
+  <!-- Simple Mobile Zoom CSS -->
+  <link rel="stylesheet" href="css/simple-zoom.css">
+
+  <!-- Modal Fix CSS -->
+  <link rel="stylesheet" href="css/modal-fix.css">
 </head>
 <body class="bg-gradient-to-b from-slate-50 to-slate-100 min-h-screen">
 
@@ -26,7 +36,7 @@
     <div class="flex items-center gap-4">
       <div class="bg-green-700 text-white font-bold rounded-md px-3 py-2">KGU</div>
       <div>
-        <h1 class="text-xl font-semibold">Hệ thống quản lý điểm rèn luyện</h1>
+        <h1 class="text-xl font-semibold">QLDRL</h1>
         <p class="text-sm text-gray-500">Giao diện Giảng viên - Trường Đại học Kiên Giang</p>
       </div>
     </div>
@@ -51,7 +61,7 @@
         </button>
 
         <!-- Notifications dropdown -->
-        <div id="notifications-menu" class="hidden absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
+        <div id="notifications-menu" class="hidden absolute right-0 mt-2 w-80 max-w-[calc(100vw-1rem)] bg-white rounded-lg shadow-lg border border-gray-200 z-50">
           <div class="p-3 border-b border-gray-200">
             <p class="text-sm font-medium text-gray-900">Thông báo</p>
           </div>
@@ -81,13 +91,13 @@
             <p class="text-xs text-gray-500">Giảng viên</p>
           </div>
           <div class="py-2">
-            <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+            <a id="gv-profile-link" href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
               <svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
               </svg>
               Thông tin cá nhân
             </a>
-            <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+            <a id="gv-settings-link" href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
               <svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
@@ -104,7 +114,15 @@
           </div>
         </div>
       </div>
-    </nav>
+        <!-- Duyệt eKYC -->
+    <div class="sidebar-item" id="menu-ekyc" data-section="ekyc">
+      <div class="flex items-center p-3 rounded-lg cursor-pointer transition-all duration-200 hover:bg-green-50 hover:shadow-sm">
+        <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center flex-shrink-0"><svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg></div>
+        <div class="ml-3 sidebar-text"><span class="text-sm font-medium text-gray-800">Duyệt eKYC</span><p class="text-xs text-gray-500">Xác thực danh tính</p></div>
+        <div class="ml-auto sidebar-text"><svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg></div>
+      </div>
+    </div>
+  </nav>
   </div>
 </header>
 
@@ -195,7 +213,7 @@
       </div>
     </div>
 
-    <!-- Activities -->
+  <!-- Activities -->
     <div class="sidebar-item" data-section="activities">
       <div class="flex items-center p-3 rounded-lg cursor-pointer transition-all duration-200 hover:bg-purple-50 hover:shadow-sm">
         <div class="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center flex-shrink-0">
@@ -210,6 +228,46 @@
         <div class="ml-auto sidebar-text transition-all duration-300 overflow-hidden">
           <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+          </svg>
+        </div>
+      </div>
+    </div>
+
+    <!-- Officer Assignment -->
+    <div class="sidebar-item" data-section="officers">
+      <div class="flex items-center p-3 rounded-lg cursor-pointer transition-all duration-200 hover:bg-orange-50 hover:shadow-sm">
+        <div class="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center flex-shrink-0">
+          <svg class="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 1.343-3 3s1.343 3 3 3 3-1.343 3-3-1.343-3-3-3zm0-5a8 8 0 100 16 8 8 0 000-16z"/>
+          </svg>
+        </div>
+        <div class="ml-3 sidebar-text transition-all duration-300 overflow-hidden">
+          <span class="text-sm font-medium text-gray-800">Phân công cán bộ lớp</span>
+          <p class="text-xs text-gray-500">Lớp trưởng, lớp phó, lớp học phần</p>
+        </div>
+        <div class="ml-auto sidebar-text transition-all duration-300 overflow-hidden">
+          <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+          </svg>
+        </div>
+      </div>
+    </div>
+
+    <!-- Evidence -->
+    <div class="sidebar-item" data-section="evidence">
+      <div class="flex items-center p-3 rounded-lg cursor-pointer transition-all duration-200 hover:bg-rose-50 hover:shadow-sm">
+        <div class="w-10 h-10 bg-rose-100 rounded-lg flex items-center justify-center flex-shrink-0">
+          <svg class="w-5 h-5 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h6m-6 8h6a2 2 0 002-2V8a2 2 0 00-2-2H9l-2 2H5a2 2 0 00-2 2v8a2 2 0 002 2h2" />
+          </svg>
+        </div>
+        <div class="ml-3 sidebar-text transition-all duration-300 overflow-hidden">
+          <span class="text-sm font-medium text-gray-800">Minh chứng</span>
+          <p class="text-xs text-gray-500">Duyệt tự động & thủ công</p>
+        </div>
+        <div class="ml-auto sidebar-text transition-all duration-300 overflow-hidden">
+          <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
           </svg>
         </div>
       </div>
@@ -232,6 +290,34 @@
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
           </svg>
         </div>
+      </div>
+    </div>
+
+    <!-- Evaluation Forms -->
+    <div class="sidebar-item" data-section="evalforms">
+      <div class="flex items-center p-3 rounded-lg cursor-pointer transition-all duration-200 hover:bg-teal-50 hover:shadow-sm">
+        <div class="w-10 h-10 bg-teal-100 rounded-lg flex items-center justify-center flex-shrink-0">
+          <svg class="w-5 h-5 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6M7 7h10a2 2 0 012 2v9a2 2 0 01-2 2H7a2 2 0 01-2-2V9a2 2 0 012-2z"/>
+          </svg>
+        </div>
+        <div class="ml-3 sidebar-text transition-all duration-300 overflow-hidden">
+          <span class="text-sm font-medium text-gray-800">Phiếu ĐGRL</span>
+          <p class="text-xs text-gray-500">Nhận & duyệt</p>
+        </div>
+        <div class="ml-auto sidebar-text transition-all duration-300 overflow-hidden">
+          <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+          </svg>
+        </div>
+      </div>
+    </div>
+      <!-- Duyệt eKYC -->
+    <div class="sidebar-item" id="menu-ekyc" data-section="ekyc">
+      <div class="flex items-center p-3 rounded-lg cursor-pointer transition-all duration-200 hover:bg-green-50 hover:shadow-sm">
+        <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center flex-shrink-0"><svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg></div>
+        <div class="ml-3 sidebar-text"><span class="text-sm font-medium text-gray-800">Duyệt eKYC</span><p class="text-xs text-gray-500">Xác thực danh tính</p></div>
+        <div class="ml-auto sidebar-text"><svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg></div>
       </div>
     </div>
   </nav>
@@ -434,100 +520,7 @@
 
   <!-- Grades Management Section -->
   <section id="grades" class="section-content hidden">
-    <div class="max-w-7xl mx-auto p-6">
-      <div class="mb-8">
-        <h2 class="text-3xl font-bold text-gray-800 mb-2">Quản lý điểm rèn luyện</h2>
-        <p class="text-gray-600">Nhập và cập nhật điểm rèn luyện cho sinh viên</p>
-      </div>
-
-      <!-- Grade Input Form -->
-      <div class="bg-white p-6 rounded-lg shadow-md mb-6">
-        <h3 class="text-lg font-semibold text-gray-800 mb-4">Nhập điểm rèn luyện</h3>
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">MSSV</label>
-            <input type="text" id="grade-mssv" placeholder="Nhập MSSV" class="w-full border rounded-md px-3 py-2">
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Năm học</label>
-            <select id="grade-year" class="w-full border rounded-md px-3 py-2">
-              <option value="">Chọn năm học</option>
-            </select>
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Học kì</label>
-            <select id="grade-semester" class="w-full border rounded-md px-3 py-2">
-              <option value="">Chọn học kì</option>
-              <option value="1">Học kì 1</option>
-              <option value="2">Học kì 2</option>
-              <option value="3">Học kì 3</option>
-            </select>
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Điểm rèn luyện</label>
-            <input type="number" id="grade-score" min="0" max="100" placeholder="0-100" class="w-full border rounded-md px-3 py-2">
-          </div>
-        </div>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Vi phạm nhà trường</label>
-            <input type="number" id="grade-violation-school" min="0" placeholder="Số lần vi phạm" class="w-full border rounded-md px-3 py-2">
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Vi phạm xã hội</label>
-            <input type="number" id="grade-violation-social" min="0" placeholder="Số lần vi phạm" class="w-full border rounded-md px-3 py-2">
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Tham gia NCKH</label>
-            <select id="grade-research" class="w-full border rounded-md px-3 py-2">
-              <option value="">Chọn</option>
-              <option value="true">Có</option>
-              <option value="false">Không</option>
-            </select>
-          </div>
-        </div>
-        <div class="mt-4 flex gap-2">
-          <button id="save-grade" class="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700">
-            Lưu điểm
-          </button>
-          <button id="clear-grade-form" class="px-4 py-2 border rounded-md hover:bg-gray-100">
-            Xóa form
-          </button>
-        </div>
-      </div>
-
-      <!-- Grades Table -->
-      <div class="bg-white rounded-lg shadow-md overflow-hidden">
-        <div class="px-6 py-4 border-b">
-          <h3 class="text-lg font-semibold text-gray-800">Bảng điểm rèn luyện</h3>
-        </div>
-        <div class="overflow-x-auto">
-          <table class="w-full">
-            <thead class="bg-gray-50">
-              <tr>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">MSSV</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Họ và tên</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Năm học</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Học kì</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Điểm RL</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">VP Nhà trường</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">VP Xã hội</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">NCKH</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Đánh giá</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Thao tác</th>
-              </tr>
-            </thead>
-            <tbody id="grades-table-body" class="bg-white divide-y divide-gray-200">
-              <tr>
-                <td colspan="10" class="px-6 py-4 text-center text-gray-500">
-                  Đang tải dữ liệu...
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
+    <div id="giangvien-diem-container" data-scope="giangvien"></div>
   </section>
 
   <!-- Activities Management Section -->
@@ -538,13 +531,13 @@
         <p class="text-gray-600">Xem và quản lý các hoạt động rèn luyện</p>
       </div>
 
-      <!-- Add Activity Button -->
+      <!-- Request Activity Creation (Lecturers cannot create activities) -->
       <div class="mb-6">
-        <button id="add-activity-btn" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
+        <button id="request-activity-btn" class="px-4 py-2 bg-yellow-600 text-white rounded-md hover:bg-yellow-700">
           <svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M12 20h.01"></path>
           </svg>
-          Thêm hoạt động mới
+          Yêu cầu tạo hoạt động (Khoa/Trường)
         </button>
       </div>
 
@@ -556,45 +549,288 @@
     </div>
   </section>
 
-  <!-- Reports Section -->
-  <section id="reports" class="section-content hidden">
+  <!-- Officer Assignment Section -->
+  <section id="officers" class="section-content hidden">
     <div class="max-w-7xl mx-auto p-6">
       <div class="mb-8">
-        <h2 class="text-3xl font-bold text-gray-800 mb-2">Báo cáo</h2>
-        <p class="text-gray-600">Xem các báo cáo thống kê</p>
+        <h2 class="text-3xl font-bold text-gray-800 mb-2">Phân công cán bộ lớp</h2>
+        <p class="text-gray-600">Chọn lớp và gán vai trò cho sinh viên: Lớp trưởng, Lớp phó hoặc Lớp trưởng lớp học phần</p>
       </div>
 
-      <!-- Report Filters -->
       <div class="bg-white p-6 rounded-lg shadow-md mb-6">
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Loại báo cáo</label>
-            <select id="report-type" class="w-full border rounded-md px-3 py-2">
-              <option value="summary">Báo cáo tổng hợp</option>
-              <option value="faculty">Báo cáo theo khoa</option>
-              <option value="class">Báo cáo theo lớp</option>
-              <option value="activity">Báo cáo hoạt động</option>
-            </select>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Khoa</label>
+            <select id="officer-khoa" class="w-full border rounded-md px-3 py-2"></select>
           </div>
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Năm học</label>
-            <select id="report-year" class="w-full border rounded-md px-3 py-2">
-              <option value="">Tất cả năm học</option>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Lớp</label>
+            <select id="officer-lop" class="w-full border rounded-md px-3 py-2"></select>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Vai trò</label>
+            <select id="officer-role" class="w-full border rounded-md px-3 py-2">
+              <option value="LopTruong">Lớp trưởng</option>
+              <option value="LopPho">Lớp phó</option>
+              <option value="LopTruongHocPhan">Lớp trưởng lớp học phần</option>
             </select>
           </div>
           <div class="flex items-end">
-            <button id="generate-report" class="w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
-              Tạo báo cáo
-            </button>
+            <button id="officer-save" class="px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700">Lưu phân công</button>
           </div>
         </div>
       </div>
 
-      <!-- Report Content -->
-      <div id="report-content" class="bg-white rounded-lg shadow-md p-6">
-        <div class="text-center text-gray-500">
-          <p>Chọn loại báo cáo và nhấn "Tạo báo cáo" để xem kết quả</p>
+      <div class="bg-white rounded-lg shadow-md overflow-hidden">
+        <div class="px-6 py-4 border-b flex items-center justify-between">
+          <h3 class="text-lg font-semibold text-gray-800">Danh sách sinh viên</h3>
+          <span id="officer-count" class="text-sm text-gray-500"></span>
         </div>
+        <div class="overflow-x-auto">
+          <table class="w-full">
+            <thead>
+              <tr class="bg-gray-50 text-left">
+                <th class="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Chọn</th>
+                <th class="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">MSSV</th>
+                <th class="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Họ tên</th>
+                <th class="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Vai trò hiện tại</th>
+              </tr>
+            </thead>
+            <tbody id="officer-students" class="divide-y divide-gray-100"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Evidence Moderation Section -->
+  <section id="evidence" class="section-content hidden">
+    <div class="max-w-7xl mx-auto p-6">
+      <div class="mb-8 flex items-start justify-between gap-4 flex-wrap">
+        <div>
+          <h2 class="text-3xl font-bold text-gray-800 mb-2">Duyệt minh chứng</h2>
+          <p class="text-gray-600 max-w-xl">Xem kết quả phân tích AI, duyệt hoặc từ chối minh chứng do sinh viên gửi. Các minh chứng ở trạng thái <span class="font-semibold">ManualReview</span> cần giảng viên xác nhận.</p>
+        </div>
+        <div id="evidence-pending-badge" class="hidden px-4 py-2 bg-rose-100 text-rose-700 rounded-lg text-sm font-medium"></div>
+      </div>
+      <!-- Filters -->
+      <div class="bg-white p-5 rounded-lg shadow-md mb-6">
+        <div class="grid grid-cols-1 md:grid-cols-6 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">MSSV</label>
+            <input id="evidence-filter-mssv" type="text" placeholder="VD: SV001" class="w-full border rounded-md px-3 py-2" />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Verdict</label>
+            <select id="evidence-filter-verdict" class="w-full border rounded-md px-3 py-2">
+              <option value="">Tất cả</option>
+              <option value="ManualReview">ManualReview</option>
+              <option value="Approved">Approved</option>
+              <option value="Rejected">Rejected</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Lớp (GVCN)</label>
+            <select id="evidence-filter-class" class="w-full border rounded-md px-3 py-2">
+              <option value="">Tất cả lớp của bạn</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Trang</label>
+            <input id="evidence-filter-page" type="number" min="1" value="1" class="w-full border rounded-md px-3 py-2" />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Kích thước trang</label>
+            <select id="evidence-filter-pageSize" class="w-full border rounded-md px-3 py-2">
+              <option value="10">10</option>
+              <option value="20">20</option>
+              <option value="50" selected>50</option>
+            </select>
+          </div>
+          <div class="flex items-end gap-2">
+            <button id="evidence-filter-apply" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 w-full">Lọc</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Evidence Table -->
+      <div class="bg-white rounded-lg shadow-md overflow-hidden">
+        <div class="px-6 py-4 border-b flex items-center justify-between">
+          <h3 class="text-lg font-semibold text-gray-800">Danh sách minh chứng</h3>
+          <div class="flex gap-2 items-center">
+            <span id="evidence-selected-count" class="text-sm text-gray-600 hidden">
+              <span id="evidence-selected-num">0</span> được chọn
+            </span>
+            <button id="evidence-approve-bulk" class="px-3 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 text-sm hidden">Duyệt nhiều</button>
+            <button id="evidence-reject-bulk" class="px-3 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 text-sm hidden">Từ chối nhiều</button>
+            <span id="evidence-total" class="text-sm text-gray-500"></span>
+          </div>
+        </div>
+        <div class="overflow-x-auto border border-gray-200">
+          <table class="w-full">
+            <thead class="bg-gray-50 sticky top-0">
+              <tr>
+                <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                  <input type="checkbox" id="evidence-select-all" class="rounded" title="Chọn tất cả" />
+                </th>
+                <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">MSSV</th>
+                <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Hoạt động</th>
+                <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Điểm AI</th>
+                <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Bối cảnh</th>
+                <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Face</th>
+                <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Thiết bị</th>
+                <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Verdict</th>
+                <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Trạng thái</th>
+                <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Thao tác</th>
+              </tr>
+            </thead>
+            <tbody id="evidence-tbody" class="bg-white divide-y divide-gray-200">
+              <tr><td colspan="10" class="px-6 py-4 text-center text-gray-500">Chưa có dữ liệu</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Reports Section (Lecturer - Only Class Report) -->
+  <section id="reports" class="section-content hidden">
+    <div class="max-w-7xl mx-auto p-6">
+      <div class="mb-8">
+        <h2 class="text-3xl font-bold text-gray-800 mb-2">Báo cáo lớp</h2>
+        <p class="text-gray-600">Báo cáo thống kê về lớp chủ nhiệm của bạn</p>
+      </div>
+
+      <!-- Report Year Filter -->
+      <div class="bg-white p-4 rounded-lg shadow-md mb-6 flex items-end gap-4">
+        <div class="flex-1">
+          <label class="block text-sm font-medium text-gray-700 mb-1">Năm học</label>
+          <select id="report-year" class="w-full border rounded-md px-3 py-2">
+            <option value="">Tất cả năm học</option>
+          </select>
+        </div>
+        <button id="generate-report" class="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
+          Cập nhật
+        </button>
+      </div>
+
+      <!-- Loading State -->
+      <div id="report-loading" class="text-center text-gray-500 py-8 hidden">
+        <p>Đang tải báo cáo...</p>
+      </div>
+
+      <!-- Report Cards (Class Report - Card List View) -->
+      <div id="report-content" class="space-y-4">
+        <!-- Card template:
+        <div class="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg shadow-md p-6 border-l-4 border-blue-600">
+          <div class="flex justify-between items-start mb-4">
+            <div>
+              <h3 class="text-xl font-bold text-gray-800">Tên Lớp</h3>
+              <p class="text-sm text-gray-600">Khoa: Tên Khoa</p>
+            </div>
+            <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">Năm</span>
+          </div>
+          
+          <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-4">
+            <div class="bg-white p-3 rounded">
+              <p class="text-xs text-gray-600">Số SV</p>
+              <p class="text-2xl font-bold text-gray-900">XX</p>
+            </div>
+            <div class="bg-white p-3 rounded">
+              <p class="text-xs text-gray-600">Điểm TB</p>
+              <p class="text-2xl font-bold text-gray-900">XX.X</p>
+            </div>
+            <div class="bg-white p-3 rounded">
+              <p class="text-xs text-gray-600">Xuất sắc</p>
+              <p class="text-2xl font-bold text-purple-600">XX</p>
+            </div>
+            <div class="bg-white p-3 rounded">
+              <p class="text-xs text-gray-600">Giỏi</p>
+              <p class="text-2xl font-bold text-green-600">XX</p>
+            </div>
+            <div class="bg-white p-3 rounded">
+              <p class="text-xs text-gray-600">Khá</p>
+              <p class="text-2xl font-bold text-blue-600">XX</p>
+            </div>
+          </div>
+          
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div class="bg-white p-3 rounded">
+              <p class="text-xs text-gray-600">Trung bình</p>
+              <p class="text-xl font-bold text-yellow-600">XX</p>
+            </div>
+            <div class="bg-white p-3 rounded">
+              <p class="text-xs text-gray-600">Yếu</p>
+              <p class="text-xl font-bold text-red-600">XX</p>
+            </div>
+            <div class="bg-white p-3 rounded">
+              <p class="text-xs text-gray-600">VP NT</p>
+              <p class="text-xl font-bold text-orange-600">XX</p>
+            </div>
+            <div class="bg-white p-3 rounded">
+              <p class="text-xs text-gray-600">VP XH</p>
+              <p class="text-xl font-bold text-red-600">XX</p>
+            </div>
+          </div>
+          
+          <div class="mt-4 flex gap-2">
+            <button onclick="viewClassStudents(...)" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm">
+              Xem chi tiết
+            </button>
+            <button onclick="exportReport(...)" class="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 text-sm">
+              Xuất Excel
+            </button>
+          </div>
+        </div>
+        -->
+      </div>
+    </div>
+  </section>
+
+  <!-- Evaluation Forms (Lecturer) Section -->
+  <section id="evalforms" class="section-content hidden">
+    <div class="max-w-7xl mx-auto p-6">
+      <div class="mb-8">
+        <h2 class="text-3xl font-bold text-gray-800 mb-2">Phiếu đánh giá rèn luyện</h2>
+        <p class="text-gray-600">Nhận phiếu từ sinh viên theo Khoa/Lớp, xem chi tiết và duyệt gửi lên Khoa</p>
+      </div>
+
+      <div id="approval-dashboard-container"></div>
+
+
+    </div>
+  </section>
+
+
+  <section id="ekyc" class="section-content hidden">
+    <div class="max-w-7xl mx-auto p-6">
+      <div class="mb-6 flex justify-between items-center">
+        <div>
+          <h2 class="text-2xl font-bold text-gray-800 mb-1">Duyệt yêu cầu eKYC</h2>
+          <p class="text-sm text-gray-500">Xem và phê duyệt các yêu cầu xác thực danh tính từ sinh viên.</p>
+        </div>
+        <button onclick="loadEkycPending()" class="bg-blue-50 text-blue-600 px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-100 flex items-center gap-2">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+            Làm mới
+        </button>
+      </div>
+      
+      <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        <table class="w-full text-sm text-left">
+          <thead class="bg-gray-50 text-gray-600 font-semibold border-b">
+            <tr>
+              <th class="px-6 py-4">Sinh viên</th>
+              <th class="px-6 py-4">Lớp</th>
+              <th class="px-6 py-4">Điểm khuôn mặt</th>
+              <th class="px-6 py-4">Điểm thẻ</th>
+              <th class="px-6 py-4">Trích xuất (MSSV)</th>
+              <th class="px-6 py-4 text-center">Thao tác</th>
+            </tr>
+          </thead>
+          <tbody id="ekyc-table-body" class="divide-y divide-gray-100">
+            <tr><td colspan="6" class="px-6 py-8 text-center text-gray-500">Đang tải dữ liệu...</td></tr>
+          </tbody>
+        </table>
       </div>
     </div>
   </section>
@@ -654,70 +890,168 @@
   </div>
 </div>
 
-<!-- Modal thêm hoạt động mới -->
+<!-- Modal yêu cầu tạo hoạt động (dành cho Giảng viên) -->
+<div id="request-activity-modal" class="modal hidden">
+  <div class="modal-content max-w-2xl">
+    <div class="p-4 border-b flex justify-between items-center">
+      <h3 class="text-lg font-semibold">Yêu cầu tạo hoạt động</h3>
+      <button onclick="closeRequestActivityModal()" class="text-gray-600 px-2 py-1 rounded hover:bg-gray-100">Đóng</button>
+    </div>
+    <div class="p-6">
+      <p class="text-sm text-gray-700 mb-3">Giảng viên không có quyền trực tiếp tạo hoạt động. Vui lòng gửi yêu cầu tới Khoa hoặc Trường để họ xét duyệt và tạo hoạt động trên hệ thống. Bạn có thể gửi form yêu cầu dưới đây; hệ thống sẽ chuyển tới email/ban quản trị (nếu được cấu hình) hoặc bạn có thể sao chép nội dung và gửi trực tiếp.</p>
+      <form id="request-activity-form" class="space-y-4">
+        <div>
+          <label class="form-label">Tiêu đề yêu cầu</label>
+          <input type="text" id="request-title" class="form-input" placeholder="Ví dụ: Yêu cầu tạo hoạt động Tình nguyện" required>
+        </div>
+        <div>
+          <label class="form-label">Nội dung yêu cầu</label>
+          <textarea id="request-body" class="form-input form-textarea" placeholder="Mô tả ngắn, thời gian, điểm rèn luyện, số lượng..." required></textarea>
+        </div>
+        <div class="flex justify-end gap-3 pt-4">
+          <button type="button" onclick="closeRequestActivityModal()" class="btn-secondary">Hủy</button>
+          <button type="submit" class="btn-success">Gửi yêu cầu</button>
+        </div>
+      </form>
+      <div id="request-result" class="mt-3 text-sm hidden"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Lecturer Profile & Settings Modals -->
+<div id="gv-profile-modal" class="modal hidden">
+  <div class="modal-content max-w-lg">
+    <div class="p-4 border-b flex justify-between items-center">
+      <h3 class="text-lg font-semibold">Cập nhật thông tin giảng viên</h3>
+      <button id="gv-profile-close" class="text-gray-600 px-2 py-1 rounded hover:bg-gray-100">Đóng</button>
+    </div>
+    <div class="p-4 space-y-4">
+      <div class="flex items-center gap-3">
+        <img id="gv-avatar-preview" class="w-16 h-16 rounded-full border" src="https://i.pravatar.cc/150?u=giangvien" alt="Avatar" />
+        <input type="file" id="gv-avatar-file" accept="image/*" class="text-sm" />
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-xs font-medium text-gray-600 mb-1">Mã cá nhân</label>
+          <input id="gv-macn" type="text" class="w-full border rounded px-3 py-2 bg-gray-100" disabled />
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-600 mb-1">Họ tên</label>
+          <input id="gv-ten" type="text" class="w-full border rounded px-3 py-2 bg-gray-100" disabled />
+        </div>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-xs font-medium text-gray-600 mb-1">Email</label>
+          <input id="gv-email" type="email" class="w-full border rounded px-3 py-2 bg-gray-100" disabled />
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-600 mb-1">Số điện thoại</label>
+          <input id="gv-sdt" type="text" class="w-full border rounded px-3 py-2" />
+        </div>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-xs font-medium text-gray-600 mb-1">Khoa</label>
+          <input id="gv-khoa" type="text" class="w-full border rounded px-3 py-2 bg-gray-100" disabled />
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-600 mb-1">Lớp cố vấn/chủ nhiệm</label>
+          <input id="gv-lopcv" type="text" class="w-full border rounded px-3 py-2 bg-gray-100" disabled />
+        </div>
+      </div>
+      <div>
+        <label class="block text-xs font-medium text-gray-600 mb-1">Địa chỉ</label>
+        <textarea id="gv-diachi" rows="3" class="w-full border rounded px-3 py-2"></textarea>
+      </div>
+      <div class="flex justify-end gap-2 pt-2 border-t border-gray-100">
+        <button id="gv-profile-cancel" type="button" class="px-3 py-2 border rounded-md hover:bg-gray-100">Hủy</button>
+        <button id="gv-profile-save" type="button" class="px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">Lưu</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="gv-settings-modal" class="modal hidden">
+  <div class="modal-content max-w-md">
+    <div class="p-4 border-b flex justify-between items-center">
+      <h3 class="text-lg font-semibold">Cài đặt giảng viên</h3>
+      <button id="gv-settings-close" class="text-gray-600 px-2 py-1 rounded hover:bg-gray-100">Đóng</button>
+    </div>
+    <div class="p-4 space-y-4">
+      <div>
+        <label class="flex items-center gap-3 cursor-pointer">
+          <input id="gv-setting-emailNotify" type="checkbox" class="w-4 h-4" />
+          <span class="text-sm text-gray-700">Nhận email khi có thông báo mới</span>
+        </label>
+      </div>
+      <div>
+        <label class="flex items-center gap-3 cursor-pointer">
+          <input id="gv-setting-hoverLoad" type="checkbox" class="w-4 h-4" />
+          <span class="text-sm text-gray-700">Tự động tải danh sách thông báo khi di chuột vào chuông</span>
+        </label>
+      </div>
+      <div class="flex justify-end gap-2 pt-2 border-t border-gray-100">
+        <button id="gv-settings-cancel" type="button" class="px-3 py-2 border rounded-md hover:bg-gray-100">Hủy</button>
+        <button id="gv-settings-save" type="button" class="px-3 py-2 bg-green-600 text-white rounded-md hover:bg-green-700">Lưu cài đặt</button>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- Modal Thêm/Sửa hoạt động -->
 <div id="add-activity-modal" class="modal hidden">
   <div class="modal-content max-w-2xl">
     <div class="p-4 border-b flex justify-between items-center">
-      <h3 class="text-lg font-semibold">Thêm hoạt động mới</h3>
-      <button onclick="closeAddActivityModal()" class="text-gray-600 px-2 py-1 rounded hover:bg-gray-100">Đóng</button>
+      <h3 class="text-lg font-semibold">Sửa hoạt động</h3>
+      <button type="button" onclick="document.getElementById('add-activity-modal').classList.add('hidden')" class="text-gray-600 px-2 py-1 rounded hover:bg-gray-100">Đóng</button>
     </div>
     <div class="p-6">
       <form id="add-activity-form" class="space-y-4">
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label class="form-label">Mã hoạt động</label>
-            <input type="text" id="activity-code" class="form-input" placeholder="Nhập mã hoạt động" required>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Mã hoạt động</label>
+            <input type="text" id="activity-code" class="w-full border rounded-md px-3 py-2 bg-gray-50" readonly required>
           </div>
           <div>
-            <label class="form-label">Tên hoạt động</label>
-            <input type="text" id="activity-name" class="form-input" placeholder="Nhập tên hoạt động" required>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Tên hoạt động</label>
+            <input type="text" id="activity-name" class="w-full border rounded-md px-3 py-2" required>
           </div>
         </div>
-        
         <div>
-          <label class="form-label">Mô tả hoạt động</label>
-          <textarea id="activity-description" class="form-input form-textarea" placeholder="Mô tả chi tiết về hoạt động"></textarea>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Mô tả</label>
+          <textarea id="activity-description" class="w-full border rounded-md px-3 py-2"></textarea>
         </div>
-        
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
-            <label class="form-label">Ngày bắt đầu</label>
-            <input type="date" id="activity-start-date" class="form-input" required>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Ngày bắt đầu</label>
+            <input type="date" id="activity-start-date" class="w-full border rounded-md px-3 py-2" required>
           </div>
           <div>
-            <label class="form-label">Ngày kết thúc</label>
-            <input type="date" id="activity-end-date" class="form-input" required>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Ngày kết thúc</label>
+            <input type="date" id="activity-end-date" class="w-full border rounded-md px-3 py-2" required>
           </div>
           <div>
-            <label class="form-label">Điểm rèn luyện</label>
-            <input type="number" id="activity-points" class="form-input" placeholder="0-100" min="0" max="100" required>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Điểm rèn luyện</label>
+            <input type="number" id="activity-points" class="w-full border rounded-md px-3 py-2" required>
           </div>
         </div>
-        
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label class="form-label">Địa điểm</label>
-            <input type="text" id="activity-location" class="form-input" placeholder="Địa điểm tổ chức">
+            <label class="block text-sm font-medium text-gray-700 mb-1">Số lượng tối đa</label>
+            <input type="number" id="activity-max-participants" class="w-full border rounded-md px-3 py-2">
           </div>
           <div>
-            <label class="form-label">Số lượng tham gia tối đa</label>
-            <input type="number" id="activity-max-participants" class="form-input" placeholder="Số lượng" min="1">
+            <label class="block text-sm font-medium text-gray-700 mb-1">Từ khóa</label>
+            <input type="text" id="activity-requirements" class="w-full border rounded-md px-3 py-2" placeholder="SanKhau, NgoaiTroi...">
           </div>
         </div>
-        
         <div>
-          <label class="form-label">Yêu cầu tham gia</label>
-          <textarea id="activity-requirements" class="form-input form-textarea" placeholder="Các yêu cầu để tham gia hoạt động"></textarea>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Địa điểm</label>
+          <input type="text" id="activity-location" class="w-full border rounded-md px-3 py-2">
         </div>
-        
         <div class="flex justify-end gap-3 pt-4">
-          <button type="button" onclick="closeAddActivityModal()" class="btn-secondary">
-            Hủy
-          </button>
-          <button type="submit" class="btn-success">
-            <span id="submit-text">Thêm hoạt động</span>
-            <span id="submit-loading" class="loading-spinner hidden"></span>
-          </button>
+          <button type="button" class="px-4 py-2 border rounded-md hover:bg-gray-100">Hủy</button>
+          <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"><span id="submit-text">Cập nhật hoạt động</span></button>
         </div>
       </form>
     </div>
@@ -725,7 +1059,114 @@
 </div>
 
 <!-- Custom JS -->
-<script src="js/giangvien.js"></script>
+<script src="js/phieu_view_modal.js?v=8"></script>
+<script src="js/diem_import.js?v=2"></script>
+<script src="js/giangvien.js?v=10"></script>
+<script src="js/giangvien_profile.js?v=2"></script>
+<script>
+  // Đóng modal khi click ra ngoài nội dung
+  (function(){
+    const modal = document.getElementById('modal');
+    if (modal) {
+      modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+          window.closeModal && window.closeModal();
+        }
+      });
+    }
+    const addModal = document.getElementById('add-activity-modal');
+    if (addModal) {
+      addModal.addEventListener('click', (e) => {
+        if (e.target === addModal) {
+          window.closeAddActivityModal && window.closeAddActivityModal();
+        }
+      });
+    }
+    // ESC để đóng
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        if (!modal.classList.contains('hidden')) window.closeModal();
+        if (!addModal.classList.contains('hidden')) window.closeAddActivityModal();
+      }
+    });
+  })();
+</script>
+
+
+  
+  <script src="/js/approval-dashboard.js"></script>
+    <script src="js/notification-widget.js"></script>
+
+<!-- eKYC Review Modal -->
+<div id="ekyc-review-modal" class="modal hidden">
+  <div class="modal-content max-w-4xl mx-4 lg:mx-auto rounded-xl shadow-2xl bg-white overflow-hidden flex flex-col max-h-[90vh]">
+    <div class="p-4 bg-gradient-to-r from-blue-600 to-indigo-700 text-white flex justify-between items-center flex-shrink-0">
+      <h3 class="text-lg font-bold flex items-center gap-2">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+        Duyệt eKYC: <span id="ekyc-mdl-name" class="ml-1 text-blue-100"></span>
+      </h3>
+      <button onclick="document.getElementById('ekyc-review-modal').classList.add('hidden')" class="text-white hover:text-red-200 transition-colors">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+      </button>
+    </div>
+    
+    <div class="p-6 overflow-y-auto flex-1 bg-slate-50">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <!-- Khuôn mặt -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 flex flex-col items-center">
+            <h4 class="text-sm font-bold text-gray-700 mb-3 uppercase tracking-wider">Ảnh chân dung</h4>
+            <div class="w-full h-64 bg-gray-100 rounded-lg overflow-hidden flex items-center justify-center border border-gray-200 mb-3">
+                <video id="ekyc-mdl-selfie" autoplay loop muted playsinline class="max-w-full max-h-full object-cover"></video>
+            </div>
+            <div class="w-full flex justify-between items-center px-4 py-2 bg-blue-50 rounded-lg text-sm">
+                <span class="text-gray-600 font-medium">Độ trùng khớp:</span>
+                <span id="ekyc-mdl-face-score" class="font-bold text-blue-700 text-lg">0%</span>
+            </div>
+        </div>
+        
+        <!-- Thẻ SV -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 flex flex-col items-center">
+            <h4 class="text-sm font-bold text-gray-700 mb-3 uppercase tracking-wider">Ảnh thẻ sinh viên</h4>
+            <div class="w-full h-64 bg-gray-100 rounded-lg overflow-hidden flex items-center justify-center border border-gray-200 mb-3">
+                <img id="ekyc-mdl-card" src="" class="max-w-full max-h-full object-contain">
+            </div>
+            <div class="w-full flex justify-between items-center px-4 py-2 bg-indigo-50 rounded-lg text-sm">
+                <span class="text-gray-600 font-medium">Định dạng thẻ:</span>
+                <span id="ekyc-mdl-card-score" class="font-bold text-indigo-700 text-lg">0%</span>
+            </div>
+        </div>
+      </div>
+      
+      <!-- Text Extracted -->
+      <div class="mt-6 bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+        <h4 class="text-sm font-bold text-gray-700 mb-2 uppercase tracking-wider flex items-center gap-2">
+            <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7"></path></svg>
+            Dữ liệu AI bóc tách
+        </h4>
+        <div id="ekyc-mdl-parsed" class="mb-3"></div>
+        <div class="text-xs text-gray-500 mb-1 cursor-pointer hover:text-blue-600 font-medium" onclick="document.getElementById('ekyc-mdl-text').classList.toggle('hidden')">
+            + Xem/Ẩn văn bản gốc (OCR)
+        </div>
+        <div id="ekyc-mdl-text" class="hidden bg-gray-50 p-3 rounded-lg border border-gray-200 font-mono text-sm text-gray-800 whitespace-pre-wrap"></div>
+      </div>
+    </div>
+    
+    <div class="p-4 bg-white border-t border-gray-200 flex justify-end gap-3 flex-shrink-0">
+      <button onclick="submitEkycDecision('Reject')" class="px-5 py-2.5 bg-white border border-red-200 text-red-600 rounded-lg font-medium hover:bg-red-50 transition-colors shadow-sm">
+        Từ chối
+      </button>
+      <button onclick="submitEkycDecision('Approve')" class="px-5 py-2.5 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition-colors shadow-sm flex items-center gap-2">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+        Phê duyệt hồ sơ
+      </button>
+    </div>
+  </div>
+</div>
 
 </body>
 </html>
+
+
+
+
+
